@@ -1,5 +1,3 @@
-#include <geometry_msgs/PoseStamped.h>
-#include <geometry_msgs/PoseWithCovariance.h>
 #include <geometry_msgs/PoseWithCovarianceStamped.h>
 #include <nav_msgs/Odometry.h>
 #include <sensor_msgs/point_cloud2_iterator.h>
@@ -20,13 +18,13 @@ grid_map::InterpolationMethods parseInterpolationMethod(const std::string &metho
 HeightmapSubscriber::HeightmapSubscriber(const PolicySpec &policy_spec, const std::string &home_dir)
     : DummyHeightmapSource(policy_spec, home_dir) {
   YAML::Node map_sub_cfg = config_["grid_map_subscriber"];
-  yml::setIf(config_, "timeout_threshold", map_timeout_threshold_);
-  yml::setIf(config_, "default_enabled", default_subscriber_enabled_);
+  yml::setIf(map_sub_cfg, "timeout_threshold", map_timeout_threshold_);
+  yml::setIf(map_sub_cfg, "default_enabled", default_subscriber_enabled_);
   map_sub_ = makeSubscriber(map_sub_cfg, &HeightmapSubscriber::gridMapCallback, this,
                             "/elevation_mapping/elevation_map");
 
   YAML::Node loc_sub_cfg = config_["localization_subscriber"];
-  yml::setIf(config_, "timeout_threshold", loc_timeout_threshold_);
+  yml::setIf(loc_sub_cfg, "timeout_threshold", loc_timeout_threshold_);
   loc_sub_ = makeSubscriber(loc_sub_cfg, &HeightmapSubscriber::localizationCallback, this, "/odometry");
 
   yml::setIf(config_, "elevation_layer", elevation_layer_);
@@ -99,8 +97,8 @@ bool HeightmapSubscriber::update(const LowState &low_state, ControlRequests &req
   }
   {
     std::lock_guard<std::mutex> lock(msg_mtx_);
-    Vec2f pos{loc_msg_.position.x, loc_msg_.position.y};
-    const auto &orn = loc_msg_.orientation;
+    Vec2f pos{loc_msg_.pose.position.x, loc_msg_.pose.position.y};
+    const auto &orn = loc_msg_.pose.orientation;
     Eigen::Rotation2Df rot(Quatf(orn.w, orn.x, orn.y, orn.z).eulerAngles().z());
 
     for (std::size_t i{}; i < numHeightSamples(); ++i) {
@@ -149,7 +147,7 @@ bool HeightmapSubscriber::update(const LowState &low_state, ControlRequests &req
       ++iter_z;
       ++iter_rgb;
     }
-    sample_msg_.header = loc_header_;
+    sample_msg_.header = loc_msg_.header;
     sample_pub_.publish(sample_msg_);
   }
   if (elevation_zero_mean_) elevation_ -= mean;
@@ -173,28 +171,17 @@ void HeightmapSubscriber::gridMapCallback(const grid_map_msgs::GridMap::ConstPtr
 void HeightmapSubscriber::localizationCallback(const ros::MessageEvent<const topic_tools::ShapeShifter> &event) {
   std::lock_guard<std::mutex> lock(msg_mtx_);
   auto msg_data = event.getMessage();
-  if (msg_data->getDataType() == "geometry_msgs/Pose") {
-    auto msg          = msg_data->instantiate<geometry_msgs::Pose>();
-    loc_msg_          = *msg;
-    loc_header_.stamp = ros::Time::now();
-    ++loc_header_.seq;
-  } else if (msg_data->getDataType() == "geometry_msgs/PoseStamped") {
-    auto msg    = msg_data->instantiate<geometry_msgs::PoseStamped>();
-    loc_msg_    = msg->pose;
-    loc_header_ = msg->header;
-  } else if (msg_data->getDataType() == "geometry_msgs/PoseWithCovariance") {
-    auto msg          = msg_data->instantiate<geometry_msgs::PoseWithCovariance>();
-    loc_msg_          = msg->pose;
-    loc_header_.stamp = ros::Time::now();
-    ++loc_header_.seq;
+  if (msg_data->getDataType() == "geometry_msgs/PoseStamped") {
+    auto msg = msg_data->instantiate<geometry_msgs::PoseStamped>();
+    loc_msg_ = *msg;
   } else if (msg_data->getDataType() == "geometry_msgs/PoseWithCovarianceStamped") {
-    auto msg    = msg_data->instantiate<geometry_msgs::PoseWithCovarianceStamped>();
-    loc_msg_    = msg->pose.pose;
-    loc_header_ = msg->header;
+    auto msg        = msg_data->instantiate<geometry_msgs::PoseWithCovarianceStamped>();
+    loc_msg_.header = msg->header;
+    loc_msg_.pose   = msg->pose.pose;
   } else if (msg_data->getDataType() == "nav_msgs/Odometry") {
-    auto msg    = msg_data->instantiate<nav_msgs::Odometry>();
-    loc_msg_    = msg->pose.pose;
-    loc_header_ = msg->header;
+    auto msg        = msg_data->instantiate<nav_msgs::Odometry>();
+    loc_msg_.header = msg->header;
+    loc_msg_.pose   = msg->pose.pose;
   } else {
     subscriber_enabled_ = false;
     STEPIT_WARN("HeightmapSubscriber received a message with unsupported type '{}'.", msg_data->getDataType());
@@ -256,7 +243,7 @@ bool HeightmapSubscriber::checkAllReady() {
     STEPIT_INFO(error_msg_);
   }
 
-  double loc_lag   = (ros::Time::now() - loc_header_.stamp).toSec();
+  double loc_lag   = (ros::Time::now() - loc_msg_.header.stamp).toSec();
   bool loc_timeout = loc_lag > loc_timeout_threshold_;
   if (loc_timeout) {
     if (not loc_timeout_) {

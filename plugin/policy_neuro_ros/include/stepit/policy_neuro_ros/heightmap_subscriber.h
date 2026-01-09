@@ -1,7 +1,7 @@
 #ifndef STEPIT_NEURO_POLICY_ROS_HEIGHTMAP_SUBSCRIBER_H_
 #define STEPIT_NEURO_POLICY_ROS_HEIGHTMAP_SUBSCRIBER_H_
 
-#include <geometry_msgs/Pose.h>
+#include <geometry_msgs/PoseStamped.h>
 #include <grid_map_ros/grid_map_ros.hpp>
 #include <sensor_msgs/PointCloud2.h>
 #include <std_msgs/Header.h>
@@ -55,8 +55,7 @@ class HeightmapSubscriber : public DummyHeightmapSource {
   std::string error_msg_;
   grid_map::GridMap map_msg_;
   grid_map_msgs::GridMapInfo map_info_;
-  geometry_msgs::Pose loc_msg_;
-  std_msgs::Header loc_header_;
+  geometry_msgs::PoseStamped loc_msg_;
   sensor_msgs::PointCloud2 sample_msg_;
   std::vector<Vec2f> global_sample_coords_;
 };

@@ -25,7 +25,14 @@ stepit_add_plugin(${PROJECT_NAME}
     INCLUDES include
     DEPENDS policy_neuro ros2_base
 )
-ament_target_dependencies(${PROJECT_NAME} PUBLIC geometry_msgs grid_map_msgs grid_map_ros nav_msgs sensor_msgs std_msgs)
+ament_target_dependencies(${PROJECT_NAME} PUBLIC
+    geometry_msgs
+    grid_map_msgs
+    grid_map_ros
+    nav_msgs
+    sensor_msgs
+    std_msgs
+)
 
 
 if (BUILD_TESTING)

@@ -1,9 +1,7 @@
 #ifndef STEPIT_NEURO_POLICY_ROS2_HEIGHTMAP_SUBSCRIBER2_H_
 #define STEPIT_NEURO_POLICY_ROS2_HEIGHTMAP_SUBSCRIBER2_H_
 
-#include <geometry_msgs/msg/pose.hpp>
 #include <geometry_msgs/msg/pose_stamped.hpp>
-#include <geometry_msgs/msg/pose_with_covariance.hpp>
 #include <geometry_msgs/msg/pose_with_covariance_stamped.hpp>
 #include <grid_map_msgs/msg/grid_map.hpp>
 #include <grid_map_ros/grid_map_ros.hpp>
@@ -26,9 +24,7 @@ class HeightmapSubscriber2 : public DummyHeightmapSource {
  private:
   using InterpolationMethods = grid_map::InterpolationMethods;
   void gridMapCallback(const grid_map_msgs::msg::GridMap::SharedPtr msg);
-  void poseCallback(const geometry_msgs::msg::Pose::SharedPtr msg);
   void poseStampedCallback(const geometry_msgs::msg::PoseStamped::SharedPtr msg);
-  void poseWithCovarianceCallback(const geometry_msgs::msg::PoseWithCovariance::SharedPtr msg);
   void poseWithCovarianceStampedCallback(const geometry_msgs::msg::PoseWithCovarianceStamped::SharedPtr msg);
   void odometryCallback(const nav_msgs::msg::Odometry::SharedPtr msg);
   void handleControlRequest(ControlRequest request);
@@ -66,9 +62,7 @@ class HeightmapSubscriber2 : public DummyHeightmapSource {
   grid_map::GridMap map_msg_;
   grid_map_msgs::msg::GridMapInfo map_info_;
   rclcpp::Time map_stamp_{0, 0, RCL_ROS_TIME};
-  geometry_msgs::msg::Pose loc_msg_;
-  rclcpp::Time loc_stamp_{0, 0, RCL_ROS_TIME};
-  std::string loc_frame_id_;
+  geometry_msgs::msg::PoseStamped loc_msg_;
   sensor_msgs::msg::PointCloud2 sample_msg_;
   std::vector<Vec2f> global_sample_coords_;
 };

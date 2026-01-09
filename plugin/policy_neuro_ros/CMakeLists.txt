@@ -7,7 +7,14 @@ project(stepit_plugin_policy_neuro_ros)
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
-find_package(catkin QUIET COMPONENTS geometry_msgs grid_map_ros nav_msgs roscpp topic_tools)
+find_package(catkin QUIET
+    COMPONENTS
+      geometry_msgs
+      grid_map_ros
+      nav_msgs
+      roscpp
+      topic_tools
+)
 if (NOT catkin_FOUND)
   message(STATUS "Skipped plugin '${PROJECT_NAME}': Missing catkin.")
   return()
@@ -105,7 +112,12 @@ endif ()
 catkin_package(
     INCLUDE_DIRS include
     LIBRARIES ${PROJECT_NAME}
-    CATKIN_DEPENDS geometry_msgs grid_map_ros nav_msgs roscpp topic_tools
+    CATKIN_DEPENDS
+      geometry_msgs
+      grid_map_ros
+      nav_msgs
+      roscpp
+      topic_tools
 #  DEPENDS system_lib
 )
 if (NOT STEPIT_BUILDING_WITH_CATKIN)

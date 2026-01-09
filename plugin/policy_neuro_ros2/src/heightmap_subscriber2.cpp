@@ -49,15 +49,9 @@ HeightmapSubscriber2::HeightmapSubscriber2(const PolicySpec &policy_spec, const 
 
   map_sub_ = getNode()->create_subscription<grid_map_msgs::msg::GridMap>(
       map_topic, map_qos, std::bind(&HeightmapSubscriber2::gridMapCallback, this, std::placeholders::_1));
-  if (loc_topic_type == "geometry_msgs/msg/Pose") {
-    loc_sub_ = getNode()->create_subscription<geometry_msgs::msg::Pose>(
-        loc_topic, loc_qos, std::bind(&HeightmapSubscriber2::poseCallback, this, std::placeholders::_1));
-  } else if (loc_topic_type == "geometry_msgs/msg/PoseStamped") {
+  if (loc_topic_type == "geometry_msgs/msg/PoseStamped") {
     loc_sub_ = getNode()->create_subscription<geometry_msgs::msg::PoseStamped>(
         loc_topic, loc_qos, std::bind(&HeightmapSubscriber2::poseStampedCallback, this, std::placeholders::_1));
-  } else if (loc_topic_type == "geometry_msgs/msg/PoseWithCovariance") {
-    loc_sub_ = getNode()->create_subscription<geometry_msgs::msg::PoseWithCovariance>(
-        loc_topic, loc_qos, std::bind(&HeightmapSubscriber2::poseWithCovarianceCallback, this, std::placeholders::_1));
   } else if (loc_topic_type == "geometry_msgs/msg/PoseWithCovarianceStamped") {
     loc_sub_ = getNode()->create_subscription<geometry_msgs::msg::PoseWithCovarianceStamped>(
         loc_topic, loc_qos,
@@ -122,8 +116,8 @@ bool HeightmapSubscriber2::update(const LowState &low_state, ControlRequests &re
   }
   {
     std::lock_guard<std::mutex> lock(msg_mtx_);
-    Vec2f pos{loc_msg_.position.x, loc_msg_.position.y};
-    const auto &orn = loc_msg_.orientation;
+    Vec2f pos{loc_msg_.pose.position.x, loc_msg_.pose.position.y};
+    const auto &orn = loc_msg_.pose.orientation;
     Eigen::Rotation2Df rot(Quatf(orn.w, orn.x, orn.y, orn.z).eulerAngles().z());
 
     for (std::size_t i{}; i < numHeightSamples(); ++i) {
@@ -172,8 +166,7 @@ bool HeightmapSubscriber2::update(const LowState &low_state, ControlRequests &re
       ++iter_z;
       ++iter_rgb;
     }
-    sample_msg_.header.stamp    = loc_stamp_;
-    sample_msg_.header.frame_id = loc_frame_id_;
+    sample_msg_.header = loc_msg_.header;
     sample_pub_->publish(sample_msg_);
   }
   if (elevation_zero_mean_) elevation_ -= mean;
@@ -191,49 +184,29 @@ void HeightmapSubscriber2::gridMapCallback(const grid_map_msgs::msg::GridMap::Sh
   std::lock_guard<std::mutex> lock(msg_mtx_);
   grid_map::GridMapRosConverter::fromMessage(*msg, map_msg_);
   map_info_     = msg->info;
-  map_stamp_    = rclcpp::Time(msg->header.stamp);
   map_received_ = true;
-}
-
-void HeightmapSubscriber2::poseCallback(const geometry_msgs::msg::Pose::SharedPtr msg) {
-  std::lock_guard<std::mutex> lock(msg_mtx_);
-  loc_msg_      = *msg;
-  loc_stamp_    = getNode()->now();
-  loc_frame_id_ = "";
-  loc_received_ = true;
 }
 
 void HeightmapSubscriber2::poseStampedCallback(const geometry_msgs::msg::PoseStamped::SharedPtr msg) {
   std::lock_guard<std::mutex> lock(msg_mtx_);
-  loc_msg_      = msg->pose;
-  loc_stamp_    = rclcpp::Time(msg->header.stamp);
-  loc_frame_id_ = msg->header.frame_id;
-  loc_received_ = true;
-}
-
-void HeightmapSubscriber2::poseWithCovarianceCallback(const geometry_msgs::msg::PoseWithCovariance::SharedPtr msg) {
-  std::lock_guard<std::mutex> lock(msg_mtx_);
-  loc_msg_      = msg->pose;
-  loc_stamp_    = getNode()->now();
-  loc_frame_id_ = "";
-  loc_received_ = true;
+  loc_msg_.header = msg->header;
+  loc_msg_.pose   = msg->pose;
+  loc_received_   = true;
 }
 
 void HeightmapSubscriber2::poseWithCovarianceStampedCallback(
     const geometry_msgs::msg::PoseWithCovarianceStamped::SharedPtr msg) {
   std::lock_guard<std::mutex> lock(msg_mtx_);
-  loc_msg_      = msg->pose.pose;
-  loc_stamp_    = rclcpp::Time(msg->header.stamp);
-  loc_frame_id_ = msg->header.frame_id;
-  loc_received_ = true;
+  loc_msg_.header = msg->header;
+  loc_msg_.pose   = msg->pose.pose;
+  loc_received_   = true;
 }
 
 void HeightmapSubscriber2::odometryCallback(const nav_msgs::msg::Odometry::SharedPtr msg) {
   std::lock_guard<std::mutex> lock(msg_mtx_);
-  loc_msg_      = msg->pose.pose;
-  loc_stamp_    = rclcpp::Time(msg->header.stamp);
-  loc_frame_id_ = msg->header.frame_id;
-  loc_received_ = true;
+  loc_msg_.header = msg->header;
+  loc_msg_.pose   = msg->pose.pose;
+  loc_received_   = true;
 }
 
 void HeightmapSubscriber2::handleControlRequest(ControlRequest request) {
@@ -290,7 +263,7 @@ bool HeightmapSubscriber2::checkAllReady() {
     STEPIT_INFO(error_msg_);
   }
 
-  double loc_lag   = (getNode()->now() - loc_stamp_).seconds();
+  double loc_lag   = (getNode()->now() - loc_msg_.header.stamp).seconds();
   bool loc_timeout = loc_lag > loc_timeout_threshold_;
   if (loc_timeout) {
     if (not loc_timeout_) {
