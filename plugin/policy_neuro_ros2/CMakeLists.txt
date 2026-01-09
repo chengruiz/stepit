@@ -15,6 +15,7 @@ find_package(grid_map_ros REQUIRED)
 find_package(nav_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(std_msgs REQUIRED)
+find_package(tf2_ros REQUIRED)
 
 stepit_add_plugin(${PROJECT_NAME}
     SOURCES
@@ -32,6 +33,7 @@ ament_target_dependencies(${PROJECT_NAME} PUBLIC
     nav_msgs
     sensor_msgs
     std_msgs
+    tf2_ros
 )
 
 

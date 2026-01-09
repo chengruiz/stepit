@@ -25,7 +25,14 @@ HeightmapSubscriber::HeightmapSubscriber(const PolicySpec &policy_spec, const st
 
   YAML::Node loc_sub_cfg = config_["localization_subscriber"];
   yml::setIf(loc_sub_cfg, "timeout_threshold", loc_timeout_threshold_);
-  loc_sub_ = makeSubscriber(loc_sub_cfg, &HeightmapSubscriber::localizationCallback, this, "/odometry");
+  yml::setIf(loc_sub_cfg, "robot_frame_id", robot_frame_id_);
+  use_tf_ = not robot_frame_id_.empty();
+  if (use_tf_) {
+    tf_buffer_   = std::make_unique<tf2_ros::Buffer>();
+    tf_listener_ = std::make_unique<tf2_ros::TransformListener>(*tf_buffer_);
+  } else {
+    loc_sub_ = makeSubscriber(loc_sub_cfg, &HeightmapSubscriber::localizationCallback, this, "/odometry");
+  }
 
   yml::setIf(config_, "elevation_layer", elevation_layer_);
   yml::setIf(config_, "uncertainty_layer", uncertainty_layer_);
@@ -220,6 +227,26 @@ bool HeightmapSubscriber::checkAllReady() {
     STEPIT_WARN(error_msg_);
     return subscriber_enabled_ = false;
   }
+
+  if (use_tf_) {
+    const auto &map_frame_id = map_msg_.getFrameId();
+    try {
+      const auto transform      = tf_buffer_->lookupTransform(map_frame_id, robot_frame_id_, ros::Time(0));
+      loc_msg_.header           = transform.header;
+      loc_msg_.pose.position.x  = transform.transform.translation.x;
+      loc_msg_.pose.position.y  = transform.transform.translation.y;
+      loc_msg_.pose.position.z  = transform.transform.translation.z;
+      loc_msg_.pose.orientation = transform.transform.rotation;
+      loc_received_             = true;
+    } catch (const tf2::TransformException &error) {
+      error_msg_ = fmt::format(
+          "Heightmap subscriber was disabled because TF transform from '{}' to '{}' is unavailable: {}",
+          robot_frame_id_, map_frame_id, error.what());
+      STEPIT_WARN(error_msg_);
+      return subscriber_enabled_ = false;
+    }
+  }
+
   if (not loc_received_) {
     error_msg_ = "Heightmap subscriber was disabled because the localization is not received.";
     STEPIT_WARN(error_msg_);

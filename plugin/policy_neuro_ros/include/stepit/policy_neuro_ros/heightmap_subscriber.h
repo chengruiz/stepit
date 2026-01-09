@@ -5,6 +5,8 @@
 #include <grid_map_ros/grid_map_ros.hpp>
 #include <sensor_msgs/PointCloud2.h>
 #include <std_msgs/Header.h>
+#include <tf2_ros/buffer.h>
+#include <tf2_ros/transform_listener.h>
 #include <topic_tools/shape_shifter.h>
 
 #include <stepit/joystick/joystick.h>
@@ -31,8 +33,13 @@ class HeightmapSubscriber : public DummyHeightmapSource {
   ros::Subscriber map_sub_;
   ros::Subscriber loc_sub_;
   ros::Publisher sample_pub_;
+  std::unique_ptr<tf2_ros::Buffer> tf_buffer_;
+  std::unique_ptr<tf2_ros::TransformListener> tf_listener_;
+
   float map_timeout_threshold_{0.5F};
   float loc_timeout_threshold_{0.1F};
+  bool use_tf_{false};
+  std::string robot_frame_id_;
   std::string elevation_layer_{"elevation"};
   std::string uncertainty_layer_{"uncertainty_range"};
   bool elevation_zero_mean_{true};

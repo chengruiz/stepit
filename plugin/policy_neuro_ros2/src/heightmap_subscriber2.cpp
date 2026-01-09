@@ -1,4 +1,3 @@
-#include <cmath>
 #include <sensor_msgs/point_cloud2_iterator.hpp>
 
 #include <stepit/policy_neuro/subscriber_action.h>
@@ -23,7 +22,8 @@ HeightmapSubscriber2::HeightmapSubscriber2(const PolicySpec &policy_spec, const 
 
   YAML::Node loc_sub_cfg = config_["localization_subscriber"];
   yml::setIf(loc_sub_cfg, "timeout_threshold", loc_timeout_threshold_);
-  auto [loc_topic, loc_topic_type, loc_qos] = parseTopicInfo(loc_sub_cfg, "/odometry", "nav_msgs/msg/Odometry");
+  yml::setIf(loc_sub_cfg, "robot_frame_id", robot_frame_id_);
+  use_tf_ = not robot_frame_id_.empty();
 
   yml::setIf(config_, "elevation_layer", elevation_layer_);
   yml::setIf(config_, "uncertainty_layer", uncertainty_layer_);
@@ -49,22 +49,28 @@ HeightmapSubscriber2::HeightmapSubscriber2(const PolicySpec &policy_spec, const 
 
   map_sub_ = getNode()->create_subscription<grid_map_msgs::msg::GridMap>(
       map_topic, map_qos, std::bind(&HeightmapSubscriber2::gridMapCallback, this, std::placeholders::_1));
-  if (loc_topic_type == "geometry_msgs/msg/PoseStamped") {
-    loc_sub_ = getNode()->create_subscription<geometry_msgs::msg::PoseStamped>(
-        loc_topic, loc_qos, std::bind(&HeightmapSubscriber2::poseStampedCallback, this, std::placeholders::_1));
-  } else if (loc_topic_type == "geometry_msgs/msg/PoseWithCovarianceStamped") {
-    loc_sub_ = getNode()->create_subscription<geometry_msgs::msg::PoseWithCovarianceStamped>(
-        loc_topic, loc_qos,
-        std::bind(&HeightmapSubscriber2::poseWithCovarianceStampedCallback, this, std::placeholders::_1));
-  } else if (loc_topic_type == "nav_msgs/msg/Odometry") {
-    loc_sub_ = getNode()->create_subscription<nav_msgs::msg::Odometry>(
-        loc_topic, loc_qos, std::bind(&HeightmapSubscriber2::odometryCallback, this, std::placeholders::_1));
+  if (use_tf_) {
+    tf_buffer_   = std::make_unique<tf2_ros::Buffer>(getNode()->get_clock());
+    tf_listener_ = std::make_unique<tf2_ros::TransformListener>(*tf_buffer_);
   } else {
-    STEPIT_ERROR(
-        "Unsupported localization message type '{}'. Expected 'geometry_msgs/msg/Pose', "
-        "'geometry_msgs/msg/PoseStamped', 'geometry_msgs/msg/PoseWithCovariance', "
-        "'geometry_msgs/msg/PoseWithCovarianceStamped', or 'nav_msgs/msg/Odometry'.",
-        loc_topic_type);
+    auto [loc_topic, loc_topic_type, loc_qos] = parseTopicInfo(loc_sub_cfg, "/odometry", "nav_msgs/msg/Odometry");
+    if (loc_topic_type == "geometry_msgs/msg/PoseStamped") {
+      loc_sub_ = getNode()->create_subscription<geometry_msgs::msg::PoseStamped>(
+          loc_topic, loc_qos, std::bind(&HeightmapSubscriber2::poseStampedCallback, this, std::placeholders::_1));
+    } else if (loc_topic_type == "geometry_msgs/msg/PoseWithCovarianceStamped") {
+      loc_sub_ = getNode()->create_subscription<geometry_msgs::msg::PoseWithCovarianceStamped>(
+          loc_topic, loc_qos,
+          std::bind(&HeightmapSubscriber2::poseWithCovarianceStampedCallback, this, std::placeholders::_1));
+    } else if (loc_topic_type == "nav_msgs/msg/Odometry") {
+      loc_sub_ = getNode()->create_subscription<nav_msgs::msg::Odometry>(
+          loc_topic, loc_qos, std::bind(&HeightmapSubscriber2::odometryCallback, this, std::placeholders::_1));
+    } else {
+      STEPIT_ERROR(
+          "Unsupported localization message type '{}'. Expected 'geometry_msgs/msg/Pose', "
+          "'geometry_msgs/msg/PoseStamped', 'geometry_msgs/msg/PoseWithCovariance', "
+          "'geometry_msgs/msg/PoseWithCovarianceStamped', or 'nav_msgs/msg/Odometry'.",
+          loc_topic_type);
+    }
   }
 
   YAML::Node sample_pub_cfg = config_["height_sample_publisher"];
@@ -240,6 +246,26 @@ bool HeightmapSubscriber2::checkAllReady() {
     STEPIT_WARN(error_msg_);
     return subscriber_enabled_ = false;
   }
+
+  if (use_tf_) {
+    const auto &map_frame_id = map_msg_.getFrameId();
+    try {
+      const auto transform      = tf_buffer_->lookupTransform(map_frame_id, robot_frame_id_, tf2::TimePointZero);
+      loc_msg_.header           = transform.header;
+      loc_msg_.pose.position.x  = transform.transform.translation.x;
+      loc_msg_.pose.position.y  = transform.transform.translation.y;
+      loc_msg_.pose.position.z  = transform.transform.translation.z;
+      loc_msg_.pose.orientation = transform.transform.rotation;
+      loc_received_             = true;
+    } catch (const tf2::TransformException &error) {
+      error_msg_ = fmt::format(
+          "Heightmap subscriber was disabled because TF transform from '{}' to '{}' is unavailable: {}",
+          robot_frame_id_, map_frame_id, error.what());
+      STEPIT_WARN(error_msg_);
+      return subscriber_enabled_ = false;
+    }
+  }
+
   if (not loc_received_) {
     error_msg_ = "Heightmap subscriber was disabled because the localization is not received.";
     STEPIT_WARN(error_msg_);

@@ -26,9 +26,10 @@ grid_map_subscriber:                         # [Optional] ROS2 subscriber settin
   timeout_threshold: 0.5                     # [Optional] Float, seconds before the message is considered stale
   default_enabled: false                     # [Optional] Bool, whether to enable the ROS2 subscriber on policy starting
 
-localization_subscriber:                     # similar settings for localization subscriber
+localization_subscriber:                     # Similar settings for localization subscriber
+  robot_frame_id: "base_link"                # [Optional] String, look up the pose of this frame from TF if specified instead of subscribing to a topic
   topic: "/odometry"
-  topic_type: "nav_msgs/msg/Odometry"
+  topic_type: "nav_msgs/msg/Odometry"        # [Optional] Literal["geometry_msgs/msg/PoseStamped", "geometry_msgs/msg/PoseWithCovarianceStamped", "nav_msgs/msg/Odometry"], the message type to subscribe
   qos:
     reliability: "best_effort"
     durability: "volatile"

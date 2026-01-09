@@ -28,6 +28,7 @@ grid_map_subscriber:
   default_enabled: false                     # [Optional] Bool, whether to enable the subscriber on policy starting
 
 localization_subscriber:                     # Similar structure as grid_map_subscriber
+  robot_frame_id: "base_link"                # [Optional] String, look up the pose of this frame from TF if specified
   topic: "/odometry"
   queue_size: 1
   transport_hints:

@@ -8,6 +8,8 @@
 #include <nav_msgs/msg/odometry.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/msg/point_cloud2.hpp>
+#include <tf2_ros/buffer.h>
+#include <tf2_ros/transform_listener.h>
 
 #include <stepit/joystick/joystick.h>
 #include <stepit/policy_neuro/heightmap_source.h>
@@ -34,9 +36,13 @@ class HeightmapSubscriber2 : public DummyHeightmapSource {
   rclcpp::Subscription<grid_map_msgs::msg::GridMap>::SharedPtr map_sub_{nullptr};
   rclcpp::SubscriptionBase::SharedPtr loc_sub_{nullptr};
   rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr sample_pub_{nullptr};
+  std::unique_ptr<tf2_ros::Buffer> tf_buffer_;
+  std::unique_ptr<tf2_ros::TransformListener> tf_listener_;
 
   std::string map_topic_{"/elevation_mapping/elevation_map"};
   std::string loc_topic_{"/odometry"};
+  bool use_tf_{false};
+  std::string robot_frame_id_;
   float map_timeout_threshold_{0.5F};
   float loc_timeout_threshold_{0.1F};
   std::string elevation_layer_{"elevation"};

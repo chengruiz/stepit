@@ -13,6 +13,7 @@ find_package(catkin QUIET
       grid_map_ros
       nav_msgs
       roscpp
+      tf2_ros
       topic_tools
 )
 if (NOT catkin_FOUND)
@@ -117,6 +118,7 @@ catkin_package(
       grid_map_ros
       nav_msgs
       roscpp
+      tf2_ros
       topic_tools
 #  DEPENDS system_lib
 )
