@@ -2,7 +2,6 @@
 
 namespace stepit {
 Publisher &Publisher::instance() {
-  STEPIT_REGISTER_PUBLISHER(dummy, kMinPriority, [] { return std::make_unique<Publisher>(); });
   static std::unique_ptr<Publisher> instance_{PublisherReg::make("")};
   return *instance_;
 }

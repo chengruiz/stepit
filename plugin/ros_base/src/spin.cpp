@@ -2,7 +2,7 @@
 #include <stepit/ros/node_handle.h>
 
 namespace stepit {
-class RosSpin : public CatchSigIntSpin {
+class RosSpin : public WaitForSigInt {
  public:
   int spin() override {
     ros::Rate rate(1000);

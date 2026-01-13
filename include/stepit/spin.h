@@ -29,9 +29,9 @@ class Spin {
 using SpinPtr = Spin::Ptr;
 using SpinReg = Spin::Reg;
 
-class CatchSigIntSpin : public Spin {
+class WaitForSigInt : public Spin {
  public:
-  CatchSigIntSpin() { std::signal(SIGINT, &CatchSigIntSpin::signalHandler); }
+  WaitForSigInt() { std::signal(SIGINT, &WaitForSigInt::signalHandler); }
 
   int spin() override {
     while (not sigint_received_) pause();

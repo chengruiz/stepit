@@ -79,9 +79,11 @@ endif ()
 
 stepit_add_executable(stepit src/stepit_app/main.cpp)
 stepit_add_executable(rotation_transform src/stepit_app/rotation_transform.cpp)
+stepit_add_plugin(stepit_plugin_builtin SOURCES src/stepit/builtin.cpp)
 
 # Dynamically discover plugins
 set(STEPIT_ALL_PLUGINS "")
+# Add the default plugin search directory
 list(APPEND STEPIT_PLUGIN_DIRS "${CMAKE_CURRENT_LIST_DIR}/plugin")
 foreach (plugin_search_dir ${STEPIT_PLUGIN_DIRS})
   if (NOT IS_ABSOLUTE ${plugin_search_dir})
@@ -92,6 +94,7 @@ foreach (plugin_search_dir ${STEPIT_PLUGIN_DIRS})
     continue()
   endif ()
 
+  # Search for plugins in the directory
   file(GLOB discovered_plugins RELATIVE ${plugin_search_dir} ${plugin_search_dir}/*)
   foreach (plugin ${discovered_plugins})
     set(plugin_dir "${plugin_search_dir}/${plugin}")
@@ -123,15 +126,10 @@ endforeach ()
 message(STATUS "Blacklisted plugins: ${STEPIT_BLACKLIST_PLUGINS}")
 
 if (NOT DEFINED STEPIT_WHITELIST_PLUGINS)
-  if (DEFINED STEPIT_PLUGINS)
-    # For backward compatibility
-    set(STEPIT_WHITELIST_PLUGINS "${STEPIT_PLUGINS}")
-  else ()
-    set(STEPIT_WHITELIST_PLUGINS "${STEPIT_ALL_PLUGINS}")
-  endif()
+  set(STEPIT_WHITELIST_PLUGINS "${STEPIT_ALL_PLUGINS}")
 endif ()
 
-# Build the selected plugins
+# Build the whitelisted plugins
 while (STEPIT_WHITELIST_PLUGINS)
   list(POP_FRONT STEPIT_WHITELIST_PLUGINS plugin)
   if (NOT ${plugin} IN_LIST STEPIT_ALL_PLUGINS)
