@@ -24,15 +24,15 @@ Tested with ROS2 Humble (Ubuntu 22.04) and Jazzy (Ubuntu 24.04).
   - `ros2`: providing joystick input from ROS2 topic (`/joy` of type `sensor_msgs/Joy`).
   - `ros2_xbox`: providing joystick input from ROS2 topic with Xbox keymap.
 
-**NOTICE**:
-To use `ros2_srv` control input when building with `cmake`, you need to add `install/lib` to `LD_LIBRARY_PATH`, e.g.
+### Notes 
+
+- To use `ros2_srv` control input when building with `cmake`, you need to add `install/lib` to `LD_LIBRARY_PATH`, e.g.
 
 ```shell
-LD_LIBRARY_PATH=install/lib:$LD_LIBRARY_PATH ./install/bin/stepit [options]
+export LD_LIBRARY_PATH=install/lib:$LD_LIBRARY_PATH
 ```
 
-**NOTICE**:
-To build StepIt with `colcon`, you should add `stepit/plugin/ros2` to `--base-paths` in your `colcon` command.
+- To build StepIt with `colcon`, you should add `stepit/plugin/ros2` to `--base-paths` in your `colcon` command.
 You also need to skip the `stepit` package to avoid linkage error, e.g.
 
 ```shell

@@ -21,7 +21,6 @@ Tested with ROS Noetic (Ubuntu 20.04).
   - `ros`: providing joystick input from ROS topic (`/joy` of type `sensor_msgs/Joy`).
   - `ros_xbox`: providing joystick input from ROS topic with Xbox keymap.
 
-**NOTICE**:
-StepIt can be put in the `src` directory of your ROS workspace and build it as like it is a ROS package.
-StepIt can be built with `catkin build`， but cannot be built with `catkin_make` or `catkin_make_isolated`
-unless you manually add a `CATKIN_IGNORE` file under `package/ros2`.
+### Notes
+
+- StepIt can be put in the `src` directory of your ROS workspace and built with `catkin build`. It cannot be built with `catkin_make` or `catkin_make_isolated` unless you manually add a `CATKIN_IGNORE` file under `package/ros2`.

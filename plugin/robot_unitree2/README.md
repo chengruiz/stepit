@@ -1,6 +1,6 @@
 # robot_unitree2
 
-StepIt plugin for controlling the Unitree Go2, B2 and G1 robot, and with the Unitree joysticks.
+StepIt plugin for controlling the Unitree Go2, B2 and G1 robots, and with the Unitree joysticks.
 
 ### Environment Variables
 
@@ -12,14 +12,15 @@ StepIt plugin for controlling the Unitree Go2, B2 and G1 robot, and with the Uni
 - `stepit::joystick::Joystick`:
     - `unitree2`: providing joystick input with the Unitree joystick. The `LAS` button is binded to the `L1` + `L2` buttons, and the `RAS` button is binded to the `R1` + `R2` buttons.
 
+### Notes
 
-**NOTICE**: Add unitree_sdk2 thirdparty library path to the front of `LD_LIBRARY_PATH` if stepit is also built with ROS2.
+- Add unitree_sdk2 thirdparty library path to the front of `LD_LIBRARY_PATH` if stepit is also built with ROS2.
 
 ```bash
-export LD_LIBRARY_PATH=<stepit_dir>/extern/robot_sdk/unitree_sdk2/thirdparty/lib/<arch>:$LD_LIBRARY_PATH
+export LD_LIBRARY_PATH=<stepit_dir>/extern/robot_sdk/unitree_sdk2/thirdparty/lib/$(uname -m):$LD_LIBRARY_PATH
 ```
-  
-**NOTICE**: Set environment variable `STEPIT_NETIF` to `lo` to use [unitree_mujoco](https://github.com/unitreerobotics/unitree_mujoco) for sim-to-sim transfer.
+
+- Set environment variable `STEPIT_NETIF` to `lo` to use [unitree_mujoco](https://github.com/unitreerobotics/unitree_mujoco) for sim-to-sim transfer.
 
 ```bash
 export STEPIT_NETIF=lo
