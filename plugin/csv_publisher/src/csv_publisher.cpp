@@ -1,21 +1,8 @@
-#include <chrono>
-#include <ctime>
-#include <iomanip>
-#include <sstream>
-
-#include <stepit/registry.h>
 #include <stepit/csv_publisher/csv_publisher.h>
 
 namespace stepit {
 CsvPublisher::CsvPublisher() {
-  auto now      = std::chrono::system_clock::now();
-  std::time_t t = std::chrono::system_clock::to_time_t(now);
-  std::tm bd_time{};
-  localtime_r(&t, &bd_time);
-
-  std::ostringstream oss;
-  oss << "low_level_" << std::put_time(&bd_time, "%Y%m%d_%H%M%S") << ".csv";
-  std::string filename = oss.str();
+  std::string filename = fmt::format("low_level_{}.csv", getCurrentTimeStamp("%Y%m%d_%H%M%S", false));
   file_.open(filename);
   STEPIT_ASSERT(file_, "Failed to open file {}.", filename);
 }

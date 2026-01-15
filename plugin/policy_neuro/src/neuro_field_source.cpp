@@ -9,7 +9,7 @@ NeuroFieldSource::NeuroFieldSource(const std::string &name, const std::string &h
   run_name_ = yml::readIf<std::string>(config_["run"], "name", "unknown");
   yml::setIf(config_, "assert_all_finite", assert_all_finite_);
 
-  printBanner(60, kGreen, "NeuroFieldSource {} ({})", name, run_name_);
+  displayFormattedBanner(60, kGreen, "NeuroFieldSource {} ({})", name, run_name_);
   nn_ = NnrtApi::make("", home_dir + "/" + name + ".onnx", config_);
 
   for (const auto &input_name : nn_->getInputNames()) {

@@ -11,7 +11,7 @@ NeuroPolicy::NeuroPolicy(const RobotSpec &robot_spec, const std::string &home_di
   STEPIT_ASSERT(tailored_.empty() or tailored_ == robot_spec.robot_name,
                 "Policy tailored for '{}' cannot be used with robot '{}'.", tailored_, robot_spec.robot_name);
   action_id_ = registerField("action", 0);
-  printBanner(60, kGreen, "NeuroPolicy {} ({}Hz)", spec_.policy_name, getControlFreq());
+  displayFormattedBanner(60, kGreen, "NeuroPolicy {} ({}Hz)", spec_.policy_name, getControlFreq());
 
   // Add field sources read from the YAML file
   auto fs_node = config_["field_source"];
@@ -70,7 +70,7 @@ NeuroPolicy::NeuroPolicy(const RobotSpec &robot_spec, const std::string &home_di
     fs->initFieldProperties();
     STEPIT_DBUGNT("- {}", getTypeName(*fs));
   }
-  printBanner(60, nullptr, "");
+  displayFormattedBanner(60);
 }
 
 void NeuroPolicy::addFieldSource(std::unique_ptr<FieldSource> fs, bool first) {

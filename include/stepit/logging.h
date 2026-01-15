@@ -88,30 +88,12 @@ class LoggingModule {
 #define STEPIT_ASSERT_EQ LLU_ASSERT_EQ
 
 namespace stepit {
+std::string getCurrentTimeStamp(const char *format = "%F %T", bool milliseconds = true);
+void displayFormattedBanner(std::size_t width, const char *style = nullptr, std::string msg = "");
+
 template <typename... Args>
-void printBanner(std::size_t width, const char *style = nullptr, Args &&...args) {
-  std::string msg = fmt::format(std::forward<Args>(args)...);
-  std::size_t len = msg.size();
-
-  // create UTF8 bar string repeated helper
-  auto make_bar = [](std::size_t count) {
-    std::string bar;
-    for (std::size_t i{}; i < count; ++i) bar += u8"─";
-    return bar;
-  };
-
-  if (style != nullptr and style[0] != '\0') {
-    msg = fmt::format("{}{}{}", style, msg, llu::kClear);
-  }
-  if (not msg.empty()) {
-    msg = fmt::format(" [{}] ", msg);
-    len += 4;
-  }
-
-  std::size_t pad   = width > len ? width - len : 0;
-  std::size_t left  = pad / 2;
-  std::size_t right = pad - left;
-  STEPIT_LOGNT("{}{}{}", make_bar(left), msg, make_bar(right));
+void displayFormattedBanner(std::size_t width, const char *style, const std::string &format, Args &&...args) {
+  displayFormattedBanner(width, style, fmt::format(format, std::forward<Args>(args)...));
 }
 }  // namespace stepit
 

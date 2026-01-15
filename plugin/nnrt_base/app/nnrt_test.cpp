@@ -19,7 +19,7 @@ int main(int argc, char *argv[]) {
   model1->clearState();
   model2->clearState();
 
-  printBanner(60, "", "Inference test");
+  displayFormattedBanner(60, nullptr, "Inference test");
   for (std::size_t step{}; step < 3; ++step) {
     std::cout << "Step " << step << std::endl;
     for (std::size_t i{}; i < model1->getNumInputs(); ++i) {
