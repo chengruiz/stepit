@@ -1,9 +1,7 @@
 #ifndef STEPIT_JOYSTICK_H_
 #define STEPIT_JOYSTICK_H_
 
-#include <functional>
 #include <map>
-#include <memory>
 #include <mutex>
 
 #include <boost/optional.hpp>

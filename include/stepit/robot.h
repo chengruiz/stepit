@@ -2,12 +2,11 @@
 #define STEPIT_ROBOT_H_
 
 #include <array>
-#include <memory>
 #include <string>
 #include <vector>
 
-#include <stepit/macro.h>
 #include <stepit/registry.h>
+#include <stepit/utils.h>
 
 namespace stepit {
 /**
@@ -75,32 +74,32 @@ struct RobotSpec {
   RobotSpec() = default;
   explicit RobotSpec(const YAML::Node &config);
 
-  /* Name of the robot. */
+  /* Name of the robot */
   std::string robot_name;
-  /* Names of the joints. */
+  /* Names of the joints */
   std::vector<std::string> joint_names;
-  /* Names of the end effectors (feet). */
+  /* Names of the end effectors (feet) */
   std::vector<std::string> foot_names;
-  /* Degree of freedom of the robot. */
+  /* Degree of freedom of the robot */
   std::size_t dof{};
-  /* Number of legs of the robot. */
+  /* Number of legs of the robot */
   std::size_t num_legs{};
-  /* Communication Frequency (unit: Hz). */
+  /* Communication Frequency (unit: Hz) */
   std::size_t comm_freq{};
 
-  /* Proportional gain used for following fixed trajectories. */
+  /* Proportional gain used for following fixed trajectories */
   std::vector<float> kp;
-  /* Derivative gain used for following fixed trajectories. */
+  /* Derivative gain used for following fixed trajectories */
   std::vector<float> kd;
-  /* Maximum joint position deviation allowed when following fixed trajectories (unit: rad). */
+  /* Maximum joint position deviation allowed when following fixed trajectories (unit: rad) */
   std::vector<float> stuck_threshold;
 
   struct Safety {
-    /* Whether to freeze the robot when safety violations are detected. */
+    /* Whether to freeze the robot when safety violations are detected */
     bool enabled{true};
-    /* Maximum allowable roll angle (unit: rad). */
+    /* Maximum allowable roll angle (unit: rad) */
     float roll{M_PIf / 2};
-    /* Maximum allowable pitch angle (unit: rad). */
+    /* Maximum allowable pitch angle (unit: rad) */
     float pitch{M_PIf / 2};
   } safety;
 
@@ -110,16 +109,16 @@ struct RobotSpec {
   float returning_to_standing_time{1.0};
   std::vector<float> standing_cfg;
   std::vector<float> lying_cfg;
-  /* Whether the robot automatically enter damped mode when low commands are not published. */
+  /* Whether the robot automatically enter damped mode when low commands are not published */
   bool auto_damped_mode{true};
-  /* Damping coefficient used in damped mode, only has effect when auto_damped_mode is false. */
+  /* Damping coefficient used in damped mode, only has effect when auto_damped_mode is false */
   float kd_damped_mode{5.};
 };
 
 class RobotApi : public Interface<RobotApi> {
  public:
   explicit RobotApi(const std::string &name)
-      : config_(yml::loadFile(fmt::format("{}/robot/{}.yml", kConfigDir, name))), spec_(config_) {}
+      : config_(loadConfigFile(fmt::format("robot/{}.yml", name))), spec_(config_) {}
 
   virtual void getControl(bool enable) = 0;
   virtual void setSend(LowCmd &)       = 0;

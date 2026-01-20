@@ -52,6 +52,7 @@ stepit_add_library(stepit_core SHARED
     src/stepit/publisher.cpp
     src/stepit/robot.cpp
     src/stepit/spin.cpp
+    src/stepit/utils.cpp
 )
 target_compile_definitions(stepit_core PRIVATE STEPIT_CONFIG_DIR=\"${STEPIT_HOME_DIRECTORY}/config\")
 target_compile_options(stepit_core PUBLIC -fPIC PRIVATE -Wall -Wextra -Wpedantic -Wno-unused-parameter)

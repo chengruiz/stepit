@@ -1,5 +1,5 @@
-#ifndef STEPIT_NATIVE_JOYSTICK_KEYMAP_H_
-#define STEPIT_NATIVE_JOYSTICK_KEYMAP_H_
+#ifndef STEPIT_JOYSTICK_KEYMAP_H_
+#define STEPIT_JOYSTICK_KEYMAP_H_
 
 #include <stepit/joystick/joystick.h>
 
@@ -15,7 +15,7 @@ struct Slots {
 
 struct Keymap {
   Keymap() = default;
-  explicit Keymap(const YAML::Node &config);
+  Keymap(const YAML::Node &config);
 
   std::size_t A      = 0;
   std::size_t B      = 1;
@@ -68,4 +68,4 @@ inline Keymap getXboxKeymap() { return {}; }
 }  // namespace joystick
 }  // namespace stepit
 
-#endif  // STEPIT_NATIVE_JOYSTICK_KEYMAP_H_
+#endif  // STEPIT_JOYSTICK_KEYMAP_H_

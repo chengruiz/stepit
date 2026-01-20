@@ -1,7 +1,6 @@
 #include <cstdio>
 
-#include <stepit/logging.h>
-#include <stepit/macro.h>
+#include <stepit/utils.h>
 #include <stepit/joystick/usb.h>
 
 namespace stepit {
@@ -72,7 +71,7 @@ void UsbJoystick::connectHandler(std::shared_ptr<gamepad::device> dev) {
   } else {
     bool found = false;
     // Search for the keymap file in the config directory
-    for (const auto &entry : fs::directory_iterator(fmt::format("{}/joystick", kConfigDir))) {
+    for (const auto &entry : fs::directory_iterator(getConfigPath("joystick"))) {
       if (entry.path().extension() != ".yml") continue;
       std::string stem = toLowercase(entry.path().stem().string());
       if (name.find(stem) != std::string::npos) {

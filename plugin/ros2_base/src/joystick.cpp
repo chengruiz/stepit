@@ -1,4 +1,4 @@
-#include <stepit/macro.h>
+#include <stepit/utils.h>
 #include <stepit/ros2/joystick.h>
 #include <stepit/ros2/node.h>
 
@@ -12,7 +12,7 @@ std::string getJoyName() {
 }
 
 Ros2Joystick::Ros2Joystick()
-    : Ros2Joystick(Keymap{yml::loadFile(fmt::format("{}/joystick/{}.yml", kConfigDir, getJoyName()))}) {}
+    : Ros2Joystick(loadConfigFile(fmt::format("joystick/{}.yml", getJoyName()))) {}
 
 Ros2Joystick::Ros2Joystick(const Keymap &keymap) : keymap_(keymap) {
   std::string topic_name = "/joy";
