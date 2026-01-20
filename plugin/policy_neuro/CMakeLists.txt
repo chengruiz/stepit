@@ -11,6 +11,7 @@ stepit_add_plugin(${PROJECT_NAME}
       src/field_assembler.cpp
       src/field_scaling.cpp
       src/heightmap_source.cpp
+      src/history_buffer.cpp
       src/joint_reordering.cpp
       src/neuro_field_source.cpp
       src/neuro_policy.cpp
