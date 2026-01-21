@@ -63,8 +63,8 @@ void LoggingModule::logImpl(const std::string &info) {
 }
 
 std::string getCurrentTimeStamp(const char *format, bool milliseconds) {
-  auto now  = std::chrono::high_resolution_clock::now();
-  auto time = std::chrono::high_resolution_clock::to_time_t(now);
+  auto now  = std::chrono::system_clock::now();
+  auto time = std::chrono::system_clock::to_time_t(now);
   std::tm broken_down_time{};
   localtime_r(&time, &broken_down_time);
 

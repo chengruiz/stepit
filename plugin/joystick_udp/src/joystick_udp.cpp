@@ -15,7 +15,7 @@ class UdpJoystick : public Joystick {
 
   bool connected() const override {
     std::lock_guard<std::mutex> _(mutex_);
-    return tick_ != 0 and llu::timePassed<MSec>(stamp_) < timeout_;
+    return tick_ != 0 and getElapsedTime<MSec>(stamp_) < timeout_;
   }
 
   void getState(State &state) override {
@@ -41,7 +41,7 @@ class RetroidJoystick final : public UdpJoystick<udp_gamepad::RetroidGamepad> {
   void callback(const KeysType &keys, uint32_t tick) override {
     std::lock_guard<std::mutex> _(mutex_);
     tick_  = tick;
-    stamp_ = Clock::now();
+    stamp_ = SteadyClock::now();
 
     state_.A().update(keys.A);
     state_.B().update(keys.B);
