@@ -21,6 +21,8 @@ struct TopicInfo {
 
 TopicInfo parseTopicInfo(const yml::Node &node, const std::string &default_name = "",
                          const std::string &default_type = "");
+
+inline double getElapsedTime(const rclcpp::Time &start_time) { return (getNode()->now() - start_time).seconds(); }
 }  // namespace stepit
 
 #endif  // STEPIT_ROS2_NODE_H_

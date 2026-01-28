@@ -1,12 +1,8 @@
 #ifndef STEPIT_JOYSTICK_H_
 #define STEPIT_JOYSTICK_H_
 
-#include <functional>
 #include <map>
-#include <memory>
 #include <mutex>
-
-#include <boost/optional.hpp>
 
 #include <stepit/control_input.h>
 #include <stepit/registry.h>
@@ -27,7 +23,7 @@ class JoystickControl : public ControlInput {
   void poll() override;
 
   class Registration;
-  using Rule = std::function<boost::optional<std::string>(const State &)>;
+  using Rule = std::function<std::string(const State &)>;
 
  protected:
   Joystick::Ptr js_;
@@ -54,6 +50,7 @@ class JoystickControl::Registration {
 
 using joystick::Joystick;
 using joystick::JoystickControl;
+using JoystickRule = JoystickControl::Registration;
 }  // namespace stepit
 
 #define STEPIT_REGISTER_JOYSTICK(name, priority, factory) \

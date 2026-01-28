@@ -30,7 +30,7 @@ void JoystickControl::poll() {
   std::lock_guard<std::mutex> lock(rule_mutex_);
   for (const auto &rule : rules_) {
     auto result = rule.second(state_);
-    if (result.has_value()) put(*result);
+    if (not result.empty()) put(result);
   }
 }
 

@@ -81,9 +81,8 @@ bool HeightmapSubscriber::reset() {
   error_msg_.clear();
   subscribing_status_ = publisher::StatusRegistration::make("Policy/Heightmap/Subscribing");
   error_msg_status_   = publisher::StatusRegistration::make("Policy/Heightmap/ErrorMessage");
-  js_rules_.emplace_back([](const joystick::State &js) {
-    return js.LB().pressed and js.B().on_press ? boost::optional<std::string>("Policy/Heightmap/SwitchSubscriber")
-                                               : boost::none;
+  joystick_rules_.emplace_back([](const joystick::State &js) -> std::string {
+    return js.LB().pressed and js.B().on_press ? "Policy/Heightmap/SwitchSubscriber" : "";
   });
   return true;
 }
@@ -163,7 +162,7 @@ bool HeightmapSubscriber::update(const LowState &low_state, ControlRequests &req
 
 void HeightmapSubscriber::exit() {
   DummyHeightmapSource::exit();
-  js_rules_.clear();
+  joystick_rules_.clear();
   subscribing_status_.reset();
   error_msg_status_.reset();
 }
@@ -253,7 +252,7 @@ bool HeightmapSubscriber::checkAllReady() {
     return subscriber_enabled_ = false;
   }
 
-  double map_lag   = (ros::Time::now() - map_info_.header.stamp).toSec();
+  double map_lag   = getElapsedTime(map_info_.header.stamp);
   bool map_timeout = map_lag > map_timeout_threshold_;
   if (map_timeout) {
     if (not map_timeout_) {
@@ -270,7 +269,7 @@ bool HeightmapSubscriber::checkAllReady() {
     STEPIT_INFO(error_msg_);
   }
 
-  double loc_lag   = (ros::Time::now() - loc_msg_.header.stamp).toSec();
+  double loc_lag   = getElapsedTime(loc_msg_.header.stamp);
   bool loc_timeout = loc_lag > loc_timeout_threshold_;
   if (loc_timeout) {
     if (not loc_timeout_) {

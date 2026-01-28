@@ -6,6 +6,8 @@ namespace neuro_policy {
 const std::map<std::string, CmdRollSource::Action> CmdRollSource::kActionMap = {
     {"SetRoll",         Action::kSetRoll},
     {"SetRollUnscaled", Action::kSetRollUnscaled},
+    {"EnableJoystick",  Action::kEnableJoystick},
+    {"DisableJoystick", Action::kDisableJoystick},
 };
 // clang-format on
 
@@ -15,12 +17,14 @@ CmdRollSource::CmdRollSource(const PolicySpec &policy_spec, const std::string &h
   if (fs::exists(home_dir + "/cmd_posture.yml")) {
     config_ = yml::loadFile(home_dir + "/cmd_posture.yml");
     yml::setIf(config_, "roll_scale_factor", roll_scale_factor_);
+    yml::setIf(config_, "joystick_enabled", joystick_enabled_);
   }
 }
 
 bool CmdRollSource::reset() {
   cmd_roll_ = 0.0F;
-  js_rules_.emplace_back([](const joystick::State &state) {
+  joystick_rules_.emplace_back([this](const joystick::State &state) -> std::string {
+    if (not joystick_enabled_) return "";
     return fmt::format("Policy/CmdRoll/SetRollUnscaled:{}",
                        static_cast<float>(state.Right().pressed) - static_cast<float>(state.Left().pressed));
   });
@@ -36,7 +40,7 @@ bool CmdRollSource::update(const LowState &low_state, ControlRequests &requests,
   return true;
 }
 
-void CmdRollSource::exit() { js_rules_.clear(); }
+void CmdRollSource::exit() { joystick_rules_.clear(); }
 
 void CmdRollSource::handleControlRequest(ControlRequest request) {
   auto action = lookupAction(request.action(), kActionMap);
@@ -53,6 +57,16 @@ void CmdRollSource::handleControlRequest(ControlRequest request) {
       request.response(kSuccess);
       break;
     }
+    case Action::kEnableJoystick: {
+      joystick_enabled_ = true;
+      request.response(kSuccess);
+      break;
+    }
+    case Action::kDisableJoystick: {
+      joystick_enabled_ = false;
+      request.response(kSuccess);
+      break;
+    }
     default: {
       request.response(kUnrecognizedRequest);
       break;
@@ -64,6 +78,8 @@ void CmdRollSource::handleControlRequest(ControlRequest request) {
 const std::map<std::string, CmdPitchSource::Action> CmdPitchSource::kActionMap = {
     {"SetPitch",         Action::kSetPitch},
     {"SetPitchUnscaled", Action::kSetPitchUnscaled},
+    {"EnableJoystick",   Action::kEnableJoystick},
+    {"DisableJoystick",  Action::kDisableJoystick},
 };
 // clang-format on
 
@@ -73,13 +89,16 @@ CmdPitchSource::CmdPitchSource(const PolicySpec &policy_spec, const std::string 
   if (fs::exists(home_dir + "/cmd_posture.yml")) {
     config_ = yml::loadFile(home_dir + "/cmd_posture.yml");
     yml::setIf(config_, "pitch_scale_factor", pitch_scale_factor_);
+    yml::setIf(config_, "joystick_enabled", joystick_enabled_);
   }
 }
 
 bool CmdPitchSource::reset() {
   cmd_pitch_ = 0.0F;
-  js_rules_.emplace_back(
-      [](const joystick::State &state) { return fmt::format("Policy/CmdPitch/SetPitchUnscaled:{}", state.ras_y()); });
+  joystick_rules_.emplace_back([this](const joystick::State &state) -> std::string {
+    if (not joystick_enabled_) return "";
+    return fmt::format("Policy/CmdPitch/SetPitchUnscaled:{}", state.ras_y());
+  });
   return true;
 }
 
@@ -92,7 +111,7 @@ bool CmdPitchSource::update(const LowState &low_state, ControlRequests &requests
   return true;
 }
 
-void CmdPitchSource::exit() { js_rules_.clear(); }
+void CmdPitchSource::exit() { joystick_rules_.clear(); }
 
 void CmdPitchSource::handleControlRequest(ControlRequest request) {
   auto action = lookupAction(request.action(), kActionMap);
@@ -109,6 +128,16 @@ void CmdPitchSource::handleControlRequest(ControlRequest request) {
       request.response(kSuccess);
       break;
     }
+    case Action::kEnableJoystick: {
+      joystick_enabled_ = true;
+      request.response(kSuccess);
+      break;
+    }
+    case Action::kDisableJoystick: {
+      joystick_enabled_ = false;
+      request.response(kSuccess);
+      break;
+    }
     default: {
       request.response(kUnrecognizedRequest);
       break;
@@ -116,11 +145,15 @@ void CmdPitchSource::handleControlRequest(ControlRequest request) {
   }
 }
 
+// clang-format off
 const std::map<std::string, CmdHeightSource::Action> CmdHeightSource::kActionMap = {
-    {"SetHeight", Action::kSetHeight},
-    {"IncreaseHeight", Action::kIncreaseHeight},
-    {"DecreaseHeight", Action::kDecreaseHeight},
+    {"SetHeight",       Action::kSetHeight},
+    {"IncreaseHeight",  Action::kIncreaseHeight},
+    {"DecreaseHeight",  Action::kDecreaseHeight},
+    {"EnableJoystick",  Action::kEnableJoystick},
+    {"DisableJoystick", Action::kDisableJoystick},
 };
+// clang-format on
 
 CmdHeightSource::CmdHeightSource(const PolicySpec &policy_spec, const std::string &home_dir) {
   cmd_height_id_ = registerProvision("cmd_height", 1);
@@ -130,16 +163,19 @@ CmdHeightSource::CmdHeightSource(const PolicySpec &policy_spec, const std::strin
     yml::setIf(config_, "default_cmd_height", default_cmd_height_);
     yml::setIf(config_, "height_scale_factor", height_scale_factor_);
     yml::setIf(config_, "height_range", height_range_);
+    yml::setIf(config_, "joystick_enabled", joystick_enabled_);
   }
 }
 
 bool CmdHeightSource::reset() {
   cmd_height_ = default_cmd_height_;
-  js_rules_.emplace_back([](const joystick::State &state) {
-    return state.Up().on_press ? boost::optional<std::string>("Policy/CmdHeight/IncreaseHeight") : boost::none;
+  joystick_rules_.emplace_back([this](const joystick::State &state) -> std::string {
+    if (not joystick_enabled_) return "";
+    return state.Up().on_press ? "Policy/CmdHeight/IncreaseHeight" : "";
   });
-  js_rules_.emplace_back([](const joystick::State &state) {
-    return state.Down().on_press ? boost::optional<std::string>("Policy/CmdHeight/DecreaseHeight") : boost::none;
+  joystick_rules_.emplace_back([this](const joystick::State &state) -> std::string {
+    if (not joystick_enabled_) return "";
+    return state.Down().on_press ? "Policy/CmdHeight/DecreaseHeight" : "";
   });
   return true;
 }
@@ -153,7 +189,7 @@ bool CmdHeightSource::update(const LowState &low_state, ControlRequests &request
   return true;
 }
 
-void CmdHeightSource::exit() { js_rules_.clear(); }
+void CmdHeightSource::exit() { joystick_rules_.clear(); }
 
 void CmdHeightSource::handleControlRequest(ControlRequest request) {
   switch (lookupAction(request.action(), kActionMap)) {
@@ -174,6 +210,16 @@ void CmdHeightSource::handleControlRequest(ControlRequest request) {
     }
     case Action::kDecreaseHeight: {
       cmd_height_ = clamp(cmd_height_ - height_scale_factor_, height_range_.lower(), height_range_.upper());
+      request.response(kSuccess);
+      break;
+    }
+    case Action::kEnableJoystick: {
+      joystick_enabled_ = true;
+      request.response(kSuccess);
+      break;
+    }
+    case Action::kDisableJoystick: {
+      joystick_enabled_ = false;
       request.response(kSuccess);
       break;
     }

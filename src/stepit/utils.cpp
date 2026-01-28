@@ -1,0 +1,20 @@
+#include <stepit/utils.h>
+
+namespace stepit {
+std::string getConfigPath(const std::string &relative_path) {
+  static std::string config_dir;
+  if (config_dir.empty()) {
+    if (not getenv("STEPIT_CONFIG_DIR", config_dir)) {
+#ifdef STEPIT_CONFIG_DIR
+      config_dir = STEPIT_CONFIG_DIR;
+#else
+      const char *home_dir = std::getenv("HOME");
+      config_dir           = fmt::format("{}/.config/stepit", home_dir != nullptr ? home_dir : ".");
+#endif  // STEPIT_CONFIG_DIR
+    }
+  }
+  return relative_path.empty() ? config_dir : fmt::format("{}/{}", config_dir, relative_path);
+}
+
+YAML::Node loadConfigFile(const std::string &relative_path) { return YAML::LoadFile(getConfigPath(relative_path)); }
+}  // namespace stepit

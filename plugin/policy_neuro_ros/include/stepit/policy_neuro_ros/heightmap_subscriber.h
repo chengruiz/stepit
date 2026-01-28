@@ -50,7 +50,7 @@ class HeightmapSubscriber : public DummyHeightmapSource {
   bool publish_samples_{false};
   bool default_subscriber_enabled_{false};
   std::mutex msg_mtx_;
-  std::vector<JoystickControl::Registration> js_rules_;
+  std::vector<JoystickRule> joystick_rules_;
   publisher::StatusRegistration::Ptr subscribing_status_;
   publisher::StatusRegistration::Ptr error_msg_status_;
 

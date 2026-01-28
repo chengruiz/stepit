@@ -39,7 +39,7 @@ bool FieldSubscriber::reset() {
 bool FieldSubscriber::update(const LowState &low_state, ControlRequests &requests, FieldMap &result) {
   std::lock_guard<std::mutex> _(mutex_);
   for (const auto &field : fields_) {
-    if (field.timeout_threshold > 0.0 and (ros::Time::now() - field.stamp).toSec() > field.timeout_threshold) {
+    if (field.timeout_threshold > 0.0 and getElapsedTime(field.stamp) > field.timeout_threshold) {
       STEPIT_WARN("Field '{}' has timed out.", field.name);
       return false;
     }

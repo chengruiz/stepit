@@ -25,9 +25,8 @@ CmdVelSubscriber2::CmdVelSubscriber2(const PolicySpec &policy_spec, const std::s
 bool CmdVelSubscriber2::reset() {
   subscriber_enabled_.store(default_subscriber_enabled_, std::memory_order_relaxed);
   subscribing_status_ = publisher::StatusRegistration::make("Policy/CmdVel/Subscribing");
-  js_rules_.emplace_back([](const joystick::State &js) {
-    return js.LB().pressed and js.A().on_press ? boost::optional<std::string>("Policy/CmdVel/SwitchSubscriber")
-                                               : boost::none;
+  joystick_rules_.emplace_back([](const joystick::State &js) -> std::string {
+    return js.LB().pressed and js.A().on_press ? "Policy/CmdVel/SwitchSubscriber" : "";
   });
   return CmdVelSource::reset();
 }
@@ -47,7 +46,7 @@ void CmdVelSubscriber2::twistStampedCallback(const geometry_msgs::msg::TwistStam
 bool CmdVelSubscriber2::update(const LowState &low_state, ControlRequests &requests, FieldMap &result) {
   bool subscriber_enabled = subscriber_enabled_.load(std::memory_order_acquire);
   subscribing_status_->update(subscriber_enabled ? 1 : 0);
-  if (subscriber_enabled and (getNode()->now() - cmd_vel_stamp_).seconds() < timeout_threshold_) {
+  if (subscriber_enabled and getElapsedTime(cmd_vel_stamp_) < timeout_threshold_) {
     target_cmd_vel_.x() = static_cast<float>(cmd_vel_msg_.linear.x);
     target_cmd_vel_.y() = static_cast<float>(cmd_vel_msg_.linear.y);
     target_cmd_vel_.z() = static_cast<float>(cmd_vel_msg_.angular.z);

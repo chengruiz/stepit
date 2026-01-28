@@ -1,8 +1,6 @@
 #ifndef STEPIT_UTILS_H_
 #define STEPIT_UTILS_H_
 
-#include <mutex>
-
 #include <boost/filesystem.hpp>
 
 #include <llu/chrono.h>
@@ -33,6 +31,15 @@ template <typename T>
 bool getenv(const std::string &name, T &result, bool verbose = true) {
   return getenv(name.c_str(), result, verbose);
 }
+
+std::string getConfigPath(const std::string &relative_path = "");
+
+YAML::Node loadConfigFile(const std::string &relative_path);
 }  // namespace stepit
+
+#ifdef STEPIT_FIX_GETTID
+#include <sys/syscall.h>
+#define gettid() syscall(SYS_gettid)
+#endif  // STEPIT_FIX_GETTID
 
 #endif  // STEPIT_UTILS_H_

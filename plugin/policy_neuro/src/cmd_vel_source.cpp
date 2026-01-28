@@ -17,6 +17,8 @@ const std::map<std::string, CmdVelSource::Action> CmdVelSource::kActionMap = {
     {"EnableSmoothing",     Action::kEnableSmoothing},
     {"DisableSmoothing",    Action::kDisableSmoothing},
     {"SetMaxAccel",         Action::kSetMaxAccel},
+    {"EnableJoystick",      Action::kEnableJoystick},
+    {"DisableJoystick",     Action::kDisableJoystick},
 };
 // clang-format on
 
@@ -32,8 +34,9 @@ CmdVelSource::CmdVelSource(const PolicySpec &policy_spec, const std::string &hom
     yml::setIf(config_, "velocity_deadzone", velocity_deadzone_);
     yml::setIf(config_, "smoothing", smoothing_);
     yml::setIf(config_, "max_acceleration", max_acceleration_);
-    yml::setIf(config_, "stall_mode", mode_enabled_[kStall]);
-    yml::setIf(config_, "move_mode", mode_enabled_[kMove]);
+    yml::setIf(config_, "stall_mode_enabled", mode_enabled_[kStall]);
+    yml::setIf(config_, "move_mode_enabled", mode_enabled_[kMove]);
+    yml::setIf(config_, "joystick_enabled", joystick_enabled_);
   }
 }
 
@@ -42,14 +45,16 @@ bool CmdVelSource::reset() {
   cmd_vel_.setZero();
   cmd_stall_ = true;
 
-  js_rules_.emplace_back([](const joystick::State &state) {
+  joystick_rules_.emplace_back([this](const joystick::State &state) -> std::string {
+    if (not joystick_enabled_) return "";
     return fmt::format("Policy/CmdVel/SetTurboRatio:{}", (state.rt() + 1.0) / 2.0);
   });
-  js_rules_.emplace_back([](const joystick::State &state) {
+  joystick_rules_.emplace_back([this](const joystick::State &state) -> std::string {
+    if (not joystick_enabled_) return "";
     return fmt::format("Policy/CmdVel/SetVelocityUnscaled:{},{},{}", -state.las_y(), -state.las_x(), -state.ras_x());
   });
-  js_rules_.emplace_back([](const joystick::State &state) {
-    return state.Start().on_press ? boost::optional<std::string>("Policy/CmdVel/CycleMode") : boost::none;
+  joystick_rules_.emplace_back([this](const joystick::State &state) -> std::string {
+    return state.Start().on_press ? "Policy/CmdVel/CycleMode" : "";
   });
   return true;
 }
@@ -90,7 +95,7 @@ bool CmdVelSource::update(const LowState &low_state, ControlRequests &requests, 
   return true;
 }
 
-void CmdVelSource::exit() { js_rules_.clear(); }
+void CmdVelSource::exit() { joystick_rules_.clear(); }
 
 void CmdVelSource::handleControlRequest(ControlRequest request) {
   auto action = lookupAction(request.action(), kActionMap);
@@ -166,6 +171,16 @@ void CmdVelSource::handleControlRequest(ControlRequest request) {
         break;
       }
       max_acceleration_ = Arr3f{ax, ay, az};
+      request.response(kSuccess);
+      break;
+    }
+    case Action::kEnableJoystick: {
+      joystick_enabled_ = true;
+      request.response(kSuccess);
+      break;
+    }
+    case Action::kDisableJoystick: {
+      joystick_enabled_ = false;
       request.response(kSuccess);
       break;
     }

@@ -27,6 +27,8 @@ ros::Publisher makePublisher(const YAML::Node &cfg, const std::string &default_t
   bool latch          = yml::readIf(cfg, "latch", false);
   return getNodeHandle().advertise<T>(topic, queue_size, latch);
 }
+
+inline double getElapsedTime(const ros::Time &start_time) { return (ros::Time::now() - start_time).toSec(); }
 }  // namespace stepit
 
 #endif  // STEPIT_ROS_NODE_HANDLE_H_

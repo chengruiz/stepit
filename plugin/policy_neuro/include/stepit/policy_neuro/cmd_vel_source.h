@@ -25,6 +25,8 @@ class CmdVelSource : public FieldSource {
     kEnableSmoothing,
     kDisableSmoothing,
     kSetMaxAccel,
+    kEnableJoystick,
+    kDisableJoystick,
     kInvalid = 255,
   };
 
@@ -35,7 +37,7 @@ class CmdVelSource : public FieldSource {
   YAML::Node config_;
   FieldId cmd_vel_id_{};
   FieldId cmd_stall_id_{};
-  std::vector<JoystickControl::Registration> js_rules_;
+  std::vector<JoystickRule> joystick_rules_;
 
   Arr3f velocity_scale_factor_{1.0, 0.5, 1.0};
   Arr3f velocity_turbo_factor_{Arr3f::Ones()};
@@ -43,6 +45,7 @@ class CmdVelSource : public FieldSource {
   bool smoothing_{false};
   float timestep_{0.01};
   Arr3f max_acceleration_{5., 2.5, 10.};
+  bool joystick_enabled_{true};
 
   enum Mode { kAuto, kStall, kMove, kNumModes } mode_{kAuto};
   static constexpr std::array<const char *, kNumModes> kModeName{"auto", "stall", "move"};

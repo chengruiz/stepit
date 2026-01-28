@@ -3,5 +3,6 @@ velocity_turbo_factor: [ 1.0, 1.0, 1.0 ]  # [Optional] Tuple[Float, Float, Float
 velocity_deadzone: 0.1                    # [Optional] Float, if each dimension of cmd_vel is below this value, it will be set to zero
 smoothing: false                          # [Optional] Bool, whether to apply smoothing to cmd_vel
 max_acceleration:  [ 5.0, 2.5, 10.0 ]     # [Optional] Tuple[Float, Float, Float], maximum acceleration for cmd_vel smoothing
-stall_mode: true                          # [Optional] Bool, whether to enable stall mode
-move_mode: true                           # [Optional] Bool, whether to enable move mode
+stall_mode_enabled: true                  # [Optional] Bool, whether to enable stall mode
+move_mode_enabled: true                   # [Optional] Bool, whether to enable move mode
+joystick_enabled: true                    # [Optional] Bool, whether to enable joystick control for velocity commands

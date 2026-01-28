@@ -1,10 +1,11 @@
-velocity_scale_factor: [ 1.0, 0.5, 1.0 ]  # Tuple[Float, Float, Float], scaling factors of cmd_vel
-velocity_turbo_factor: [ 1.0, 1.0, 1.0 ]  # Tuple[Float, Float, Float], turbo scaling factors of cmd_vel
-velocity_deadzone: 0.1                    # Float, if each dimension of cmd_vel is below this value, it will be set to zero
-smoothing: false                          # Bool, whether to apply smoothing to cmd_vel
-max_acceleration:  [ 5.0, 2.5, 10.0 ]     # Tuple[Float, Float, Float], maximum acceleration for cmd_vel smoothing
-stall_mode: true                          # Bool, whether to enable stall mode
-move_mode: true                           # Bool, whether to enable move mode
+velocity_scale_factor: [ 1.0, 0.5, 1.0 ]  # [Optional] Tuple[Float, Float, Float], scaling factors of cmd_vel
+velocity_turbo_factor: [ 1.0, 1.0, 1.0 ]  # [Optional] Tuple[Float, Float, Float], turbo scaling factors of cmd_vel
+velocity_deadzone: 0.1                    # [Optional] Float, if each dimension of cmd_vel is below this value, it will be set to zero
+smoothing: false                          # [Optional] Bool, whether to apply smoothing to cmd_vel
+max_acceleration:  [ 5.0, 2.5, 10.0 ]     # [Optional] Tuple[Float, Float, Float], maximum acceleration for cmd_vel smoothing
+stall_mode_enabled: true                  # [Optional] Bool, whether to enable stall mode
+move_mode_enabled: true                   # [Optional] Bool, whether to enable move mode
+joystick_enabled: true                    # [Optional] Bool, whether to enable joystick control for velocity commands
 
 #########################
 # ROS-specific settings #

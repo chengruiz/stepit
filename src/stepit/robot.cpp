@@ -1,17 +1,11 @@
 #include <stepit/robot.h>
 
 namespace stepit {
-#ifdef STEPIT_CONFIG_DIR
-const char *kConfigDir = STEPIT_CONFIG_DIR;
-#else
-#error "'STEPIT_CONFIG_DIR' not defined."
-#endif  // STEPIT_CONFIG_DIR
-
 RobotSpec::RobotSpec(const YAML::Node &config) {
   yml::setTo(config, "name", robot_name);
   yml::setTo(config, "joint_names", joint_names);
   yml::setTo(config, "foot_names", foot_names);
-  dof = joint_names.size();
+  dof      = joint_names.size();
   num_legs = foot_names.size();
   yml::setTo(config, "comm_freq", comm_freq);
 

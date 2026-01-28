@@ -17,9 +17,8 @@ CmdRollSubscriber::CmdRollSubscriber(const PolicySpec &policy_spec, const std::s
 bool CmdRollSubscriber::reset() {
   subscriber_enabled_.store(default_subscriber_enabled_, std::memory_order_relaxed);
   subscribing_status_ = publisher::StatusRegistration::make("Policy/CmdRoll/Subscribing");
-  js_rules_.emplace_back([](const joystick::State &js) {
-    return js.LB().pressed and js.A().on_press ? boost::optional<std::string>("Policy/CmdRoll/SwitchSubscriber")
-                                               : boost::none;
+  joystick_rules_.emplace_back([](const joystick::State &js) -> std::string {
+    return js.LB().pressed and js.A().on_press ? "Policy/CmdRoll/SwitchSubscriber" : "";
   });
   return CmdRollSource::reset();
 }
@@ -29,7 +28,7 @@ bool CmdRollSubscriber::update(const LowState &low_state, ControlRequests &reque
   subscribing_status_->update(subscriber_enabled ? 1 : 0);
   if (subscriber_enabled) {
     std::lock_guard<std::mutex> lock(mutex_);
-    if ((ros::Time::now() - cmd_roll_stamp_).toSec() < timeout_threshold_) {
+    if (getElapsedTime(cmd_roll_stamp_) < timeout_threshold_) {
       cmd_roll_ = clamp(cmd_roll_msg_, -1.0F, 1.0F) * roll_scale_factor_;
     } else {
       cmd_roll_ = 0.0F;
@@ -108,9 +107,8 @@ CmdPitchSubscriber::CmdPitchSubscriber(const PolicySpec &policy_spec, const std:
 bool CmdPitchSubscriber::reset() {
   subscriber_enabled_.store(default_subscriber_enabled_, std::memory_order_relaxed);
   subscribing_status_ = publisher::StatusRegistration::make("Policy/CmdPitch/Subscribing");
-  js_rules_.emplace_back([](const joystick::State &js) {
-    return js.LB().pressed and js.A().on_press ? boost::optional<std::string>("Policy/CmdPitch/SwitchSubscriber")
-                                               : boost::none;
+  joystick_rules_.emplace_back([](const joystick::State &js) -> std::string {
+    return js.LB().pressed and js.A().on_press ? "Policy/CmdPitch/SwitchSubscriber" : "";
   });
   return CmdPitchSource::reset();
 }
@@ -120,7 +118,7 @@ bool CmdPitchSubscriber::update(const LowState &low_state, ControlRequests &requ
   subscribing_status_->update(subscriber_enabled ? 1 : 0);
   if (subscriber_enabled) {
     std::lock_guard<std::mutex> lock(mutex_);
-    if ((ros::Time::now() - cmd_pitch_stamp_).toSec() < timeout_threshold_) {
+    if (getElapsedTime(cmd_pitch_stamp_) < timeout_threshold_) {
       cmd_pitch_ = clamp(cmd_pitch_msg_, -1.0F, 1.0F) * pitch_scale_factor_;
     } else {
       cmd_pitch_ = 0.0F;
@@ -199,9 +197,8 @@ CmdHeightSubscriber::CmdHeightSubscriber(const PolicySpec &policy_spec, const st
 bool CmdHeightSubscriber::reset() {
   subscriber_enabled_.store(default_subscriber_enabled_, std::memory_order_relaxed);
   subscribing_status_ = publisher::StatusRegistration::make("Policy/CmdHeight/Subscribing");
-  js_rules_.emplace_back([](const joystick::State &js) {
-    return js.LB().pressed and js.A().on_press ? boost::optional<std::string>("Policy/CmdHeight/SwitchSubscriber")
-                                               : boost::none;
+  joystick_rules_.emplace_back([](const joystick::State &js) -> std::string {
+    return js.LB().pressed and js.A().on_press ? "Policy/CmdHeight/SwitchSubscriber" : "";
   });
   return CmdHeightSource::reset();
 }
@@ -211,7 +208,7 @@ bool CmdHeightSubscriber::update(const LowState &low_state, ControlRequests &req
   subscribing_status_->update(subscriber_enabled ? 1 : 0);
   if (subscriber_enabled) {
     std::lock_guard<std::mutex> lock(mutex_);
-    if ((ros::Time::now() - cmd_height_stamp_).toSec() < timeout_threshold_) {
+    if (getElapsedTime(cmd_height_stamp_) < timeout_threshold_) {
       cmd_height_ = clamp(cmd_height_msg_ + default_cmd_height_, height_range_);
     } else {
       cmd_height_ = default_cmd_height_;
