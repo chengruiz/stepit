@@ -8,7 +8,7 @@
 #include <stepit/policy_neuro/field.h>
 
 namespace stepit::neuro_policy {
-class FieldSubscriber2 : public FieldSource {
+class FieldSubscriber2 : public Module {
  public:
   FieldSubscriber2(const PolicySpec &policy_spec, const std::string &home_dir);
   bool reset() override;

@@ -2,16 +2,16 @@
 
 namespace stepit {
 namespace neuro_policy {
-FieldId FieldSource::registerRequirement(const std::string &field_name) {
+FieldId Module::registerRequirement(const std::string &field_name) {
   return registerRequirement(registerField(field_name, 0));
 }
 
-FieldId FieldSource::registerRequirement(FieldId field_id) {
+FieldId Module::registerRequirement(FieldId field_id) {
   requirements_.insert(field_id);
   return field_id;
 }
 
-FieldId FieldSource::registerProvision(const std::string &field_name, std::uint32_t size) {
+FieldId Module::registerProvision(const std::string &field_name, std::uint32_t size) {
   FieldId id = registerField(field_name, size);
   provisions_.insert(id);
   return id;
@@ -22,16 +22,16 @@ FieldManager &FieldManager::instance() {
   return inst;
 }
 
-auto FieldManager::registerSource(const std::string &name, int priority, SourceRegistry::Factory factory)
+auto FieldManager::registerSource(const std::string &field_name, int priority, SourceRegistry::Factory factory)
     -> SourceRegistry::Registration {
   std::lock_guard<std::recursive_mutex> lock(mutex_);
-  return source_registry_.createRegistration(name, priority, std::move(factory));
+  return source_registry_.createRegistration(field_name, priority, std::move(factory));
 }
 
-FieldSource::Ptr FieldManager::makeSource(const std::string &name, const PolicySpec &policy_spec,
-                                          const std::string &home_dir) {
+auto FieldManager::makeSource(const std::string &field_name, const PolicySpec &policy_spec, const std::string &home_dir)
+    -> Module::Ptr {
   std::lock_guard<std::recursive_mutex> lock(mutex_);
-  return source_registry_.make(name, policy_spec, home_dir);
+  return source_registry_.make(field_name, policy_spec, home_dir);
 }
 
 FieldId FieldManager::registerField(const std::string &name, std::uint32_t size) {

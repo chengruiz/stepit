@@ -16,8 +16,7 @@ using FieldId    = std::size_t;
 using FieldMap   = std::map<FieldId, ArrXf>;
 using FieldIdVec = std::vector<FieldId>;
 
-class FieldSource
-    : public Interface<FieldSource, const PolicySpec & /* policy_spec */, const std::string & /* home_dir */> {
+class Module : public Interface<Module, const PolicySpec & /* policy_spec */, const std::string & /* home_dir */> {
  public:
   virtual void initFieldProperties() {}
   virtual bool reset() { return true; }
@@ -43,11 +42,11 @@ class FieldManager {
   FieldManager &operator=(const FieldManager &) = delete;
   static FieldManager &instance();
 
-  using SourceRegistry = Registry<FieldSource, const PolicySpec &, const std::string &>;
-  auto registerSource(const std::string &name, int priority, SourceRegistry::Factory factory)
+  using SourceRegistry = Registry<Module, const PolicySpec &, const std::string &>;
+  auto registerSource(const std::string &field_name, int priority, SourceRegistry::Factory factory)
       -> SourceRegistry::Registration;
-  auto makeSource(const std::string &name, const PolicySpec &policy_spec, const std::string &home_dir)
-      -> FieldSource::Ptr;
+  auto makeSource(const std::string &field_name, const PolicySpec &policy_spec, const std::string &home_dir)
+      -> Module::Ptr;
 
   FieldId registerField(const std::string &name, std::uint32_t size);
   FieldId getFieldId(const std::string &name);
@@ -74,8 +73,8 @@ inline FieldId getFieldId(const std::string &name) { return fieldManager().getFi
 inline const std::string &getFieldName(FieldId id) { return fieldManager().getFieldName(id); }
 inline std::uint32_t getFieldSize(FieldId id) { return fieldManager().getFieldSize(id); }
 inline void setFieldSize(FieldId id, std::uint32_t size) { fieldManager().setFieldSize(id, size); }
-inline FieldSource::Ptr makeSourceOfField(const std::string &field_name, const PolicySpec &policy_spec,
-                                          const std::string &home_dir) {
+inline Module::Ptr makeFieldSource(const std::string &field_name, const PolicySpec &policy_spec,
+                                   const std::string &home_dir) {
   return fieldManager().makeSource(field_name, policy_spec, home_dir);
 }
 
@@ -85,9 +84,9 @@ void splitFields(cArrXf data, const FieldIdVec &field_ids, FieldMap &result);
 }  // namespace neuro_policy
 }  // namespace stepit
 
-#define STEPIT_REGISTER_FIELD_SOURCE(name, priority, factory) \
-  static ::stepit::neuro_policy::FieldSource::Registration _field_source_##name##_registration(#name, priority, factory)
-#define STEPIT_REGISTER_SOURCE_OF_FIELD(field_name, priority, factory)                           \
+#define STEPIT_REGISTER_MODULE(name, priority, factory) \
+  static ::stepit::neuro_policy::Module::Registration _field_source_##name##_registration(#name, priority, factory)
+#define STEPIT_REGISTER_FIELD_SOURCE(field_name, priority, factory)                          \
   static auto _field_##field_name##_source_registration = ::stepit::neuro_policy::fieldManager() \
                                                               .registerSource(#field_name, priority, factory)
 

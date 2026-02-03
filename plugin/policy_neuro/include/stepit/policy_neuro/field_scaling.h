@@ -8,7 +8,7 @@
 
 namespace stepit {
 namespace neuro_policy {
-class FieldScaling : public FieldSource {
+class FieldScaling : public Module {
  public:
   FieldScaling(const PolicySpec &policy_spec, const std::string &home_dir);
   void initFieldProperties() override;

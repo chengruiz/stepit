@@ -4,7 +4,7 @@ StepIt plugin for ROS-based field sources that subscribe ROS topics and feed dat
 
 ### Provided Factories
 
-`stepit::policy_neuro::FieldSource`:
+`stepit::policy_neuro::Module`:
   - `cmd_height_subscriber`: subscribes to a ROS topic of one of the following types and provides command height field (`cmd_height`):
     - `std_msgs/Float32`,
     - `geometry_msgs/Twist` (`linear.z` component),
@@ -34,4 +34,4 @@ StepIt plugin for ROS-based field sources that subscribe ROS topics and feed dat
 
 ### Notes
 
-- The `CmdVelSubscriber` will be used as the preferred source for the `cmd_vel` field, as it has a higher priority than the `CmdHeightSource` in the `policy_neuro` plugin. To completely disable the subscription, specify `cmd_vel` in the `field_source` item of the policy configuration to use the `CmdHeightSource` class, which will prevent it from searching for other sources. Do the same for `cmd_height`, `cmd_pitch`, and `cmd_roll` if needed.
+- The `CmdVelSubscriber` will be used as the preferred source for the `cmd_vel` field, as it has a higher priority than the `CmdHeightSource` in the `policy_neuro` plugin. To completely disable the subscription, specify `cmd_vel` in the `module` item of the policy configuration to use the `CmdHeightSource` class, which will prevent it from searching for other sources. Do the same for `cmd_height`, `cmd_pitch`, and `cmd_roll` if needed.

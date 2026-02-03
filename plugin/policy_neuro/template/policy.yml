@@ -61,7 +61,7 @@ action_mean:         # [Optional] List[Float], action mean values, required for
 - 0.7
 - -1.5
 
-field_source:        # [Optional] List[String], source of fields for the policy
+module:              # [Optional] List[String], source of fields for the policy
   - actor            # If not specified, stepit will try to resolve the sources automatically
   - action_filter    # Addtional sources for action filtering, scaling, etc. should be included here
                      # NOTICE: the order of sources matters! The behavior of following sources is affected by previous ones.

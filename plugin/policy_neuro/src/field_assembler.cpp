@@ -48,6 +48,6 @@ bool FieldAssembler::update(const LowState &, ControlRequests &, FieldMap &resul
   return true;
 }
 
-STEPIT_REGISTER_FIELD_SOURCE(field_assembler, kDefPriority, FieldSource::make<FieldAssembler>);
+STEPIT_REGISTER_MODULE(field_assembler, kDefPriority, Module::make<FieldAssembler>);
 }  // namespace neuro_policy
 }  // namespace stepit

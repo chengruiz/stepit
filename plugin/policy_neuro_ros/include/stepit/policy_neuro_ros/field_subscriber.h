@@ -9,7 +9,7 @@
 
 namespace stepit {
 namespace neuro_policy {
-class FieldSubscriber : public FieldSource {
+class FieldSubscriber : public Module {
  public:
   FieldSubscriber(const PolicySpec &policy_spec, const std::string &home_dir);
   bool reset() override;

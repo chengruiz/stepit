@@ -14,11 +14,11 @@ NeuroPolicy::NeuroPolicy(const RobotSpec &robot_spec, const std::string &home_di
   displayFormattedBanner(60, kGreen, "NeuroPolicy {} ({}Hz)", spec_.policy_name, getControlFreq());
 
   // Add field sources read from the YAML file
-  auto fs_node = config_["field_source"];
-  if (fs_node) {
-    STEPIT_ASSERT(fs_node.IsSequence(), "'field_source' must be a sequence.");
-    for (const auto &fs : fs_node) {
-      addFieldSource(FieldSource::make(fs.as<std::string>(), spec_, home_dir), false);
+  auto module_node = config_["module"] ? config_["module"] : config_["field_source"];  // backward compatibility
+  if (module_node) {
+    STEPIT_ASSERT(module_node.IsSequence(), "'module' must be a sequence.");
+    for (const auto &module : module_node) {
+      addModule(Module::make(module.as<std::string>(), spec_, home_dir), false);
     }
   }
   // Add the actuator and the actor
@@ -26,27 +26,27 @@ NeuroPolicy::NeuroPolicy(const RobotSpec &robot_spec, const std::string &home_di
   if (config_["actuator"]) yml::setIf(config_["actuator"], "type", actuator_type);
   auto actuator = Actuator::make(actuator_type, spec_, home_dir);
   actuator_     = actuator.get();
-  addFieldSource(std::move(actuator), true);
+  addModule(std::move(actuator), true);
   if (available_fields_.find(action_id_) == available_fields_.end() and
       unavailable_fields_.find(action_id_) == unavailable_fields_.end() and
       unresolved_fields_.find(action_id_) == unresolved_fields_.end()) {
-    addFieldSource(makeSourceOfField("action", spec_, home_dir), false);
+    addModule(makeFieldSource("action", spec_, home_dir), false);
   }
   // Automatically resolve field dependencies
-  while (not unresolved_fs_.empty()) {
+  while (not unresolved_modules_.empty()) {
     FieldId requirement{};
-    for (auto field : unresolved_fs_.front()->requirements()) {
+    for (auto field : unresolved_modules_.front()->requirements()) {
       if (available_fields_.find(field) != available_fields_.end()) continue;
       if (unresolved_fields_.find(field) != unresolved_fields_.end()) {
-        STEPIT_ERROR("Find circular dependency '{}' in field source '{}'.", getFieldName(field),
-                     getTypeName(*unresolved_fs_.front()));
+        STEPIT_ERROR("Find circular dependency '{}' in module '{}'.", getFieldName(field),
+                     getTypeName(*unresolved_modules_.front()));
       }
       requirement = field;
       break;
     }
-    addFieldSource(makeSourceOfField(getFieldName(requirement), spec_, home_dir), true);
+    addModule(makeFieldSource(getFieldName(requirement), spec_, home_dir), true);
   }
-  STEPIT_ASSERT(unavailable_fields_.empty() and unresolved_fs_.empty(), "Policy is not fully resolved.");
+  STEPIT_ASSERT(unavailable_fields_.empty() and unresolved_modules_.empty(), "Policy is not fully resolved.");
 
   auto action_dim = getFieldSize(action_id_);
   action_.setZero(action_dim);
@@ -66,16 +66,16 @@ NeuroPolicy::NeuroPolicy(const RobotSpec &robot_spec, const std::string &home_di
   }
 
   STEPIT_DBUGNT("Field sources:");
-  for (const auto &fs : resolved_fs_) {
-    fs->initFieldProperties();
-    STEPIT_DBUGNT("- {}", getTypeName(*fs));
+  for (const auto &module : resolved_modules_) {
+    module->initFieldProperties();
+    STEPIT_DBUGNT("- {}", getTypeName(*module));
   }
   displayFormattedBanner(60);
 }
 
-void NeuroPolicy::addFieldSource(std::unique_ptr<FieldSource> fs, bool first) {
+void NeuroPolicy::addModule(Module::Ptr module, bool first) {
   // Add the provisions to unresolved_fields_
-  for (auto field : fs->provisions()) {
+  for (auto field : module->provisions()) {
     if (available_fields_.find(field) != available_fields_.end()) {
       STEPIT_ERROR("Multiple sources for field '{}'.", getFieldName(field));
     }
@@ -83,36 +83,36 @@ void NeuroPolicy::addFieldSource(std::unique_ptr<FieldSource> fs, bool first) {
     unavailable_fields_.erase(field);
   }
   // Add the unavailable requirements to unavailable_fields_
-  for (auto field : fs->requirements()) {
+  for (auto field : module->requirements()) {
     if (available_fields_.find(field) == available_fields_.end()) {
       unavailable_fields_.insert(field);
     }
   }
-  // Add the field source to unresolved_fs_
+  // Add the module to unresolved_modules_
   if (first) {
-    unresolved_fs_.push_front(std::move(fs));
+    unresolved_modules_.push_front(std::move(module));
   } else {
-    unresolved_fs_.push_back(std::move(fs));
+    unresolved_modules_.push_back(std::move(module));
   }
 
-  // Check if the field source is already resolved
-  while (not unresolved_fs_.empty()) {
-    const auto &front_fs = unresolved_fs_.front();
-    if (not isSatisfied(front_fs->requirements())) break;
-    for (auto field : front_fs->provisions()) {
+  // Check if the module is already resolved
+  while (not unresolved_modules_.empty()) {
+    const auto &front_module = unresolved_modules_.front();
+    if (not isSatisfied(front_module->requirements())) break;
+    for (auto field : front_module->provisions()) {
       available_fields_.insert(field);
       unresolved_fields_.erase(field);
       unavailable_fields_.erase(field);
     }
-    resolved_fs_.push_back(std::move(unresolved_fs_.front()));
-    unresolved_fs_.pop_front();
+    resolved_modules_.push_back(std::move(unresolved_modules_.front()));
+    unresolved_modules_.pop_front();
   }
 }
 
 bool NeuroPolicy::reset() {
-  for (const auto &fs : resolved_fs_) {
-    if (not fs->reset()) {
-      STEPIT_CRIT("Failed to initialize '{}'.", getTypeName(*fs));
+  for (const auto &module : resolved_modules_) {
+    if (not module->reset()) {
+      STEPIT_CRIT("Failed to initialize '{}'.", getTypeName(*module));
       return false;
     }
   }
@@ -123,13 +123,13 @@ bool NeuroPolicy::reset() {
 
 bool NeuroPolicy::act(const LowState &low_state, ControlRequests &requests, LowCmd &cmd) {
   FieldMap field_map;
-  for (const auto &fs : resolved_fs_) {
-    if (not fs->update(low_state, requests, field_map)) {
-      STEPIT_CRIT("Failed to update '{}'.", getTypeName(*fs));
+  for (const auto &module : resolved_modules_) {
+    if (not module->update(low_state, requests, field_map)) {
+      STEPIT_CRIT("Failed to update '{}'.", getTypeName(*module));
       return false;
     }
   }
-  for (const auto &fs : resolved_fs_) fs->postUpdate(field_map);
+  for (const auto &module : resolved_modules_) module->postUpdate(field_map);
   action_ = field_map.at(action_id_);
   actuator_->setLowCmd(cmd, action_);
 
@@ -145,7 +145,7 @@ bool NeuroPolicy::act(const LowState &low_state, ControlRequests &requests, LowC
 }
 
 void NeuroPolicy::exit() {
-  for (const auto &fs : resolved_fs_) fs->exit();
+  for (const auto &module : resolved_modules_) module->exit();
 }
 
 bool NeuroPolicy::isSatisfied(const std::set<FieldId> &requirements) const {

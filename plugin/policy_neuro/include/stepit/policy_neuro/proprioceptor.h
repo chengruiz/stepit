@@ -5,7 +5,7 @@
 
 namespace stepit {
 namespace neuro_policy {
-class Proprioceptor : public FieldSource {
+class Proprioceptor : public Module {
  public:
   Proprioceptor(const PolicySpec &policy_spec, const std::string &home_dir);
   bool reset() override { return true; }

@@ -5,7 +5,7 @@
 
 namespace stepit {
 namespace neuro_policy {
-class RollPitchSource : public FieldSource {
+class RollPitchSource : public Module {
  public:
   RollPitchSource(const PolicySpec &policy_spec, const std::string &home_dir);
   bool reset() override { return true; }

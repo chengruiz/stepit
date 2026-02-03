@@ -44,6 +44,6 @@ bool FieldScaling::update(const LowState &, ControlRequests &, FieldMap &result)
   return true;
 }
 
-STEPIT_REGISTER_FIELD_SOURCE(field_scaling, kDefPriority, FieldSource::make<FieldScaling>);
+STEPIT_REGISTER_MODULE(field_scaling, kDefPriority, Module::make<FieldScaling>);
 }  // namespace neuro_policy
 }  // namespace stepit

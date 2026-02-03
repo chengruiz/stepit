@@ -5,7 +5,7 @@ StepIt plugin for running neural network-based policy.
 ### Provided Interfaces
 
 - `stepit::neuro_policy::Actuator`: defines how to apply actions to the robot.
-- `stepit::neuro_policy::FieldSource`: provides input fields for neural networks.
+- `stepit::neuro_policy::Module`: provides fields according to input fields.
 
 ### Provided Factories
 
@@ -16,7 +16,7 @@ StepIt plugin for running neural network-based policy.
     - `velocity`: translates actions to joint velocity commands.
     - `torque`: translates actions to joint torque commands.
     - `hybrid`: translates actions to a combination of joint commands.
-- `stepit::neuro_policy::FieldSource`:
+- `stepit::neuro_policy::Module`:
     - `action_history`: provides history of action commands.
     - `action_filter`: applies low-pass filtering to action commands.
     - `action_reordering`: reorders action commands.
@@ -45,16 +45,16 @@ StepIt plugin for running neural network-based policy.
 
 ## Mechanisms
 
-### FieldSource
+### Module
 
-Classes derived from `FieldSource` require to declare their input dependencies (`requirements`) and output fields
+Classes derived from `Module` require to declare their input dependencies (`requirements`) and output fields
 (`provisions`) by registering named fields through a global FieldManager. At runtime, FieldManager assigns a unique ID
 and size to each field, and maintains a registry of source factories. Then the field sources sequentially produce or
 process data segments identified by FieldId.
 
 ### NeuroPolicy
 
-`NeuroPolicy` orchestrates a set of FieldSource instances into a neural‐network policy pipeline. It:
+`NeuroPolicy` orchestrates a set of `Module` instances into a neural‐network policy pipeline. It:
 
 1. Loads YAML configuration and registers the main `action` field.
 2. Reads user‐specified field sources and ensures an actor source is present.

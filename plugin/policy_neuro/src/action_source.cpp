@@ -58,9 +58,9 @@ bool ActionFilter::update(const LowState &low_state, ControlRequests &requests, 
   return true;
 }
 
-STEPIT_REGISTER_FIELD_SOURCE(action_history, kDefPriority, FieldSource::make<ActionHistory>);
-STEPIT_REGISTER_SOURCE_OF_FIELD(action_p1, kDefPriority, FieldSource::make<ActionHistory>);
-STEPIT_REGISTER_SOURCE_OF_FIELD(action_p2, kDefPriority, FieldSource::make<ActionHistory>);
-STEPIT_REGISTER_FIELD_SOURCE(action_filter, kDefPriority, FieldSource::make<ActionFilter>);
+STEPIT_REGISTER_MODULE(action_history, kDefPriority, Module::make<ActionHistory>);
+STEPIT_REGISTER_MODULE(action_filter, kDefPriority, Module::make<ActionFilter>);
+STEPIT_REGISTER_FIELD_SOURCE(action_p1, kDefPriority, Module::make<ActionHistory>);
+STEPIT_REGISTER_FIELD_SOURCE(action_p2, kDefPriority, Module::make<ActionHistory>);
 }  // namespace neuro_policy
 }  // namespace stepit
