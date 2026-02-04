@@ -27,10 +27,58 @@ StepIt plugin for ROS2-based field sources that subscribe ROS2 topics and feed d
     - `nav_msgs/msg/Odometry`.
 
 
+### Control Commands
+
+- Channel: `Policy/CmdVel`
+
+  | Action              | Argument | Description                           |
+  | :------------------ | :------- | :------------------------------------ |
+  | `EnableSubscriber`  |          | Enables subscription to ROS topics.   |
+  | `DisableSubscriber` |          | Disables subscription to ROS topics.  |
+  | `SwitchSubscriber`  |          | Toggles subscription to ROS topics.   |
+
+- Channel: `Policy/CmdRoll`
+
+  | Action              | Argument | Description                           |
+  | :------------------ | :------- | :------------------------------------ |
+  | `EnableSubscriber`  |          | Enables subscription to ROS topics.   |
+  | `DisableSubscriber` |          | Disables subscription to ROS topics.  |
+  | `SwitchSubscriber`  |          | Toggles subscription to ROS topics.   |
+
+- Channel: `Policy/CmdPitch`
+
+  | Action              | Argument | Description                           |
+  | :------------------ | :------- | :------------------------------------ |
+  | `EnableSubscriber`  |          | Enables subscription to ROS topics.   |
+  | `DisableSubscriber` |          | Disables subscription to ROS topics.  |
+  | `SwitchSubscriber`  |          | Toggles subscription to ROS topics.   |
+
+- Channel: `Policy/CmdHeight`
+
+  | Action              | Argument | Description                           |
+  | :------------------ | :------- | :------------------------------------ |
+  | `EnableSubscriber`  |          | Enables subscription to ROS topics.   |
+  | `DisableSubscriber` |          | Disables subscription to ROS topics.  |
+  | `SwitchSubscriber`  |          | Toggles subscription to ROS topics.   |
+
+- Channel: `Policy/Heightmap`
+
+  | Action              | Argument | Description                           |
+  | :------------------ | :------- | :------------------------------------ |
+  | `EnableSubscriber`  |          | Enables subscription to ROS topics.   |
+  | `DisableSubscriber` |          | Disables subscription to ROS topics.  |
+  | `SwitchSubscriber`  |          | Toggles subscription to ROS topics.   |
+
+
 ### Joystick Key Bindings
 
-- `LB` + `A`: enables velocity and posture command subcriptions, or disables them if already enabled.
-- `LB` + `B`: enables heightmap and uncertainty subcriptions, or disables them if already enabled.
+| Key        | Command                             |
+| :--------- | :---------------------------------- |
+| **LB + A** | `Policy/CmdVel/SwitchSubscriber`    |
+| **LB + A** | `Policy/CmdRoll/SwitchSubscriber`   |
+| **LB + A** | `Policy/CmdPitch/SwitchSubscriber`  |
+| **LB + A** | `Policy/CmdHeight/SwitchSubscriber` |
+| **LB + B** | `Policy/Heightmap/SwitchSubscriber` |
 
 
 ### Notes

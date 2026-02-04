@@ -1,8 +1,8 @@
 cmake_minimum_required(VERSION 3.16)
-project(stepit_plugin_csv_publisher)
+project(stepit_plugin_publisher_csv)
 
 stepit_add_plugin(${PROJECT_NAME}
-    SOURCES src/csv_publisher.cpp
+    SOURCES src/publisher_csv.cpp
     INCLUDES include
     FLAGS -Wall -Wextra -Wpedantic -Wno-unused-parameter
 )

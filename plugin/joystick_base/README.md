@@ -12,11 +12,13 @@ StepIt plugin providing joystick interface and control.
 
 ### Joystick Key Bindings
 
-- `LAS`[^1] + `RAS`[^2]: Set the agent to the frozen mode, disabling all controls.
-- `LT`[^3] + `X`: Resume the agent from the frozen mode.
-- `LT` + `A`: Stand up from lying position, or lie down from standing position.
-- `LT` + `B`: Enable the locomotion policy, or switch to standing if already enabled.
-- `LT` + `Y`: Cycle the current active locomotion policy.
+| Key                   | Command                  |
+| :-------------------- | :----------------------- |
+| `LAS`[^1] + `RAS`[^2] | `Agent/Freeze`           |
+| `LT`[^3] + `X`        | `Agent/Unfreeze`         |
+| `LT` + `A`            | `Agent/StandUpOrLieDown` |
+| `LT` + `B`            | `Agent/PolicyOnOrOff`    |
+| `LT` + `Y`            | `Agent/CyclePolicy`      |
 
 [^1]: `LAS` refers to pressing the left analog stick.
 
