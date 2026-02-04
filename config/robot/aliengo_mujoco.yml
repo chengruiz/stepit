@@ -1,0 +1,35 @@
+name: "aliengo_mujoco"
+joint_names:
+  - "FR_hip"
+  - "FR_thigh"
+  - "FR_calf"
+  - "FL_hip"
+  - "FL_thigh"
+  - "FL_calf"
+  - "RR_hip"
+  - "RR_thigh"
+  - "RR_calf"
+  - "RL_hip"
+  - "RL_thigh"
+  - "RL_calf"
+foot_names:
+  - "FR_foot"
+  - "FL_foot"
+  - "RR_foot"
+  - "RL_foot"
+comm_freq: 1000
+kp: 150.0
+kd: 4.0
+standing_cfg: [
+  0.0, 0.6435, -1.287, 
+  0.0, 0.6435, -1.287,
+  0.0, 0.6435, -1.287,
+  0.0, 0.6435, -1.287,
+]
+lying_cfg: [
+  0.0, 1.343, -2.696,
+  0.0, 1.343, -2.696,
+  0.0, 1.343, -2.696,
+  0.0, 1.343, -2.696,
+]
+auto_damped_mode: true
