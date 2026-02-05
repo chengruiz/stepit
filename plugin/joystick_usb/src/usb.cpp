@@ -89,6 +89,7 @@ void UsbJoystick::connectHandler(std::shared_ptr<gamepad::device> dev) {
   STEPIT_INFO("Joystick '{}' connected.", dev->get_name());
   connected_ = true;
   rid_       = dev->get_index();
+
   slots_.axes[keymap_.lt] = -1.0;
   slots_.axes[keymap_.rt] = -1.0;
   dev->set_axis_deadzone(gamepad::axis::LEFT_STICK_X, 0);
@@ -131,5 +132,6 @@ void UsbJoystick::buttonHandler(std::shared_ptr<gamepad::device> dev) {
 }
 
 STEPIT_REGISTER_JOYSTICK(usb, kDefPriority, Joystick::make<UsbJoystick>);
+STEPIT_REGISTER_CTRLINPUT(joystick_usb, kDefPriority, []() { return std::make_unique<JoystickControl>("usb"); });
 }  // namespace joystick
 }  // namespace stepit
