@@ -176,7 +176,7 @@ ensure_symlink "${stepit_dir}/scripts/run.sh"   "${workspace_dir}/scripts/run.sh
 
 if [[ ! -d "${workspace_dir}/configs" ]]; then
 	run mkdir -p "${workspace_dir}/configs"
-	run cp "${stepit_dir}/config/demo.conf.sh" "${workspace_dir}/configs/"
+	run cp -a "${stepit_dir}/config/run/." "${workspace_dir}/configs/"
 fi
 
 log "${GREEN}============================= Finished =============================${CLEAR}"

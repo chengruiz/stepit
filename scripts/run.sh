@@ -36,25 +36,37 @@ require_cmd() {
 usage() {
 	cat <<'EOF'
 Usage:
-	run.sh [options] CONFIG
+	run.sh [options] [CONFIG...]
 
 Options:
+	CONFIG                  Path to config file (repeatable, default: none)
 	--workspace DIR         Workspace root (default: $PWD or STEPIT_WS)
 	--build-tool TYPE       cmake | catkin | catkin_make | colcon | auto (default: auto)
+	-c, --control VALUE     Control input type (repeatable)
+	-f, --factory VALUE     Default factory (repeatable, format: <class>@<factory_name>)
+	-P, --publisher VALUE   Publisher type
+	-p, --policy VALUE      Policies (format: [<type>@]<directory>)
+	-r, --robot VALUE       Robot type
+	-v, --verbosity VALUE   Verbosity level (0-3)
 	-h, --help              Show this help message
-
-Notes:
-	- CONFIG is required and should define STEPIT_* values.
-	- Config keys: STEPIT_CONTROL, STEPIT_FACTORY, STEPIT_PUBLISHER, STEPIT_POLICY,
-	  STEPIT_ROBOT, STEPIT_VERBOSITY, STEPIT_PLUGIN_ARGS
+	--                      Pass remaining arguments to plugins
 EOF
 }
 
 workspace_dir="${STEPIT_WS:-$PWD}"
-config_file=""
 build_tool="auto"
+config_files=()
+stepit_args=()
+plugin_args=()
 while [[ $# -gt 0 ]]; do
 	case "$1" in
+		--)
+			shift
+			if [[ $# -gt 0 ]]; then
+				plugin_args+=("$@")
+			fi
+			break
+			;;
 		--workspace)
 			[[ $# -ge 2 ]] || die "--workspace requires a value"
 			workspace_dir="$2"
@@ -65,21 +77,21 @@ while [[ $# -gt 0 ]]; do
 			build_tool="$2"
 			shift 2
 			;;
+		--control|-c|--factory|-f|--publisher|-P|--policy|-p|--robot|-r|--verbosity|-v)
+			[[ $# -ge 2 ]] || die "$1 requires a value"
+			stepit_args+=("$1" "$2")
+			shift 2
+			;;
 		-h|--help)
 			usage
 			exit 0
 			;;
 		*)
-            [[ -z "${config_file}" ]] && config_file="$1" || die "Unexpected extra argument: $1"
+			config_files+=("$1")
 			shift
 			;;
 	esac
 done
-
-if [[ -z "${config_file}" ]]; then
-	usage
-	die "Missing required CONFIG argument."
-fi
 
 if [[ ! -f "${workspace_dir}/src/stepit/CMakeLists.txt" ]]; then
 	die "Expected ${workspace_dir}/src/stepit/CMakeLists.txt. Run from your StepIt workspace root or set STEPIT_WS."
@@ -107,30 +119,30 @@ case "${build_tool}" in
 	*) die "Unsupported --build-tool: ${build_tool}" ;;
 esac
 
-[[ -f "${config_file}" ]] || die "Config file not found: ${config_file}"
-# shellcheck disable=SC1090
-source "${config_file}"
-
-stepit_args=()
-append_args() {
-    local flag="$1"
-    local value="${2:-}"
-    [[ -n "${value}" ]] || return 0
-    for token in ${value}; do
-        stepit_args+=("${flag}" "${token}")
-    done
-}
-append_args "--control" "${STEPIT_CONTROL}"
-append_args "--factory" "${STEPIT_FACTORY}"
-append_args "--publisher" "${STEPIT_PUBLISHER}"
-append_args "--policy" "${STEPIT_POLICY}"
-append_args "--robot" "${STEPIT_ROBOT}"
-append_args "--verbosity" "${STEPIT_VERBOSITY}"
+if [[ ${#config_files[@]} -gt 0 ]]; then
+	for config_file in "${config_files[@]}"; do
+		[[ -f "${config_file}" ]] || die "Config file not found: ${config_file}"
+		# shellcheck disable=SC1090
+		source "${config_file}"
+		if [[ -n "${STEPIT_ARGS-}" ]]; then
+			read -r -a extra_args <<< "${STEPIT_ARGS}"
+			stepit_args+=("${extra_args[@]}")
+		fi
+		if [[ -n "${STEPIT_PLUGIN_ARGS-}" ]]; then
+			read -r -a extra_plugin_args <<< "${STEPIT_PLUGIN_ARGS}"
+			plugin_args+=("${extra_plugin_args[@]}")
+		fi
+	done
+fi
 
 log "${GREEN}=============================== Running =============================${CLEAR}"
 log "${GREEN}Workspace:${CLEAR}   ${workspace_dir}"
 log "${GREEN}Build tool:${CLEAR}  ${build_tool}"
-log "${GREEN}Config:${CLEAR}      ${config_file}"
+if [[ ${#config_files[@]} -gt 0 ]]; then
+	log "${GREEN}Config:${CLEAR}      ${config_files[*]}"
+else
+	log "${GREEN}Config:${CLEAR}      (none)"
+fi
 
 stepit_cmd=()
 case "${build_tool}" in
@@ -162,10 +174,7 @@ case "${build_tool}" in
 		;;
 esac
 
-plugin_args=()
-[[ -n "${STEPIT_PLUGIN_ARGS-}" ]] && read -r -a plugin_args <<< "${STEPIT_PLUGIN_ARGS}"
 if [[ ${#plugin_args[@]} -gt 0 ]]; then
-	run "${stepit_cmd[@]}" "${stepit_args[@]}" -- "${plugin_args[@]}"
-else
-	run "${stepit_cmd[@]}" "${stepit_args[@]}"
+	stepit_args+=("--" "${plugin_args[@]}")
 fi
+run "${stepit_cmd[@]}" "${stepit_args[@]}"
