@@ -13,7 +13,7 @@ int main(int argc, char *argv[]) {
   // clang-format off
   arg_desc.add_options()
       ("help,h",
-          "produce help message")
+          "Show this help message")
       ("factory,f", po::value<std::string>()->default_value(""),
           "NnrtApi factory name")
       ("model_path", po::value<std::string>(),

@@ -39,3 +39,4 @@ build/
 install/
 
 extern/nn_runtime/onnxruntime-linux-*
+package/ros2/CATKIN_IGNORE

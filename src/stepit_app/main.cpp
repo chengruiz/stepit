@@ -11,12 +11,12 @@ int main(int argc, char *argv[]) {
   po::options_description arg_desc("Allowed arguments");
   // clang-format off
   arg_desc.add_options()
-      ("help",
-          "produce help message")
+      ("help,h",
+          "Show this help message")
       ("control,c", po::value<std::vector<std::string>>()->composing(),
-          "Control input type")
+          "Control input type (repeatable)")
       ("factory,f", po::value<std::vector<std::string>>()->composing(),
-          "Default factory (format: <class>@<factory_name>)")
+          "Default factory (repeatable, format: <class>@<factory_name>)")
       ("publisher,P", po::value<std::string>(),
           "Publisher type")
       ("policy,p", po::value<std::vector<std::string>>()->composing(),

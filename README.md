@@ -7,7 +7,20 @@ A flexible framework for connecting legged robots, input devices, and locomotion
 
 > **Note:** This project is under **active development**, which means the interface is unstable and breaking changes are likely to occur frequently.
 
-## Setup
+## Quick Start
+
+Setup the workspace, build StepIt, and run the demo configuration:
+
+```shell
+mkdir stepit_ws && cd stepit_ws
+bash -c "$(curl -fsSL https://raw.githubusercontent.com/chengruiz/stepit/main/scripts/setup.sh)"
+./scripts/build.sh
+./scripts/run.sh ./configs/demo.conf.sh
+```
+
+## Manual Setup
+
+### Prerequisites
 
 Tested on Ubuntu 20.04, 22.04 and 24.04.
 
@@ -19,7 +32,7 @@ mkdir -p stepit_ws/src && cd stepit_ws
 git clone https://github.com/chengruiz/stepit.git src/stepit
 ```
 
-## Build
+### Build
 
 ```shell
 # In the stepit_ws directory
@@ -63,7 +76,7 @@ Read the corresponding `README.md` first if you use any of the plugins.
 - [`ros_base`](plugin/ros_base): ROS extensions, e.g. subscribing joysticks and publishing states.
 - [`ros2_base`](plugin/ros2_base): ROS2 extensions, e.g. subscribing joysticks and publishing states.
 
-## Run
+### Run
 
 ```shell
 # Run StepIt to control the robot
