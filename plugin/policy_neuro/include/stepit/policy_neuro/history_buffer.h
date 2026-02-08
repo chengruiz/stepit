@@ -6,7 +6,7 @@
 
 namespace stepit {
 namespace neuro_policy {
-class HistoryBuffer : public FieldSource {
+class HistoryBuffer : public Module {
  public:
   HistoryBuffer(const PolicySpec &policy_spec, const std::string &home_dir);
   void initFieldProperties() override;

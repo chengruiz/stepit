@@ -5,9 +5,3 @@ proprioception_history:
   source: proprioception
   history_len: 50
   newest_first: true    # true: [newest, ..., oldest], false: [oldest, ..., newest]
-
-# You can add more history buffers as needed, for example:
-# joint_states_history:
-#   source: joint_states
-#   history_len: 30
-#   newest_first: false  # oldest -> newest order
