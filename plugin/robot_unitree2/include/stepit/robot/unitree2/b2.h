@@ -32,7 +32,7 @@ class B2Api final : public RobotApi {
   u2_sdk::ChannelSubscriberPtr<u2_msg::LowState_> low_state_sub_;
   u2_msg::LowCmd_ low_cmd_{};
   LowState low_state_;
-  StaticQueue<LowState> low_state_buf_;
+  RingBuffer<LowState> low_state_buf_;
   std::mutex mutex_;
 };
 }  // namespace stepit

@@ -70,7 +70,7 @@ void B2Api::callback(const u2_msg::LowState_ *msg) {
   low_state_.tick = msg->tick();
 
   if (joint_vel_filter_window_ > 0) {
-    if (low_state_buf_.is_full()) {
+    if (low_state_buf_.full()) {
       const auto &front = low_state_buf_.front();
       float dt          = static_cast<float>(low_state_.tick - front.tick) * 0.001F;
       if (dt <= 0.0F) dt = static_cast<float>(low_state_buf_.size()) / getCommFreq();

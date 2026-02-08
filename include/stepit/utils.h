@@ -9,7 +9,7 @@
 #include <llu/geometry.h>
 #include <llu/math.h>
 #include <llu/range.h>
-#include <llu/squeue.h>
+#include <llu/ring.h>
 #include <llu/typename.h>
 #include <llu/yaml.h>
 #include <stepit/logging.h>

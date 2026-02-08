@@ -21,7 +21,7 @@ class ActionHistory : public Module {
   FieldId action_p1_id_{};
   FieldId action_p2_id_{};
   ArrXf action_mean_;
-  StaticQueue<ArrXf> action_his_;
+  RingBuffer<ArrXf> action_buf_;
 };
 
 class ActionFilter : public Module {
@@ -34,7 +34,7 @@ class ActionFilter : public Module {
   int window_size_{};
   FieldId action_id_{};
   ArrXf action_mean_;
-  StaticQueue<ArrXf> action_his_;
+  RingBuffer<ArrXf> action_buf_;
 };
 }  // namespace neuro_policy
 }  // namespace stepit
