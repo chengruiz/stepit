@@ -61,6 +61,6 @@ void FieldSubscriber::callback(std::size_t index, const std_msgs::Float32MultiAr
   field.data     = VecXf::Map(msg->data.data(), static_cast<Eigen::Index>(msg->data.size()));
 }
 
-STEPIT_REGISTER_FIELD_SOURCE(field_subscriber, kDefPriority, FieldSource::make<FieldSubscriber>);
+STEPIT_REGISTER_MODULE(field_subscriber, kDefPriority, Module::make<FieldSubscriber>);
 }  // namespace neuro_policy
 }  // namespace stepit

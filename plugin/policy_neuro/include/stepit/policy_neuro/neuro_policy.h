@@ -17,7 +17,7 @@ class NeuroPolicy : public Policy {
   void exit() override;
 
  private:
-  void addFieldSource(std::unique_ptr<FieldSource> fs, bool first);
+  void addModule(Module::Ptr module, bool first);
   bool isSatisfied(const std::set<FieldId> &requirements) const;
 
   YAML::Node config_;
@@ -27,8 +27,8 @@ class NeuroPolicy : public Policy {
   std::set<FieldId> published_fields_;
   FieldId action_id_{};
 
-  std::vector<std::unique_ptr<FieldSource>> resolved_fs_;
-  std::list<std::unique_ptr<FieldSource>> unresolved_fs_;
+  std::vector<Module::Ptr> resolved_modules_;
+  std::list<Module::Ptr> unresolved_modules_;
   std::set<FieldId> available_fields_;
   std::set<FieldId> unavailable_fields_;
   std::set<FieldId> unresolved_fields_;

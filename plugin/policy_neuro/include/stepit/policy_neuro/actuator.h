@@ -5,7 +5,7 @@
 
 namespace stepit {
 namespace neuro_policy {
-class Actuator : public FieldSource,
+class Actuator : public Module,
                  public Interface<Actuator, const PolicySpec & /* policy_spec */, const std::string & /* home_dir */> {
  public:
   using Interface    = Interface<Actuator, const PolicySpec &, const std::string &>;

@@ -2,7 +2,7 @@
 
 namespace stepit {
 Publisher &Publisher::instance() {
-  static std::unique_ptr<Publisher> instance_{Publisher::make("")};
+  static Publisher::Ptr instance_{Publisher::make("")};
   return *instance_;
 }
 

@@ -140,4 +140,4 @@ class RobotApi : public Interface<RobotApi> {
 #define STEPIT_REGISTER_ROBOTAPI(name, priority, factory) \
   static ::stepit::RobotApi::Registration _robotapi_##name##_registration(#name, priority, factory)
 
-#endif
+#endif // STEPIT_ROBOT_H_

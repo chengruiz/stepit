@@ -5,7 +5,7 @@
 
 namespace stepit {
 namespace neuro_policy {
-class JointReordering : public FieldSource {
+class JointReordering : public Module {
  public:
   JointReordering(const PolicySpec &, const std::string &home_dir);
   void initFieldProperties() override;
@@ -20,7 +20,7 @@ class JointReordering : public FieldSource {
   std::vector<bool> joint_reversed_;
 };
 
-class ActionReordering : public FieldSource {
+class ActionReordering : public Module {
  public:
   ActionReordering(const PolicySpec &, const std::string &home_dir);
   void initFieldProperties() override;

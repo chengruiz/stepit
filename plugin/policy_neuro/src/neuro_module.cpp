@@ -1,15 +1,15 @@
 #include <numeric>
 
-#include <stepit/policy_neuro/neuro_field_source.h>
+#include <stepit/policy_neuro/neuro_module.h>
 
 namespace stepit {
 namespace neuro_policy {
-NeuroFieldSource::NeuroFieldSource(const std::string &name, const std::string &home_dir)
+NeuroModule::NeuroModule(const std::string &name, const std::string &home_dir)
     : config_(yml::loadFile(home_dir + "/" + name + ".yml")) {
   run_name_ = yml::readIf<std::string>(config_["run"], "name", "unknown");
   yml::setIf(config_, "assert_all_finite", assert_all_finite_);
 
-  displayFormattedBanner(60, kGreen, "NeuroFieldSource {} ({})", name, run_name_);
+  displayFormattedBanner(60, kGreen, "NeuroModule {} ({})", name, run_name_);
   nn_ = NnrtApi::make("", home_dir + "/" + name + ".onnx", config_);
 
   for (const auto &input_name : nn_->getInputNames()) {
@@ -50,12 +50,12 @@ NeuroFieldSource::NeuroFieldSource(const std::string &name, const std::string &h
   nn_->warmup();
 }
 
-bool NeuroFieldSource::reset() {
+bool NeuroModule::reset() {
   nn_->clearState();
   return true;
 }
 
-bool NeuroFieldSource::update(const LowState &low_state, ControlRequests &requests, FieldMap &result) {
+bool NeuroModule::update(const LowState &low_state, ControlRequests &requests, FieldMap &result) {
   bool all_finite = true;
   for (std::size_t i{}; i < input_names_.size(); ++i) {
     assembleFields(result, input_fields_[i], input_arr_[i]);
@@ -78,8 +78,8 @@ bool NeuroFieldSource::update(const LowState &low_state, ControlRequests &reques
   return all_finite;
 }
 
-FieldId NeuroFieldSource::addField(const YAML::Node &node, std::vector<std::string> &field_names,
-                                   std::vector<std::uint32_t> &field_dims) {
+FieldId NeuroModule::addField(const YAML::Node &node, std::vector<std::string> &field_names,
+                              std::vector<std::uint32_t> &field_dims) {
   std::string field_name;
   std::uint32_t field_size{};
   yml::setTo(node, "name", field_name);
@@ -90,10 +90,10 @@ FieldId NeuroFieldSource::addField(const YAML::Node &node, std::vector<std::stri
   return registerField(field_name, field_size);
 }
 
-void NeuroFieldSource::parseFields(const std::string &key, const std::vector<std::string> &node_names,
-                                   std::vector<std::vector<std::string>> &field_names,
-                                   std::vector<std::vector<std::uint32_t>> &field_dims,
-                                   std::vector<std::uint32_t> &total_dims, std::vector<std::vector<FieldId>> &fields) {
+void NeuroModule::parseFields(const std::string &key, const std::vector<std::string> &node_names,
+                              std::vector<std::vector<std::string>> &field_names,
+                              std::vector<std::vector<std::uint32_t>> &field_dims,
+                              std::vector<std::uint32_t> &total_dims, std::vector<std::vector<FieldId>> &fields) {
   yml::assertValid(config_, key);
   auto cfg = config_[key];
 
@@ -128,13 +128,12 @@ void NeuroFieldSource::parseFields(const std::string &key, const std::vector<std
   }
 }
 
-NeuroActor::NeuroActor(const PolicySpec &, const std::string &home_dir) : NeuroFieldSource("actor", home_dir) {}
+NeuroActor::NeuroActor(const PolicySpec &, const std::string &home_dir) : NeuroModule("actor", home_dir) {}
 
-NeuroEstimator::NeuroEstimator(const PolicySpec &, const std::string &home_dir)
-    : NeuroFieldSource("estimator", home_dir) {}
+NeuroEstimator::NeuroEstimator(const PolicySpec &, const std::string &home_dir) : NeuroModule("estimator", home_dir) {}
 
-STEPIT_REGISTER_FIELD_SOURCE(actor, kDefPriority, FieldSource::make<NeuroActor>);
-STEPIT_REGISTER_SOURCE_OF_FIELD(action, kDefPriority, FieldSource::make<NeuroActor>);
-STEPIT_REGISTER_FIELD_SOURCE(estimator, kDefPriority, FieldSource::make<NeuroEstimator>);
+STEPIT_REGISTER_MODULE(actor, kDefPriority, Module::make<NeuroActor>);
+STEPIT_REGISTER_MODULE(estimator, kDefPriority, Module::make<NeuroEstimator>);
+STEPIT_REGISTER_FIELD_SOURCE(action, kDefPriority, Module::make<NeuroActor>);
 }  // namespace neuro_policy
 }  // namespace stepit

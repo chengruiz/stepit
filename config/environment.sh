@@ -22,6 +22,7 @@ export STEPIT_DEFAULT_NNRTAPI=""       # string, the default neural network runt
 export STEPIT_JOYSTICK_ID=-1                # int, the joystick ID (/dev/js*) to read (plugin: joystick_native)
 export STEPIT_HOST_IP="192.168.1.120"       # string, the robot host ip (plugin: robot_deeprobotics_*)
 export STEPIT_NETIF="eth0"                  # string, the network interface for communication (plugin: robot_unitree2)
+export STEPIT_UNITREE2_DOMAIN_ID=0          # int, DDS domain id for unitree_sdk2 (plugin: robot_unitree2)
 export STEPIT_JOY_NAME=""                   # string, the key mapping type of the joystick (plugin: stepit_ros, stepit_ros2)
 export STEPIT_ROS_NODE_NAME="stepit_ros"    # string, the ROS1 node name (plugin: stepit_ros)
 export STEPIT_ROS2_NODE_NAME="stepit_ros2"  # string, the ROS2 node name (plugin: stepit_ros2)

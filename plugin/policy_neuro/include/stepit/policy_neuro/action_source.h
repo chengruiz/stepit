@@ -8,7 +8,7 @@
 
 namespace stepit {
 namespace neuro_policy {
-class ActionHistory : public FieldSource {
+class ActionHistory : public Module {
  public:
   ActionHistory(const PolicySpec &policy_spec, const std::string &home_dir);
   void initFieldProperties() override;
@@ -24,7 +24,7 @@ class ActionHistory : public FieldSource {
   StaticQueue<ArrXf> action_his_;
 };
 
-class ActionFilter : public FieldSource {
+class ActionFilter : public Module {
  public:
   ActionFilter(const PolicySpec &policy_spec, const std::string &home_dir);
   bool reset() override;

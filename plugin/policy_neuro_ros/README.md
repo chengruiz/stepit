@@ -4,7 +4,7 @@ StepIt plugin for ROS-based field sources that subscribe ROS topics and feed dat
 
 ### Provided Factories
 
-`stepit::policy_neuro::FieldSource`:
+`stepit::policy_neuro::Module`:
   - `cmd_height_subscriber`: subscribes to a ROS topic of one of the following types and provides command height field (`cmd_height`):
     - `std_msgs/Float32`,
     - `geometry_msgs/Twist` (`linear.z` component),
@@ -26,12 +26,60 @@ StepIt plugin for ROS-based field sources that subscribe ROS topics and feed dat
     - `nav_msgs/Odometry`.
 
 
+### Control Commands
+
+- Channel: `Policy/CmdVel`
+
+  | Action              | Argument | Description                           |
+  | :------------------ | :------- | :------------------------------------ |
+  | `EnableSubscriber`  |          | Enables subscription to ROS topics.   |
+  | `DisableSubscriber` |          | Disables subscription to ROS topics.  |
+  | `SwitchSubscriber`  |          | Toggles subscription to ROS topics.   |
+
+- Channel: `Policy/CmdRoll`
+
+  | Action              | Argument | Description                           |
+  | :------------------ | :------- | :------------------------------------ |
+  | `EnableSubscriber`  |          | Enables subscription to ROS topics.   |
+  | `DisableSubscriber` |          | Disables subscription to ROS topics.  |
+  | `SwitchSubscriber`  |          | Toggles subscription to ROS topics.   |
+
+- Channel: `Policy/CmdPitch`
+
+  | Action              | Argument | Description                           |
+  | :------------------ | :------- | :------------------------------------ |
+  | `EnableSubscriber`  |          | Enables subscription to ROS topics.   |
+  | `DisableSubscriber` |          | Disables subscription to ROS topics.  |
+  | `SwitchSubscriber`  |          | Toggles subscription to ROS topics.   |
+
+- Channel: `Policy/CmdHeight`
+
+  | Action              | Argument | Description                           |
+  | :------------------ | :------- | :------------------------------------ |
+  | `EnableSubscriber`  |          | Enables subscription to ROS topics.   |
+  | `DisableSubscriber` |          | Disables subscription to ROS topics.  |
+  | `SwitchSubscriber`  |          | Toggles subscription to ROS topics.   |
+
+- Channel: `Policy/Heightmap`
+
+  | Action              | Argument | Description                           |
+  | :------------------ | :------- | :------------------------------------ |
+  | `EnableSubscriber`  |          | Enables subscription to ROS topics.   |
+  | `DisableSubscriber` |          | Disables subscription to ROS topics.  |
+  | `SwitchSubscriber`  |          | Toggles subscription to ROS topics.   |
+
+
 ### Joystick Key Bindings
 
-- `LB` + `A`: enables velocity and posture command subcriptions, or disables them if already enabled.
-- `LB` + `B`: enables heightmap and uncertainty subcriptions, or disables them if already enabled.
+| Key        | Command                             |
+| :--------- | :---------------------------------- |
+| **LB + A** | `Policy/CmdVel/SwitchSubscriber`    |
+| **LB + A** | `Policy/CmdRoll/SwitchSubscriber`   |
+| **LB + A** | `Policy/CmdPitch/SwitchSubscriber`  |
+| **LB + A** | `Policy/CmdHeight/SwitchSubscriber` |
+| **LB + B** | `Policy/Heightmap/SwitchSubscriber` |
 
 
 ### Notes
 
-- The `CmdVelSubscriber` will be used as the preferred source for the `cmd_vel` field, as it has a higher priority than the `CmdHeightSource` in the `policy_neuro` plugin. To completely disable the subscription, specify `cmd_vel` in the `field_source` item of the policy configuration to use the `CmdHeightSource` class, which will prevent it from searching for other sources. Do the same for `cmd_height`, `cmd_pitch`, and `cmd_roll` if needed.
+- The `CmdVelSubscriber` will be used as the preferred source for the `cmd_vel` field, as it has a higher priority than the `CmdHeightSource` in the `policy_neuro` plugin. To completely disable the subscription, specify `cmd_vel` in the `module` item of the policy configuration to use the `CmdHeightSource` class, which will prevent it from searching for other sources. Do the same for `cmd_height`, `cmd_pitch`, and `cmd_roll` if needed.

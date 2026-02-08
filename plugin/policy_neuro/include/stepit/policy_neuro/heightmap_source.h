@@ -5,7 +5,7 @@
 
 namespace stepit {
 namespace neuro_policy {
-class DummyHeightmapSource : public FieldSource {
+class DummyHeightmapSource : public Module {
  public:
   DummyHeightmapSource(const PolicySpec &policy_spec, const std::string &home_dir);
   bool reset() override { return true; }

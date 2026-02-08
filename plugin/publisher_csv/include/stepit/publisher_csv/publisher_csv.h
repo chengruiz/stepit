@@ -1,5 +1,5 @@
-#ifndef STEPIT_CSV_PUBLISHER_H_
-#define STEPIT_CSV_PUBLISHER_H_
+#ifndef STEPIT_PUBLISHER_CSV_H_
+#define STEPIT_PUBLISHER_CSV_H_
 
 #include <fstream>
 
@@ -18,4 +18,4 @@ class CsvPublisher : public Publisher {
 };
 }  // namespace stepit
 
-#endif  // STEPIT_CSV_PUBLISHER_H_
+#endif  // STEPIT_PUBLISHER_CSV_H_

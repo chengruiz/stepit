@@ -6,7 +6,7 @@
 
 namespace stepit {
 namespace neuro_policy {
-class FieldAssembler : public FieldSource {
+class FieldAssembler : public Module {
  public:
   FieldAssembler(const PolicySpec &, const std::string &home_dir);
   void initFieldProperties() override;

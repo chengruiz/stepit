@@ -1,14 +1,14 @@
-#ifndef STEPIT_NEURO_POLICY_NEURO_FIELD_SOURCE_H_
-#define STEPIT_NEURO_POLICY_NEURO_FIELD_SOURCE_H_
+#ifndef STEPIT_NEURO_POLICY_NEURO_MODULE_H_
+#define STEPIT_NEURO_POLICY_NEURO_MODULE_H_
 
 #include <stepit/nnrt/nnrt.h>
 #include <stepit/policy_neuro/field.h>
 
 namespace stepit {
 namespace neuro_policy {
-class NeuroFieldSource : public FieldSource {
+class NeuroModule : public Module {
  public:
-  NeuroFieldSource(const std::string &name, const std::string &home_dir);
+  NeuroModule(const std::string &name, const std::string &home_dir);
   bool reset() override;
   bool update(const LowState &low_state, ControlRequests &requests, FieldMap &result) override;
 
@@ -33,16 +33,16 @@ class NeuroFieldSource : public FieldSource {
   std::vector<ArrXf> input_arr_;
 };
 
-class NeuroActor : public NeuroFieldSource {
+class NeuroActor : public NeuroModule {
  public:
   NeuroActor(const PolicySpec &policy_spec, const std::string &home_dir);
 };
 
-class NeuroEstimator : public NeuroFieldSource {
+class NeuroEstimator : public NeuroModule {
  public:
   NeuroEstimator(const PolicySpec &policy_spec, const std::string &home_dir);
 };
 }  // namespace neuro_policy
 }  // namespace stepit
 
-#endif  // STEPIT_NEURO_POLICY_NEURO_FIELD_SOURCE_H_
+#endif  // STEPIT_NEURO_POLICY_NEURO_MODULE_H_

@@ -9,7 +9,7 @@
 
 namespace stepit {
 namespace neuro_policy {
-class CmdVelSource : public FieldSource {
+class CmdVelSource : public Module {
  public:
   CmdVelSource(const PolicySpec &policy_spec, const std::string &home_dir);
   bool reset() override;

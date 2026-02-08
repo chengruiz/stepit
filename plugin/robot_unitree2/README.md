@@ -5,6 +5,7 @@ StepIt plugin for controlling the Unitree Go2, B2 and G1 robots, and with the Un
 ### Environment Variables
 
 - `STEPIT_NETIF` (string, default: eth0): the network interface for communication.
+- `STEPIT_UNITREE2_DOMAIN_ID` (int, default: 0): the DDS domain ID used by unitree_sdk2.
 
 ### Provided Factories
 

@@ -82,7 +82,7 @@ bool ActionReordering::update(const LowState &, ControlRequests &, FieldMap &res
   return true;
 }
 
-STEPIT_REGISTER_FIELD_SOURCE(joint_reordering, kDefPriority, FieldSource::make<JointReordering>);
-STEPIT_REGISTER_FIELD_SOURCE(action_reordering, kDefPriority, FieldSource::make<ActionReordering>);
+STEPIT_REGISTER_MODULE(joint_reordering, kDefPriority, Module::make<JointReordering>);
+STEPIT_REGISTER_MODULE(action_reordering, kDefPriority, Module::make<ActionReordering>);
 }  // namespace neuro_policy
 }  // namespace stepit

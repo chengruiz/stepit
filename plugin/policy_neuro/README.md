@@ -5,56 +5,111 @@ StepIt plugin for running neural network-based policy.
 ### Provided Interfaces
 
 - `stepit::neuro_policy::Actuator`: defines how to apply actions to the robot.
-- `stepit::neuro_policy::FieldSource`: provides input fields for neural networks.
+- `stepit::neuro_policy::Module`: provides fields according to input fields.
 
 ### Provided Factories
 
 - `stepit::Policy`:
     - `neuro`: neural network-based locomotion policy.
 - `stepit::neuro_policy::Actuator`:
-    - `position`: translates actions to joint position commands.
-    - `velocity`: translates actions to joint velocity commands.
-    - `torque`: translates actions to joint torque commands.
-    - `hybrid`: translates actions to a combination of joint commands.
-- `stepit::neuro_policy::FieldSource`:
-    - `action_history`: provides history of action commands.
-    - `action_filter`: applies low-pass filtering to action commands.
-    - `action_reordering`: reorders action commands.
-    - `actor`: infers the neural network actor to produce actions.
-    - `cmd_height`: provides height command input.
-    - `cmd_pitch`: provides pitch command input.
-    - `cmd_roll`: provides roll command input.
-    - `cmd_vel`: provides velocity command input.
-    - `estimator`: infers the neural network state estimator.
-    - `field_assembler`: assembles multiple fields into a single output field.
-    - `field_scaling`: scales and biases input fields.
-    - `heightmap`: provides heightmap input.
-    - `joint_reorder`: reorders joint states.
-    - `roll_pitch`: provides roll and pitch input.
-    - `proprioceptor`: provides proprioceptive input.
+
+  | Name       | Description                                            |
+  | :--------- | :----------------------------------------------------- |
+  | `position` | Translates actions to joint position commands.         |
+  | `velocity` | Translates actions to joint velocity commands.         |
+  | `torque`   | Translates actions to joint torque commands.           |
+  | `hybrid`   | Translates actions to a combination of joint commands. |
+- `stepit::neuro_policy::Module`:
+
+  | Name                | Description                                           |
+  | :------------------ | :---------------------------------------------------- |
+  | `action_history`    | Provides history of action commands.                  |
+  | `action_filter`     | Applies low-pass filtering to action commands.        |
+  | `action_reordering` | Reorders action commands.                             |
+  | `actor`             | Infers the neural network actor to produce actions.   |
+  | `cmd_height`        | Provides height command input.                        |
+  | `cmd_pitch`         | Provides pitch command input.                         |
+  | `cmd_roll`          | Provides roll command input.                          |
+  | `cmd_vel`           | Provides velocity command input.                      |
+  | `estimator`         | Infers the neural network state estimator.            |
+  | `field_assembler`   | Assembles multiple fields into a single output field. |
+  | `field_scaling`     | Scales and biases input fields.                       |
+  | `heightmap`         | Provides heightmap observations.                      |
+  | `joint_reorder`     | Reorders joint states.                                |
+  | `roll_pitch`        | Provides the roll and pitch observations.             |
+  | `proprioceptor`     | Provides proprioceptive observations.                 |
+
+### Control Commands
+
+- Channel: `Policy/CmdVel`
+
+  | Action                | Argument         | Description                                  |
+  | :-------------------- | :--------------- | :------------------------------------------- |
+  | `SetVelocity`         | `vx`, `vy`, `wz` | Sets the target velocity commands.           |
+  | `SetVelocityUnscaled` | `vx`, `vy`, `wz` | Sets the unscaled target velocity commands.  |
+  | `SetTurboRatio`       | `ratio`          | Sets the turbo ratio for velocity commands.  |
+  | `SelectMode`          | `mode`           | Selects the velocity control mode.           |
+  | `CycleMode`           |                  | Cycles through velocity control modes.       |
+  | `EnableSmoothing`     |                  | Enables velocity command smoothing.          |
+  | `DisableSmoothing`    |                  | Disables velocity command smoothing.         |
+  | `SetMaxAccel`         | `ax`, `ay`, `az` | Sets the maximum acceleration for smoothing. |
+  | `EnableJoystick`      |                  | Enables joystick control for velocity.       |
+  | `DisableJoystick`     |                  | Disables joystick control for velocity.      |
+
+- Channel: `Policy/CmdRoll`
+
+  | Action            | Argument | Description                          |
+  | :---------------- | :------- | :----------------------------------- |
+  | `SetRoll`         | `roll`   | Sets the target roll angle.          |
+  | `SetRollUnscaled` | `roll`   | Sets the unscaled target roll angle. |
+  | `EnableJoystick`  |          | Enables joystick control for roll.   |
+  | `DisableJoystick` |          | Disables joystick control for roll.  |
+
+- Channel: `Policy/CmdPitch`
+
+  | Action             | Argument | Description                           |
+  | :----------------- | :------- | :------------------------------------ |
+  | `SetPitch`         | `pitch`  | Sets the target pitch angle.          |
+  | `SetPitchUnscaled` | `pitch`  | Sets the unscaled target pitch angle. |
+  | `EnableJoystick`   |          | Enables joystick control for pitch.   |
+  | `DisableJoystick`  |          | Disables joystick control for pitch.  |
+
+- Channel: `Policy/CmdHeight`
+
+  | Action            | Argument | Description                           |
+  | :---------------- | :------- | :------------------------------------ |
+  | `SetHeight`       | `height` | Sets the target body height.          |
+  | `IncreaseHeight`  |          | Increases the target body height.     |
+  | `DecreaseHeight`  |          | Decreases the target body height.     |
+  | `EnableJoystick`  |          | Enables joystick control for height.  |
+  | `DisableJoystick` |          | Disables joystick control for height. |
 
 ### Joystick Key Bindings
 
-- `LAS-X`: sets the normalized target left / right linear velocity.
-- `LAS-Y`: sets the normalized target forward / backward linear velocity.
-- `RAS-X`: sets the normalized target yaw rate (angular velocity).
-- `RAS-Y`: sets the normalized target pitch.
-- `RT`: sets the scaling factor for target velocities.
-- `DPAD-LEFT` / `DPAD-RIGHT`: sets the normalized target roll.
-- `DPAD-UP` / `DPAD-DOWN`: increases / decreases the target height.
+| Key                  | Command                                    |
+| :------------------- | :----------------------------------------- |
+| **Start**            | `Policy/CmdVel/CycleMode`                  |
+| **RT**               | `Policy/CmdVel/SetTurboRatio`              |
+| **LAS-X**            | `Policy/CmdVel/SetVelocityUnscaled` (`vx`) |
+| **LAS-Y**            | `Policy/CmdVel/SetVelocityUnscaled` (`vy`) |
+| **RAS-X**            | `Policy/CmdVel/SetVelocityUnscaled` (`wz`) |
+| **RAS-Y**            | `Policy/CmdPitch/SetPitchUnscaled`         |
+| **D-Pad Up**         | `Policy/CmdHeight/IncreaseHeight`          |
+| **D-Pad Down**       | `Policy/CmdHeight/DecreaseHeight`          |
+| **D-Pad Left/Right** | `Policy/CmdRoll/SetRollUnscaled`           |
 
 ## Mechanisms
 
-### FieldSource
+### Module
 
-Classes derived from `FieldSource` require to declare their input dependencies (`requirements`) and output fields
+Classes derived from `Module` require to declare their input dependencies (`requirements`) and output fields
 (`provisions`) by registering named fields through a global FieldManager. At runtime, FieldManager assigns a unique ID
 and size to each field, and maintains a registry of source factories. Then the field sources sequentially produce or
 process data segments identified by FieldId.
 
 ### NeuroPolicy
 
-`NeuroPolicy` orchestrates a set of FieldSource instances into a neural‐network policy pipeline. It:
+`NeuroPolicy` orchestrates a set of `Module` instances into a neural‐network policy pipeline. It:
 
 1. Loads YAML configuration and registers the main `action` field.
 2. Reads user‐specified field sources and ensures an actor source is present.

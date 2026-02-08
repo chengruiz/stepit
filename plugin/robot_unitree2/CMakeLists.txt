@@ -10,6 +10,7 @@ init_submodule(extern/robot_sdk/unitree_sdk2 WORKING_DIRECTORY ${STEPIT_HOME_DIR
 set(UNITREE_SDK2_HOME ${STEPIT_HOME_DIRECTORY}/extern/robot_sdk/unitree_sdk2)
 stepit_add_plugin(${PROJECT_NAME}
     SOURCES
+      src/aliengo_mujoco.cpp
       src/b2.cpp
       src/common.cpp
       src/g1.cpp

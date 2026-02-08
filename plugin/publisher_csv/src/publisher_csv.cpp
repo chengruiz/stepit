@@ -1,4 +1,4 @@
-#include <stepit/csv_publisher/csv_publisher.h>
+#include <stepit/publisher_csv/publisher_csv.h>
 
 namespace stepit {
 CsvPublisher::CsvPublisher() {
