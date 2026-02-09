@@ -33,11 +33,13 @@ void FieldHistory::initFieldProperties() {
     std::uint32_t target_size = buffer.source_size * buffer.history_len;
     setFieldSize(buffer.target_id, target_size);
 
-    if (buffer.default_value.size() > 0) {
+    if (buffer.default_value.size() == 0) {
+      buffer.default_value = VecXf::Zero(buffer.source_size);
+    } else if (buffer.default_value.size() == 1) {
+      buffer.default_value = VecXf::Constant(buffer.source_size, buffer.default_value[0]);
+    } else {
       STEPIT_ASSERT(buffer.default_value.size() == buffer.source_size,
                     "Default value size for '{}' does not match source field size.", buffer.target_name);
-    } else {
-      buffer.default_value = VecXf::Zero(buffer.source_size);
     }
     buffer.history.allocate(buffer.history_len);
     buffer.output_buffer.resize(target_size);
