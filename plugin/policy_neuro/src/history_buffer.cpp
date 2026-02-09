@@ -15,8 +15,8 @@ HistoryBuffer::HistoryBuffer(const PolicySpec &policy_spec, const std::string &h
     BufferConfig buffer;
     std::string source_name = yml::readAs<std::string>(node.second["source"]);
     buffer.source_id = registerField(source_name, 0);
-    buffer.history_len = yml::readAs<std::uint32_t>(node.second["history_len"]);
-    buffer.newest_first = node.second["newest_first"] ? yml::readAs<bool>(node.second["newest_first"]) : true;
+    yml::setTo(node.second["history_len"], buffer.history_len);
+    yml::setIf(node.second["newest_first"], buffer.newest_first);
     
     if (provisions_.find(buffer.source_id) == provisions_.end()) {
       registerRequirement(buffer.source_id);
