@@ -4,4 +4,7 @@ proprioception_history:    # String, the target field name
   source: proprioception   # String, the source field name to be stacked
   history_len: 50          # Int, the length of the history buffer
   newest_first: true       # [Optional] Bool, whether the newest entry is at the beginning (true) or the end (false)
-  default_value: 0.0       # [Optional] Union[Float, List[Float]], the default value to fill the history buffer
+  default_value: null      # [Optional] Union[Null, Float, List[Float]], the default value to fill the history buffer
+                           #   If null or not provided, the default value will be the first frame of the source field when the history is initialized.
+                           #   If a single float is provided, it will be broadcasted to all dimensions of the source field.
+                           #   If a list of floats is provided, its length must match the dimension of the source field, and it will be used as the default value.

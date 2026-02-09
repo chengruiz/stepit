@@ -13,8 +13,11 @@ FieldHistory::FieldHistory(const PolicySpec &policy_spec, const std::string &hom
 
     yml::setTo(node.second["source"], buffer.source_name);
     yml::setTo(node.second["history_len"], buffer.history_len);
+    STEPIT_ASSERT(buffer.history_len > 0, "History length for '{}' must be greater than 0.", buffer.target_name);
     yml::setIf(node.second["newest_first"], buffer.newest_first);
-    yml::setIf(node.second["default_value"], buffer.default_value);
+    if (node.second["default_value"] and not node.second["default_value"].IsNull()) {
+      yml::setTo(node.second["default_value"], buffer.default_value);
+    }
 
     buffer.source_id = registerField(buffer.source_name, 0);
     buffer.target_id = registerProvision(buffer.target_name, 0);
@@ -33,11 +36,9 @@ void FieldHistory::initFieldProperties() {
     std::uint32_t target_size = buffer.source_size * buffer.history_len;
     setFieldSize(buffer.target_id, target_size);
 
-    if (buffer.default_value.size() == 0) {
-      buffer.default_value = VecXf::Zero(buffer.source_size);
-    } else if (buffer.default_value.size() == 1) {
+    if (buffer.default_value.size() == 1) {
       buffer.default_value = VecXf::Constant(buffer.source_size, buffer.default_value[0]);
-    } else {
+    } else if (buffer.default_value.size() != 0) {
       STEPIT_ASSERT(buffer.default_value.size() == buffer.source_size,
                     "Default value size for '{}' does not match source field size.", buffer.target_name);
     }
@@ -48,19 +49,24 @@ void FieldHistory::initFieldProperties() {
 
 bool FieldHistory::reset() {
   for (auto &buffer : buffers_) {
-    buffer.history.fill(buffer.default_value);
+    buffer.history.clear();
   }
   return true;
 }
 
 bool FieldHistory::update(const LowState &, ControlRequests &, FieldMap &result) {
   for (auto &buffer : buffers_) {
+    const auto &frame = result.at(buffer.source_id);
+    if (buffer.history.empty()) {
+      buffer.history.fill(buffer.default_value.size() > 0 ? buffer.default_value : frame);
+    }
+
     if (buffer.newest_first) {
       // newest -> oldest: frame_0 (newest), frame_1, ..., frame_(N-1) (oldest)
-      buffer.history.push_front(result.at(buffer.source_id));
+      buffer.history.push_front(frame);
     } else {
       // oldest -> newest: frame_0 (oldest), frame_1, ..., frame_(N-1) (newest)
-      buffer.history.push_back(result.at(buffer.source_id));
+      buffer.history.push_back(frame);
     }
 
     std::uint32_t offset = 0;

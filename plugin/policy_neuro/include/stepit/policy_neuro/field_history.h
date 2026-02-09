@@ -23,10 +23,10 @@ class FieldHistory : public Module {
     /* If true, the most recent entry will be placed at the beginning of the output vector.
      * Otherwise, it will be placed at the end. */
     bool newest_first{true};
-    VecXf default_value;
+    ArrXf default_value;
 
-    RingBuffer<VecXf> history;
-    VecXf output_buffer;
+    RingBuffer<ArrXf> history;
+    ArrXf output_buffer;
   };
 
   YAML::Node config_;
