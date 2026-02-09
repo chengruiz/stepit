@@ -1,7 +1,6 @@
 #ifndef STEPIT_NEURO_POLICY_HISTORY_BUFFER_H_
 #define STEPIT_NEURO_POLICY_HISTORY_BUFFER_H_
 
-#include <deque>
 #include <stepit/policy_neuro/field.h>
 
 namespace stepit {
@@ -14,19 +13,24 @@ class HistoryBuffer : public Module {
   bool update(const LowState &low_state, ControlRequests &requests, FieldMap &result) override;
 
  private:
-  YAML::Node config_;
-  
   struct BufferConfig {
-    FieldId source_id;
-    FieldId target_id;
-    std::uint32_t history_len;
-    std::uint32_t source_size;
-    bool newest_first;  // true: newest->oldest, false: oldest->newest
-    std::deque<VecXf> history;
+    std::string source_name;
+    std::string target_name;
+    FieldId source_id{};
+    FieldId target_id{};
+    std::uint32_t history_len{};
+    std::uint32_t source_size{};
+    /* If true, the most recent entry will be placed at the beginning of the output vector.
+     * Otherwise, it will be placed at the end. */
+    bool newest_first{true};
+    VecXf default_value;
+
+    RingBuffer<VecXf> history;
+    VecXf output_buffer;
   };
-  
+
+  YAML::Node config_;
   std::vector<BufferConfig> buffers_;
-  VecXf output_buffer_;
 };
 }  // namespace neuro_policy
 }  // namespace stepit

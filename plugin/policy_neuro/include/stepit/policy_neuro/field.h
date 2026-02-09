@@ -79,6 +79,7 @@ inline Module::Ptr makeFieldSource(const std::string &field_name, const PolicySp
 }
 
 void parseFieldIds(const YAML::Node &node, FieldIdVec &result);
+void stackField(cArrXf vec, uint32_t &index, rArrXf result);
 void assembleFields(const FieldMap &field_map, const FieldIdVec &field_ids, rArrXf result);
 void splitFields(cArrXf data, const FieldIdVec &field_ids, FieldMap &result);
 }  // namespace neuro_policy
