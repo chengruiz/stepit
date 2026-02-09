@@ -119,22 +119,6 @@ case "${build_tool}" in
 	*) die "Unsupported --build-tool: ${build_tool}" ;;
 esac
 
-if [[ ${#config_files[@]} -gt 0 ]]; then
-	for config_file in "${config_files[@]}"; do
-		[[ -f "${config_file}" ]] || die "Config file not found: ${config_file}"
-		# shellcheck disable=SC1090
-		source "${config_file}"
-		if [[ -n "${STEPIT_ARGS-}" ]]; then
-			read -r -a extra_args <<< "${STEPIT_ARGS}"
-			stepit_args+=("${extra_args[@]}")
-		fi
-		if [[ -n "${STEPIT_PLUGIN_ARGS-}" ]]; then
-			read -r -a extra_plugin_args <<< "${STEPIT_PLUGIN_ARGS}"
-			plugin_args+=("${extra_plugin_args[@]}")
-		fi
-	done
-fi
-
 log "${GREEN}=============================== Running =============================${CLEAR}"
 log "${GREEN}Workspace:${CLEAR}   ${workspace_dir}"
 log "${GREEN}Build tool:${CLEAR}  ${build_tool}"
@@ -166,13 +150,30 @@ case "${build_tool}" in
 		require_cmd ros2
 		setup_script="${workspace_dir}/install/setup.bash"
 		[[ -f "${setup_script}" ]] || die "Missing ${setup_script}. Build with colcon first."
-		# shellcheck disable=SC1090
 		set +u
+		# shellcheck disable=SC1090
 		source "${setup_script}"
 		set -u
 		stepit_cmd=(ros2 run stepit_ros2 stepit)
 		;;
 esac
+
+export STEPIT_WS="${workspace_dir}"
+if [[ ${#config_files[@]} -gt 0 ]]; then
+	for config_file in "${config_files[@]}"; do
+		[[ -f "${config_file}" ]] || die "Config file not found: ${config_file}"
+		# shellcheck disable=SC1090
+		source "${config_file}"
+		if [[ -n "${STEPIT_ARGS-}" ]]; then
+			read -r -a extra_args <<< "${STEPIT_ARGS}"
+			stepit_args+=("${extra_args[@]}")
+		fi
+		if [[ -n "${STEPIT_PLUGIN_ARGS-}" ]]; then
+			read -r -a extra_plugin_args <<< "${STEPIT_PLUGIN_ARGS}"
+			plugin_args+=("${extra_plugin_args[@]}")
+		fi
+	done
+fi
 
 if [[ ${#plugin_args[@]} -gt 0 ]]; then
 	stepit_args+=("--" "${plugin_args[@]}")

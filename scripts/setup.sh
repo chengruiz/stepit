@@ -173,11 +173,8 @@ run mkdir -p "${workspace_dir}/scripts"
 ensure_symlink "${stepit_dir}/scripts/setup.sh" "${workspace_dir}/scripts/setup.sh"
 ensure_symlink "${stepit_dir}/scripts/build.sh" "${workspace_dir}/scripts/build.sh"
 ensure_symlink "${stepit_dir}/scripts/run.sh"   "${workspace_dir}/scripts/run.sh"
-
-if [[ ! -d "${workspace_dir}/configs" ]]; then
-	run mkdir -p "${workspace_dir}/configs"
-	run cp -a "${stepit_dir}/config/run/." "${workspace_dir}/configs/"
-fi
+run mkdir -p "${workspace_dir}/configs"
+run cp -a "${stepit_dir}/config/run/." "${workspace_dir}/configs/"
 
 log "${GREEN}============================= Finished =============================${CLEAR}"
 
