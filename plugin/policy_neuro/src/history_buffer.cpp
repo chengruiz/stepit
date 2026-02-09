@@ -11,8 +11,6 @@ HistoryBuffer::HistoryBuffer(const PolicySpec &policy_spec, const std::string &h
     yml::setTo(node.first, target_field_name);
     
     STEPIT_ASSERT(node.second.IsMap(), "Definition for '{}' must be a map.", target_field_name);
-    STEPIT_ASSERT(node.second["source"], "Missing 'source' field for '{}'.", target_field_name);
-    STEPIT_ASSERT(node.second["history_len"], "Missing 'history_len' field for '{}'.", target_field_name);
 
     BufferConfig buffer;
     std::string source_name = yml::readAs<std::string>(node.second["source"]);
