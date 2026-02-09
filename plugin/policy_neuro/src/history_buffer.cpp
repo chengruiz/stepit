@@ -83,6 +83,6 @@ bool HistoryBuffer::update(const LowState &, ControlRequests &, FieldMap &result
   return true;
 }
 
-STEPIT_REGISTER_MODULE(history_buffer, kDefPriority + 1, Module::make<HistoryBuffer>);
+STEPIT_REGISTER_MODULE(history_buffer, kDefPriority, Module::make<HistoryBuffer>);
 }  // namespace neuro_policy
 }  // namespace stepit
