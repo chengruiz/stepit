@@ -1,0 +1,7 @@
+# Mappings from target field names to their source fields and properties
+
+proprioception_history:    # String, the target field name
+  source: proprioception   # String, the source field name to be stacked
+  history_len: 50          # Int, the length of the history buffer
+  newest_first: true       # [Optional] Bool, whether the newest entry is at the beginning (true) or the end (false)
+  default_value: 0.0       # [Optional] Union[Float, List[Float]], the default value to fill the history buffer

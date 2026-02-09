@@ -9,9 +9,9 @@ stepit_add_plugin(${PROJECT_NAME}
       src/cmd_vel_source.cpp
       src/field.cpp
       src/field_assembler.cpp
+      src/field_history.cpp
       src/field_scaling.cpp
       src/heightmap_source.cpp
-      src/history_buffer.cpp
       src/joint_reordering.cpp
       src/neuro_module.cpp
       src/neuro_policy.cpp

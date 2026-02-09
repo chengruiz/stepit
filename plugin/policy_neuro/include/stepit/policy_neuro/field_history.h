@@ -1,13 +1,13 @@
-#ifndef STEPIT_NEURO_POLICY_HISTORY_BUFFER_H_
-#define STEPIT_NEURO_POLICY_HISTORY_BUFFER_H_
+#ifndef STEPIT_NEURO_POLICY_FIELD_HISTORY_H_
+#define STEPIT_NEURO_POLICY_FIELD_HISTORY_H_
 
 #include <stepit/policy_neuro/field.h>
 
 namespace stepit {
 namespace neuro_policy {
-class HistoryBuffer : public Module {
+class FieldHistory : public Module {
  public:
-  HistoryBuffer(const PolicySpec &policy_spec, const std::string &home_dir);
+  FieldHistory(const PolicySpec &policy_spec, const std::string &home_dir);
   void initFieldProperties() override;
   bool reset() override;
   bool update(const LowState &low_state, ControlRequests &requests, FieldMap &result) override;
@@ -35,4 +35,4 @@ class HistoryBuffer : public Module {
 }  // namespace neuro_policy
 }  // namespace stepit
 
-#endif  // STEPIT_NEURO_POLICY_HISTORY_BUFFER_H_
+#endif  // STEPIT_NEURO_POLICY_FIELD_HISTORY_H_

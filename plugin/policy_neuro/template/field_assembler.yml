@@ -1,7 +1,7 @@
 # Mappings from target field names to their components
 
-joint_states:      # target field name
-  - joint_pos      # component field names
+joint_states:      # String, the target field name
+  - joint_pos      # String, component field names
   - joint_vel
 
 proprioception:

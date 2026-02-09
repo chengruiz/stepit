@@ -1,10 +1,10 @@
-#include <stepit/policy_neuro/history_buffer.h>
+#include <stepit/policy_neuro/field_history.h>
 
 namespace stepit {
 namespace neuro_policy {
-HistoryBuffer::HistoryBuffer(const PolicySpec &policy_spec, const std::string &home_dir)
-    : config_(yml::loadFile(home_dir + "/history_buffer.yml")) {
-  STEPIT_ASSERT(config_.IsMap(), "'history_buffer.yml' must contain a map of history buffer configurations.");
+FieldHistory::FieldHistory(const PolicySpec &policy_spec, const std::string &home_dir)
+    : config_(yml::loadFile(home_dir + "/field_history.yml")) {
+  STEPIT_ASSERT(config_.IsMap(), "'field_history.yml' must contain a map of field history configurations.");
 
   for (const auto &node : config_) {
     BufferConfig buffer;
@@ -25,7 +25,7 @@ HistoryBuffer::HistoryBuffer(const PolicySpec &policy_spec, const std::string &h
   }
 }
 
-void HistoryBuffer::initFieldProperties() {
+void FieldHistory::initFieldProperties() {
   for (auto &buffer : buffers_) {
     buffer.source_size = getFieldSize(buffer.source_id);
     STEPIT_ASSERT(buffer.source_size > 0, "Size of source field '{}' is undefined.", getFieldName(buffer.source_id));
@@ -44,35 +44,32 @@ void HistoryBuffer::initFieldProperties() {
   }
 }
 
-bool HistoryBuffer::reset() {
+bool FieldHistory::reset() {
   for (auto &buffer : buffers_) {
     buffer.history.fill(buffer.default_value);
   }
   return true;
 }
 
-bool HistoryBuffer::update(const LowState &, ControlRequests &, FieldMap &result) {
+bool FieldHistory::update(const LowState &, ControlRequests &, FieldMap &result) {
   for (auto &buffer : buffers_) {
-    buffer.history.push_back(result.at(buffer.source_id));
-
-    std::uint32_t offset = 0;
     if (buffer.newest_first) {
       // newest -> oldest: frame_0 (newest), frame_1, ..., frame_(N-1) (oldest)
-      for (auto it = buffer.history.rbegin(); it != buffer.history.rend(); ++it) {
-        stackField(*it, offset, buffer.output_buffer);
-      }
+      buffer.history.push_front(result.at(buffer.source_id));
     } else {
       // oldest -> newest: frame_0 (oldest), frame_1, ..., frame_(N-1) (newest)
-      for (const auto &frame : buffer.history) {
-        stackField(frame, offset, buffer.output_buffer);
-      }
+      buffer.history.push_back(result.at(buffer.source_id));
     }
 
+    std::uint32_t offset = 0;
+    for (const auto &frame : buffer.history) {
+      stackField(frame, offset, buffer.output_buffer);
+    }
     result[buffer.target_id] = buffer.output_buffer;
   }
   return true;
 }
 
-STEPIT_REGISTER_MODULE(history_buffer, kDefPriority, Module::make<HistoryBuffer>);
+STEPIT_REGISTER_MODULE(field_history, kDefPriority, Module::make<FieldHistory>);
 }  // namespace neuro_policy
 }  // namespace stepit

@@ -1,7 +1,0 @@
-# History buffer configurations
-# Maps target field names to their source fields and history lengths
-
-proprioception_history:
-  source: proprioception
-  history_len: 50
-  newest_first: true    # true: [newest, ..., oldest], false: [oldest, ..., newest]

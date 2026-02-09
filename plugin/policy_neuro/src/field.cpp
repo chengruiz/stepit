@@ -89,19 +89,19 @@ void parseFieldIds(const YAML::Node &node, FieldIdVec &result) {
   }
 }
 
-void stackField(cArrXf vec, uint32_t &index, rArrXf result) {
-  STEPIT_ASSERT(index + vec.size() <= result.size(), "Field segment size ({}+{}) out of bounds ({}).", index,
+void stackField(cArrXf vec, uint32_t &offset, rArrXf result) {
+  STEPIT_ASSERT(offset + vec.size() <= result.size(), "Field segment size ({} + {}) out of bounds ({}).", offset,
                 vec.size(), result.size());
-  result.segment(index, vec.size()) = vec;
-  index += vec.size();
+  result.segment(offset, vec.size()) = vec;
+  offset += vec.size();
 }
 
 void assembleFields(const FieldMap &field_map, const FieldIdVec &field_ids, rArrXf result) {
-  uint32_t index = 0;
+  uint32_t offset = 0;
   for (auto field_id : field_ids) {
-    stackField(field_map.at(field_id), index, result);
+    stackField(field_map.at(field_id), offset, result);
   }
-  STEPIT_ASSERT(index == result.size(), "Assembled field size ({}) does not match the result size ({}).", index,
+  STEPIT_ASSERT(offset == result.size(), "Assembled field size ({}) does not match the result size ({}).", offset,
                 result.size());
 }
 
