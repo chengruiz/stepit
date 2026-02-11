@@ -16,11 +16,20 @@ find_package(std_msgs REQUIRED)
 find_package(stepit_ros2_msgs QUIET)
 
 stepit_add_plugin(${PROJECT_NAME}
-    SOURCES src/control.cpp src/joystick.cpp src/node.cpp src/publisher.cpp src/spin.cpp
-    ENTRY src/entry.cpp
-    INCLUDES include
-    DEPENDS joystick_base
-    FLAGS PRIVATE -Wall -Wextra -Wpedantic -Wno-unused-parameter
+    SOURCES
+      src/control.cpp
+      src/joystick.cpp
+      src/node.cpp
+      src/publisher.cpp
+      src/spin.cpp
+    ENTRY
+      src/entry.cpp
+    INCLUDES
+      include
+    DEPENDS
+      joystick_base
+    FLAGS
+      PRIVATE -Wall -Wextra -Wpedantic -Wno-unused-parameter
 )
 ament_target_dependencies(${PROJECT_NAME} PUBLIC
     diagnostic_msgs geometry_msgs rclcpp sensor_msgs std_msgs

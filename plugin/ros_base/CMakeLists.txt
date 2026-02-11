@@ -138,10 +138,14 @@ stepit_add_plugin(${PROJECT_NAME}
       src/node_handle.cpp
       src/publisher.cpp
       src/spin.cpp
-    ENTRY src/entry.cpp
-    INCLUDES include ${catkin_INCLUDE_DIRS}
-    LINK_LIBS ${catkin_LIBRARIES}
-    DEPENDS joystick_base
+    ENTRY
+      src/entry.cpp
+    INCLUDES
+      include ${catkin_INCLUDE_DIRS}
+    LINK_LIBS
+      ${catkin_LIBRARIES}
+    DEPENDS
+      joystick_base
 )
 if (TARGET stepit_ros_msgs)
   target_link_libraries(${PROJECT_NAME} PUBLIC stepit_ros_msgs)
