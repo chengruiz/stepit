@@ -98,6 +98,10 @@ if [[ ! -f "${workspace_dir}/src/stepit/CMakeLists.txt" ]]; then
 fi
 
 detect_build_tool() {
+	if [[ -f "${workspace_dir}/.stepit/build_tool" ]]; then
+		printf '%s' "$(<"${workspace_dir}/.stepit/build_tool")"
+		return 0
+	fi
 	if [[ -f "${workspace_dir}/install/.colcon_install_layout" || -f "${workspace_dir}/install/_local_setup_util_sh.py" ]]; then
 		printf '%s' "colcon"
 		return 0
@@ -134,6 +138,7 @@ case "${build_tool}" in
 		stepit_bin="${workspace_dir}/install/bin/stepit"
 		[[ -x "${stepit_bin}" ]] || die "Missing ${stepit_bin}. Build and install first."
         export LD_LIBRARY_PATH="${workspace_dir}/install/lib:${LD_LIBRARY_PATH:-}"
+		stepit_cmd=("${stepit_bin}")
 		;;
 	catkin|catkin_make)
 		require_cmd rosrun
@@ -157,6 +162,7 @@ esac
 
 export STEPIT_WS="${workspace_dir}"
 if [[ ${#config_files[@]} -gt 0 ]]; then
+	# Allows chaining configs to pass arguments via STEPIT_ARGS and STEPIT_PLUGIN_ARGS
 	for config_file in "${config_files[@]}"; do
 		[[ -f "${config_file}" ]] || die "Config file not found: ${config_file}"
 		# shellcheck disable=SC1090

@@ -88,6 +88,8 @@ ITEMS_TO_CLEAN=(
 	"logs"
 	"install"
 	".catkin_tools"
+	".catkin_workspace"
+	".stepit"
 )
 
 cd "$WORKSPACE_ROOT" || die "Failed to cd into $WORKSPACE_ROOT"

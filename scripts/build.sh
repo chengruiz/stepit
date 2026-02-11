@@ -36,9 +36,9 @@ require_cmd() {
 usage() {
 	cat <<'EOF'
 Usage:
-	build.sh [MODE] [options] [-- extra-args]
+	build.sh [BUILD_TOOL] [options] [-- extra-args]
 
-Modes:
+Build tool:
 	(cmake)         Configure + build + install via CMake (default)
 	ROS1            Alias for: catkin_make
 	ROS2            Alias for: colcon
@@ -50,34 +50,16 @@ Options:
 	--debug | --release     CMake build type (default: --release)
 	-j, --jobs N            Parallelism (default: nproc)
 	--workspace DIR         Workspace root (default: $PWD or STEPIT_WS)
-	--clean                 Remove prior build outputs for this mode
+	--clean                 Remove prior build outputs for this build tool
 	--cmake-arg ARG         Extra CMake arg (repeatable), e.g. --cmake-arg -DSTEPIT_BLACKLIST_PLUGINS=...
 	-D...                   Convenience: any -D... is treated as --cmake-arg
 	-h, --help              Show this help message
 EOF
 }
 
-mode="cmake"
-if [[ $# -gt 0 && "${1}" != -* ]]; then
-	case "$1" in
-		cmake|ROS1|ROS2|catkin|catkin_make|colcon)
-			mode="$1"
-			shift
-			;;
-		*)
-			# Allow calling without MODE, but only if first arg looks like an option
-			;;
-	esac
-fi
-
-case "$mode" in
-	ROS1) mode="catkin_make" ;;
-	ROS2) mode="colcon" ;;
-	cmake|catkin|catkin_make|colcon) ;;
-	*) die "Unsupported mode: $mode" ;;
-esac
 
 workspace_dir="${STEPIT_WS:-$PWD}"
+build_tool=""
 build_type="Release"
 jobs="$(nproc 2>/dev/null || echo 4)"
 clean=false
@@ -127,7 +109,9 @@ while [[ $# -gt 0 ]]; do
 			break
 			;;
 		*)
-			die "Unknown argument: $1 (try --help)"
+			[[ -z "$build_tool" ]] || die "Unknown argument: $1 (try --help)"
+			build_tool="$1"
+			shift
 			;;
 	esac
 done
@@ -135,14 +119,33 @@ done
 if [[ ! -f "${workspace_dir}/src/stepit/CMakeLists.txt" ]]; then
 	die "Expected ${workspace_dir}/src/stepit/CMakeLists.txt. Run from your StepIt workspace root or set STEPIT_WS."
 fi
+if [[ -z "$build_tool" ]]; then
+	if [[ -f "${workspace_dir}/.stepit/build_tool" ]]; then
+		build_tool="$(<"${workspace_dir}/.stepit/build_tool")"
+	else
+		build_tool="cmake"
+	fi
+fi
+
+case "$build_tool" in
+	ROS1) build_tool="catkin_make" ;;
+	ROS2) build_tool="colcon" ;;
+	cmake|catkin|catkin_make|colcon) ;;
+	*) die "Unsupported build_tool: $build_tool" ;;
+esac
+
 
 log "${GREEN}============================= Building =============================${CLEAR}"
 log "${GREEN}Workspace:${CLEAR}   ${workspace_dir}"
-log "${GREEN}Mode:${CLEAR}        ${mode}"
+log "${GREEN}Build tool:${CLEAR}  ${build_tool}"
 log "${GREEN}Build type:${CLEAR}  ${build_type}"
 log "${GREEN}Jobs:${CLEAR}        ${jobs}"
 
-case "$mode" in
+run mkdir -p "${workspace_dir}/.stepit"
+echo "$build_tool" > "${workspace_dir}/.stepit/build_tool"
+
+
+case "$build_tool" in
 	cmake)
 		require_cmd cmake
 		install_prefix="${workspace_dir}/install"
@@ -151,14 +154,25 @@ case "$mode" in
 			run rm -rf "${build_dir}" "${install_prefix}"
 		fi
 
-		run cmake \
-			-B"${build_dir}" \
-			-S"${workspace_dir}/src/stepit" \
-			-DCMAKE_BUILD_TYPE="${build_type}" \
-			-DCMAKE_INSTALL_PREFIX="${install_prefix}" \
-			-DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
-			"${cmake_args[@]}" \
+		cmake_args+=(
+			"-B${build_dir}" 
+			"-S${workspace_dir}/src/stepit" 
+			"-DCMAKE_BUILD_TYPE=${build_type}" 
+			"-DCMAKE_INSTALL_PREFIX=${install_prefix}" 
+			"-DCMAKE_EXPORT_COMPILE_COMMANDS=ON"
 			"${extra_args[@]}"
+		)
+
+		skip_configure=false
+		if [[ -f "${build_dir}/CMakeCache.txt" && -f "${workspace_dir}/.stepit/cmake_args" ]]; then
+			last_cmake_args=$(<"${workspace_dir}/.stepit/cmake_args")
+			[[ "${cmake_args[*]}" == "$last_cmake_args" ]] && skip_configure=true
+		fi
+		if [[ "$skip_configure" == false ]]; then
+			echo "${cmake_args[*]}" > "${workspace_dir}/.stepit/cmake_args"
+			run cmake "${cmake_args[@]}"
+		fi
+
 		run cmake --build "${build_dir}" -j"${jobs}"
 		run cmake --install "${build_dir}"
 		;;
@@ -174,7 +188,7 @@ case "$mode" in
 				"${workspace_dir}/logs"
 		fi
 
-		if [[ "$mode" == "catkin" ]]; then
+		if [[ "$build_tool" == "catkin" ]]; then
 			require_cmd catkin
 			run catkin config \
 				--cmake-args \
