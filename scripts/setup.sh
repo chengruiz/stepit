@@ -61,14 +61,16 @@ ensure_symlink() {
 usage() {
 	cat <<'EOF'
 Usage:
-	setup.sh [--workspace DIR] [--repo URL] [-h|--help]
+	setup.sh [options]
 
-This script installs StepIt prerequisites, creates a workspace, and clone
-the StepIt repository into DIR/src/stepit.
+Options:
+	-w, --workspace DIR    Workspace root (default: inferred from script location)
+	-r, --repo URL         StepIt repository URL (default: https://github.com/chengruiz/stepit.git)
+	-h, --help             Show this help message
 
-Defaults:
-	--workspace: (auto) if $PWD/src exists OR $PWD is named stepit_ws -> $PWD, else -> $PWD/stepit_ws
-	--repo:      https://github.com/chengruiz/stepit.git
+Description:
+	Initializes a StepIt workspace by cloning the repository (or updating if it already exists)
+	and creating config files and script symlinks.
 
 Environment overrides:
 	STEPIT_WS, STEPIT_REPO
@@ -93,12 +95,12 @@ repo_url="${STEPIT_REPO:-https://github.com/chengruiz/stepit.git}"
 
 while [[ $# -gt 0 ]]; do
 	case "$1" in
-		--workspace)
+		-w|--workspace)
 			[[ $# -ge 2 ]] || die "--workspace requires a value"
 			workspace_dir="$2"
 			shift 2
 			;;
-		--repo)
+		-r|--repo)
 			[[ $# -ge 2 ]] || die "--repo requires a value"
 			repo_url="$2"
 			shift 2
@@ -173,6 +175,7 @@ run mkdir -p "${workspace_dir}/scripts"
 ensure_symlink "${stepit_dir}/scripts/setup.sh" "${workspace_dir}/scripts/setup.sh"
 ensure_symlink "${stepit_dir}/scripts/build.sh" "${workspace_dir}/scripts/build.sh"
 ensure_symlink "${stepit_dir}/scripts/run.sh"   "${workspace_dir}/scripts/run.sh"
+ensure_symlink "${stepit_dir}/scripts/clean.sh" "${workspace_dir}/scripts/clean.sh"
 run mkdir -p "${workspace_dir}/configs"
 run cp -a "${stepit_dir}/config/run/." "${workspace_dir}/configs/"
 

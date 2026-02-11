@@ -131,12 +131,9 @@ fi
 stepit_cmd=()
 case "${build_tool}" in
 	cmake)
+		stepit_bin="${workspace_dir}/install/bin/stepit"
+		[[ -x "${stepit_bin}" ]] || die "Missing ${stepit_bin}. Build and install first."
         export LD_LIBRARY_PATH="${workspace_dir}/install/lib:${LD_LIBRARY_PATH:-}"
-		if [[ -x "${workspace_dir}/install/bin/stepit" ]]; then
-			stepit_cmd=("${workspace_dir}/install/bin/stepit")
-		else
-			die "stepit executable not found in install/bin. Build and install first."
-		fi
 		;;
 	catkin|catkin_make)
 		require_cmd rosrun
