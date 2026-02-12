@@ -63,7 +63,7 @@ target_link_libraries(stepit_core PUBLIC
     Boost::program_options
     Eigen3::Eigen
     dl
-    llu
+    llu::llu
     Threads::Threads
     yaml-cpp
 )

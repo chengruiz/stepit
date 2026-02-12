@@ -84,6 +84,7 @@ ITEMS_TO_CLEAN=(
 	"log"
 	"logs"
 	"install"
+	"src/CMakeLists.txt"
 	".catkin_tools"
 	".catkin_workspace"
 	".stepit"
