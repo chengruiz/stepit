@@ -36,7 +36,7 @@ Usage:
 
 Options:
 	-w, --workspace DIR     Workspace root (default: inferred from script location)
-	-n, --dry-run           Print what would be removed without removing it
+	-y, --yes               Clean without confirmation
 	-h, --help              Show this help message
 
 Description:
@@ -47,7 +47,7 @@ EOF
 }
 
 # Defaults
-DRY_RUN=false
+FORCE=false
 WORKSPACE_ROOT="${STEPIT_WS:-$PWD}"
 
 # Parse args
@@ -56,17 +56,14 @@ while [[ $# -gt 0 ]]; do
 		-h|--help)
 			usage
 			;;
-		-n|--dry-run)
-			DRY_RUN=true
+		-y|--yes)
+			FORCE=true
 			shift
 			;;
 		-w|--workspace)
-			if [[ -n "${2:-}" ]]; then
-				WORKSPACE_ROOT="$2"
-				shift 2
-			else
-				die "Error: Argument for $1 is missing"
-			fi
+			[[ -n "${2:-}" ]] || die "Error: Argument for $1 is missing"
+			WORKSPACE_ROOT="$2"
+			shift 2
 			;;
 		*)
 			die "Unknown argument: $1"
@@ -92,16 +89,29 @@ ITEMS_TO_CLEAN=(
 	".stepit"
 )
 
-cd "$WORKSPACE_ROOT" || die "Failed to cd into $WORKSPACE_ROOT"
-
+cd "$WORKSPACE_ROOT"
+items=()
 for item in "${ITEMS_TO_CLEAN[@]}"; do
-	if [[ -e "$item" ]]; then
-		if [[ "$DRY_RUN" == "true" ]]; then
-			log "${YELLOW}[DRY-RUN]${CLEAR} rm -rf $item"
-		else
-			run rm -rf "$item"
-		fi
-	fi
+	[[ -e "$item" ]] && items+=("$item")
 done
+
+if [[ ${#items[@]} -eq 0 ]]; then
+	log "Nothing to clean."
+	exit 0
+fi
+
+if [[ "$FORCE" == "false" ]]; then
+	log "The following command will be executed:"
+	log "${YELLOW}>> rm -rf ${items[*]}${CLEAR}"
+	read -p "Do you want to proceed? [Y/n] " -n 1 -r
+	echo
+	if [[ $REPLY =~ ^[Nn]$ ]]; then
+		log "Aborting clean."
+		exit 0
+	fi
+	rm -rf "${items[@]}"
+else
+	run rm -rf "${items[@]}"
+fi
 
 log "${GREEN}Clean complete.${CLEAR}"
