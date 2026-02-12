@@ -40,11 +40,11 @@ Usage:
 
 Build tool:
 	(cmake)         Configure + build + install via CMake (default)
-	ROS1            Alias for: catkin_make
-	ROS2            Alias for: colcon
 	catkin          Build ROS1 packages with catkin_tools (catkin build)
 	catkin_make     Build ROS1 packages with catkin_make
 	colcon          Build ROS2 packages with colcon
+	ROS1            Alias for: catkin_make
+	ROS2            Alias for: colcon
 
 Options:
 	--debug | --release     CMake build type (default: --release)
@@ -54,6 +54,10 @@ Options:
 	--cmake-arg ARG         Extra CMake arg (repeatable), e.g. --cmake-arg -DSTEPIT_BLACKLIST_PLUGINS=...
 	-D...                   Convenience: any -D... is treated as --cmake-arg
 	-h, --help              Show this help message
+
+Note:
+	- If BUILD_TOOL is not specified, it will be read from '.stepit/build_tool' if it exists, or default to 'cmake'.
+	- You can always use cmake as the build tool, even if you want to build with ROS / ROS2.
 EOF
 }
 

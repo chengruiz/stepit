@@ -37,7 +37,12 @@ NdArray &NdArray::operator=(NdArray &&other) noexcept {
   return *this;
 }
 
-NpzReader::NpzReader(const std::string &path) {
+NpzReader::NpzReader(const std::string &path) { readFile(path); }
+
+void NpzReader::readFile(const std::string &path) {
+  keys_.clear();
+  values_.clear();
+
   std::unique_ptr<pybind11::scoped_interpreter> guard;
   if (not Py_IsInitialized()) {
     guard = std::make_unique<pybind11::scoped_interpreter>();
@@ -60,6 +65,10 @@ NpzReader::NpzReader(const std::string &path) {
     keys_.push_back(file);
     values_.push_back(std::move(array));
   }
+}
+
+bool NpzReader::hasKey(const std::string &key) const {
+  return std::find(keys_.begin(), keys_.end(), key) != keys_.end();
 }
 
 const NdArray &NpzReader::operator[](const std::string &key) const {

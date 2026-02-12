@@ -32,12 +32,15 @@ struct NdArray {
 
 class NpzReader {
  public:
-  NpzReader(const std::string &path);
+  NpzReader() = default;
+  explicit NpzReader(const std::string &path);
   NpzReader(const NpzReader &)            = delete;
   NpzReader &operator=(const NpzReader &) = delete;
   NpzReader(NpzReader &&)                 = default;
   NpzReader &operator=(NpzReader &&)      = default;
 
+  void readFile(const std::string &path);
+  bool hasKey(const std::string &key) const;
   const std::vector<std::string> &keys() const { return keys_; }
   const NdArray &operator[](const std::string &key) const;
 
