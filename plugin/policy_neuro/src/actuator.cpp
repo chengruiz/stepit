@@ -2,7 +2,7 @@
 
 namespace stepit {
 namespace neuro_policy {
-PositionActuator::PositionActuator(const PolicySpec &policy_spec, const std::string &home_dir) {
+Actuator::Actuator(const PolicySpec &policy_spec, const std::string &home_dir) {
   YAML::Node policy_config = yml::loadFile(home_dir + "/policy.yml");
   if (policy_config["actuator"]) {
     config_ = policy_config["actuator"];
@@ -14,13 +14,29 @@ PositionActuator::PositionActuator(const PolicySpec &policy_spec, const std::str
   bias_.setZero(policy_spec.dof);
   kp_.setZero(policy_spec.dof);
   kd_.setZero(policy_spec.dof);
+
+  if (config_["parameters"]) {
+    yml::Node parameters = config_["parameters"];
+    yml::assertNTuple(parameters, policy_spec.dof);
+    for (std::size_t i{}; i < policy_spec.dof; ++i) {
+      STEPIT_ASSERT(parameters[i].IsMap(), "Each element in 'parameters' should be a map.");
+      auto param = parameters[i];
+      yml::setIf(param, "scale", scale_[i]);
+      yml::setIf(param, "bias", bias_[i]);
+      yml::setIf(param, "Kp", kp_[i]);
+      yml::setIf(param, "Kd", kd_[i]);
+    }
+  } else {
+    yml::setIf(config_, "scale", scale_);
+    yml::setIf(config_, "bias", bias_);
+    yml::setIf(config_, "Kp", kp_);
+    yml::setIf(config_, "Kd", kd_);
+  }
+}
+
+PositionActuator::PositionActuator(const PolicySpec &policy_spec, const std::string &home_dir)
+    : Actuator(policy_spec, home_dir) {
   target_joint_pos_.setZero(policy_spec.dof);
-
-  yml::setIf(config_, "scale", scale_);
-  yml::setIf(config_, "bias", bias_);
-  yml::setTo(config_, "Kp", kp_);
-  yml::setTo(config_, "Kd", kd_);
-
   last_target_joint_pos_id_ = registerProvision("last_target_joint_pos", target_joint_pos_.size());
 }
 
@@ -52,25 +68,9 @@ void PositionActuator::setLowCmd(LowCmd &cmd, cArrXf action) {
   }
 }
 
-VelocityActuator::VelocityActuator(const PolicySpec &policy_spec, const std::string &home_dir) {
-  YAML::Node policy_config = yml::loadFile(home_dir + "/policy.yml");
-  if (policy_config["actuator"]) {
-    config_ = policy_config["actuator"];
-  } else {
-    config_ = policy_config;
-  }
-
-  scale_.setOnes(policy_spec.dof);
-  bias_.setZero(policy_spec.dof);
-  kp_.setZero(policy_spec.dof);
-  kd_.setZero(policy_spec.dof);
-
-  yml::setIf(config_, "scale", scale_);
-  yml::setIf(config_, "bias", bias_);
-  yml::setIf(config_, "Kp", kp_);
-  yml::setTo(config_, "Kd", kd_);
-  target_joint_vel_ = bias_;
-
+VelocityActuator::VelocityActuator(const PolicySpec &policy_spec, const std::string &home_dir)
+    : Actuator(policy_spec, home_dir) {
+  target_joint_vel_         = bias_;
   last_target_joint_vel_id_ = registerProvision("last_target_joint_vel", target_joint_vel_.size());
 }
 
@@ -95,25 +95,9 @@ void VelocityActuator::setLowCmd(LowCmd &cmd, cArrXf action) {
   }
 }
 
-TorqueActuator::TorqueActuator(const PolicySpec &policy_spec, const std::string &home_dir) {
-  YAML::Node policy_config = yml::loadFile(home_dir + "/policy.yml");
-  if (policy_config["actuator"]) {
-    config_ = policy_config["actuator"];
-  } else {
-    config_ = policy_config;
-  }
-
-  scale_.setOnes(policy_spec.dof);
-  bias_.setZero(policy_spec.dof);
-  kp_.setZero(policy_spec.dof);
-  kd_.setZero(policy_spec.dof);
-
-  yml::setIf(config_, "scale", scale_);
-  yml::setIf(config_, "bias", bias_);
-  yml::setIf(config_, "Kp", kp_);
-  yml::setIf(config_, "Kd", kd_);
-  target_joint_tor_ = bias_;
-
+TorqueActuator::TorqueActuator(const PolicySpec &policy_spec, const std::string &home_dir)
+    : Actuator(policy_spec, home_dir) {
+  target_joint_tor_         = bias_;
   last_target_joint_tor_id_ = registerProvision("last_target_joint_tor", target_joint_tor_.size());
 }
 
@@ -138,38 +122,29 @@ void TorqueActuator::setLowCmd(LowCmd &cmd, cArrXf action) {
   }
 }
 
-HybridActuator::HybridActuator(const PolicySpec &policy_spec, const std::string &home_dir) {
-  YAML::Node policy_config = yml::loadFile(home_dir + "/policy.yml");
-  if (policy_config["actuator"]) {
-    config_ = policy_config["actuator"];
+// clang-format off
+const std::map<std::string, HybridActuator::Mode> HybridActuator::kModeMap = {
+    {"position", HybridActuator::Mode::kPosition},
+    {"velocity", HybridActuator::Mode::kVelocity},
+    {"torque",   HybridActuator::Mode::kTorque},
+};
+// clang-format on
+
+HybridActuator::HybridActuator(const PolicySpec &policy_spec, const std::string &home_dir)
+    : Actuator(policy_spec, home_dir) {
+  if (config_["parameters"]) {
+    yml::Node parameters = config_["parameters"];
+    for (const auto &node : config_["parameters"]) {
+      modes_.push_back(lookupMap(yml::readAs<std::string>(node, "mode"), kModeMap));
+    }
   } else {
-    config_ = policy_config;
-  }
-
-  scale_.setOnes(policy_spec.dof);
-  bias_.setZero(policy_spec.dof);
-  kp_.setZero(policy_spec.dof);
-  kd_.setZero(policy_spec.dof);
-
-  yml::setIf(config_, "scale", scale_);
-  yml::setIf(config_, "bias", bias_);
-  yml::setTo(config_, "Kp", kp_);
-  yml::setTo(config_, "Kd", kd_);
-  yml::assertNTuple(config_, "mode", policy_spec.dof);
-  for (std::size_t i{}; i < policy_spec.dof; ++i) {
-    auto mode_str = config_["mode"][i].as<std::string>();
-    if (mode_str == "position") {
-      modes_.push_back(Mode::kPosition);
-    } else if (mode_str == "velocity") {
-      modes_.push_back(Mode::kVelocity);
-    } else if (mode_str == "torque") {
-      modes_.push_back(Mode::kTorque);
-    } else {
-      STEPIT_ERROR("Invalid actuator mode '{}'.", mode_str);
+    yml::assertNTuple(config_, "mode", policy_spec.dof);
+    for (const auto &node : config_["mode"]) {
+      modes_.push_back(lookupMap(yml::readAs<std::string>(node), kModeMap));
     }
   }
-  joint_command_ = bias_;
 
+  joint_command_         = bias_;
   last_joint_command_id_ = registerProvision("last_joint_command", joint_command_.size());
 }
 

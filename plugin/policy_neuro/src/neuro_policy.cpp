@@ -14,9 +14,9 @@ NeuroPolicy::NeuroPolicy(const RobotSpec &robot_spec, const std::string &home_di
   displayFormattedBanner(60, kGreen, "NeuroPolicy {} ({}Hz)", spec_.policy_name, getControlFreq());
 
   // Add field sources read from the YAML file
-  auto module_node = config_["module"] ? config_["module"] : config_["field_source"];  // backward compatibility
+  auto module_node = config_["modules"] ? config_["modules"] : config_["module"];  // backward compatibility
   if (module_node) {
-    STEPIT_ASSERT(module_node.IsSequence(), "'module' must be a sequence.");
+    STEPIT_ASSERT(module_node.IsSequence(), "'modules' must be a sequence.");
     for (const auto &module : module_node) {
       addModule(Module::make(module.as<std::string>(), spec_, home_dir), false);
     }

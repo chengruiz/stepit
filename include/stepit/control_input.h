@@ -122,8 +122,7 @@ class MultipleControlInputs {
 
 template <typename Action>
 Action lookupAction(const std::string &action, const std::map<std::string, Action> &action_map) {
-  auto it = action_map.find(action);
-  return it != action_map.end() ? it->second : Action::kInvalid;
+  return lookupMap(action, action_map, Action::kInvalid);
 }
 }  // namespace stepit
 

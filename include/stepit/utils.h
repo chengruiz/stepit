@@ -35,6 +35,19 @@ bool getenv(const std::string &name, T &result, bool verbose = true) {
 std::string getConfigPath(const std::string &relative_path = "");
 
 YAML::Node loadConfigFile(const std::string &relative_path);
+
+template <typename Key, typename Value>
+Value lookupMap(const Key &key, const std::map<Key, Value> &map) {
+  auto it = map.find(key);
+  STEPIT_ASSERT(it != map.end(), "Key '{}' not found.", key);
+  return it->second;
+}
+
+template <typename Key, typename Value>
+Value lookupMap(const Key &key, const std::map<Key, Value> &map, const Value &default_value) {
+  auto it = map.find(key);
+  return it == map.end() ? default_value : it->second;
+}
 }  // namespace stepit
 
 #ifdef STEPIT_FIX_GETTID

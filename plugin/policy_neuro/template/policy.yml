@@ -5,34 +5,43 @@ tailored: go2        # [Optional] String, name of the robot this policy is tailo
 
 actuator:            # [Optional] actuator configuration
   type: position     #   [Optional] Literal["position", "velocity", "torque", "hybrid"], type of the actuator
+
+  # Option 1, specify actuator parameters by "parameter"
+  parameters:        #   List[Dict], per-actuator parameters
+  - {
+    Kp: 30.0,        #     [Optional] Float, proportional gain for PD controller
+    Kd: 1.0,         #     [Optional] Float, derivative gain for PD controller
+    bias: 0.0,       #     [Optional] Float, bias for the joint command
+    scale: 1.0,      #     [Optional] Float, scale for the joint command
+    mode: position,  #     [Optional] Literal["position", "velocity", "torque"], mode of each actuator, required for "hybrid" type
+  }
+  - { Kp: 30.0, Kd: 1.0, bias: 0.7,  scale: 2.0 }
+  - { Kp: 30.0, Kd: 1.0, bias: -1.5, scale: 2.0 }
+  - { Kp: 30.0, Kd: 1.0, bias: 0.0,  scale: 1.0 }
+  - { Kp: 30.0, Kd: 1.0, bias: 0.7,  scale: 2.0 }
+  - { Kp: 30.0, Kd: 1.0, bias: -1.5, scale: 2.0 }
+  - { Kp: 30.0, Kd: 1.0, bias: 0.0,  scale: 1.0 }
+  - { Kp: 30.0, Kd: 1.0, bias: 0.7,  scale: 2.0 }
+  - { Kp: 30.0, Kd: 1.0, bias: -1.5, scale: 2.0 }
+  - { Kp: 30.0, Kd: 1.0, bias: 0.0,  scale: 1.0 }
+  - { Kp: 30.0, Kd: 1.0, bias: 0.7,  scale: 2.0 }
+  - { Kp: 30.0, Kd: 1.0, bias: -1.5, scale: 2.0 }
+
+  # Option 2, specify each parameter separately
   Kp: 30.0           #   [Optional] Union[Float, List[Float]], proportional gain for PD controller
   Kd: 1.0            #   [Optional] Union[Float, List[Float]], derivative gain for PD controller
-  bias:              #   [Optional] List[Float], bias for the target joint position
-    - 0.0
-    - 0.7
-    - -1.5
-    - 0.0
-    - 0.7
-    - -1.5
-    - 0.0
-    - 0.7
-    - -1.5
-    - 0.0
-    - 0.7
-    - -1.5
-  scale:            #   [Optional] Union[Float, List[Float]], scale for the target joint position
-    - 1.0
-    - 2.0
-    - 2.0
-    - 1.0
-    - 2.0
-    - 2.0
-    - 1.0
-    - 2.0
-    - 2.0
-    - 1.0
-    - 2.0
-    - 2.0
+  bias: [            #   [Optional] List[Float], bias for the target joint position
+    0.0, 0.7, 1.5,
+    0.0, 0.7, 1.5,
+    0.0, 0.7, 1.5,
+    0.0, 0.7, 1.5,
+  ]
+  scale: [           #   [Optional] Union[Float, List[Float]], scale for the target joint position
+    1.0, 2.0, 2.0,
+    1.0, 2.0, 2.0,
+    1.0, 2.0, 2.0,
+    1.0, 2.0, 2.0,
+  ]
   mode:             #   List[Literal["position", "velocity", "torque"]]
     - position      #   mode of each actuator, required for "hybrid" type
     - velocity
@@ -61,7 +70,7 @@ action_mean:         # [Optional] List[Float], action mean values, required for
 - 0.7
 - -1.5
 
-module:              # [Optional] List[String], source of fields for the policy
+modules:             # [Optional] List[String], source of fields for the policy
   - actor            # If not specified, stepit will try to resolve the sources automatically
   - action_filter    # Addtional sources for action filtering, scaling, etc. should be included here
                      # NOTICE: the order of sources matters! The behavior of following sources is affected by previous ones.

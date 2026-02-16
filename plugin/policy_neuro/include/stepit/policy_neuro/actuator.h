@@ -15,8 +15,15 @@ class Actuator : public Module,
   using Factory      = Interface::Factory;
   using Interface::make;
 
+  Actuator(const PolicySpec &policy_spec, const std::string &home_dir);
+
   bool update(const LowState &low_state, ControlRequests &requests, FieldMap &result) override { return true; }
   virtual void setLowCmd(LowCmd &cmd, cArrXf action) = 0;
+
+ protected:
+  YAML::Node config_;
+  ArrXf scale_, bias_;
+  ArrXf kp_, kd_;
 };
 
 class PositionActuator : public Actuator {
@@ -27,11 +34,7 @@ class PositionActuator : public Actuator {
   void setLowCmd(LowCmd &cmd, cArrXf action) override;
 
  private:
-  YAML::Node config_;
-  ArrXf scale_, bias_;
-  ArrXf kp_, kd_;
   FieldId last_target_joint_pos_id_;
-
   bool is_first_update_{false};
   ArrXf target_joint_pos_;
 };
@@ -44,11 +47,7 @@ class VelocityActuator : public Actuator {
   void setLowCmd(LowCmd &cmd, cArrXf action) override;
 
  private:
-  YAML::Node config_;
-  ArrXf scale_, bias_;
-  ArrXf kp_, kd_;
   FieldId last_target_joint_vel_id_;
-
   ArrXf target_joint_vel_;
 };
 
@@ -60,11 +59,7 @@ class TorqueActuator : public Actuator {
   void setLowCmd(LowCmd &cmd, cArrXf action) override;
 
  private:
-  YAML::Node config_;
-  ArrXf scale_, bias_;
-  ArrXf kp_, kd_;
   FieldId last_target_joint_tor_id_;
-
   ArrXf target_joint_tor_;
 };
 
@@ -75,15 +70,12 @@ class HybridActuator : public Actuator {
   bool update(const LowState &low_state, ControlRequests &requests, FieldMap &result) override;
   void setLowCmd(LowCmd &cmd, cArrXf action) override;
 
-  enum class Mode { kPosition, kVelocity, kTorque };
-
  private:
-  YAML::Node config_;
-  ArrXf scale_, bias_;
-  ArrXf kp_, kd_;
+  enum class Mode { kPosition, kVelocity, kTorque };
+  static const std::map<std::string, Mode> kModeMap;
+
   std::vector<Mode> modes_;
   FieldId last_joint_command_id_;
-
   ArrXf joint_command_;
 };
 }  // namespace neuro_policy
