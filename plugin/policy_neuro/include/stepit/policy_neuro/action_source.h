@@ -18,6 +18,7 @@ class ActionHistory : public Module {
 
  private:
   FieldId action_id_{};
+  FieldId last_action_id_{};
   FieldId action_p1_id_{};
   FieldId action_p2_id_{};
   ArrXf action_mean_;

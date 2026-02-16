@@ -9,12 +9,16 @@ ActionHistory::ActionHistory(const PolicySpec &, const std::string &home_dir) {
   action_buf_.allocate(5);
 
   action_id_    = getFieldId("action");
+  last_action_id_ = registerProvision("last_action", 0);
+  action_p1_id_ = registerProvision("action_p1", 0);
   action_p1_id_ = registerProvision("action_p1", 0);
   action_p2_id_ = registerProvision("action_p2", 0);
 }
 
 void ActionHistory::initFieldProperties() {
   auto action_dim = getFieldSize(action_id_);
+
+  setFieldSize(last_action_id_, action_dim);
   setFieldSize(action_p1_id_, action_dim);
   setFieldSize(action_p2_id_, action_dim);
 }
@@ -25,6 +29,7 @@ bool ActionHistory::reset() {
 }
 
 bool ActionHistory::update(const LowState &low_state, ControlRequests &requests, FieldMap &result) {
+  result[last_action_id_] = action_buf_.at(-1, action_mean_);
   result[action_p1_id_] = action_buf_.at(-1, action_mean_);
   result[action_p2_id_] = action_buf_.at(-2, action_mean_);
   return true;
@@ -60,6 +65,7 @@ bool ActionFilter::update(const LowState &low_state, ControlRequests &requests, 
 
 STEPIT_REGISTER_MODULE(action_history, kDefPriority, Module::make<ActionHistory>);
 STEPIT_REGISTER_MODULE(action_filter, kDefPriority, Module::make<ActionFilter>);
+STEPIT_REGISTER_FIELD_SOURCE(last_action, kDefPriority, Module::make<ActionHistory>);
 STEPIT_REGISTER_FIELD_SOURCE(action_p1, kDefPriority, Module::make<ActionHistory>);
 STEPIT_REGISTER_FIELD_SOURCE(action_p2, kDefPriority, Module::make<ActionHistory>);
 }  // namespace neuro_policy
