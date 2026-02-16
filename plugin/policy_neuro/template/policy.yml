@@ -56,28 +56,15 @@ actuator:            # [Optional] actuator configuration
     - velocity
     - torque
 
-action_mean:         # [Optional] List[Float], action mean values, required for
-- 0.0                #   - previous action observation
-- 0.7                #   - action scaling
-- -1.5               #   - action filtering
-- 0.0
-- 0.7
-- -1.5
-- 0.0
-- 0.7
-- -1.5
-- 0.0
-- 0.7
-- -1.5
-
-modules:             # [Optional] List[String], source of fields for the policy
-  - actor            # If not specified, stepit will try to resolve the sources automatically
-  - action_filter    # Addtional sources for action filtering, scaling, etc. should be included here
-                     # NOTICE: the order of sources matters! The behavior of following sources is affected by previous ones.
+action_mean: 0.0     # [Optional] Union[Float, List[Float]], the default action
+modules:             # [Optional] List[String], modules of the policy
+  - actor            # If not specified, stepit will try to resolve the modules automatically
+  - action_filter    # Addtional modules for action filtering, scaling, etc. should be included here
+                     # NOTICE: the order of modules matters! The behavior of following modules is affected by previous ones.
 
 publish_fields:      # [Optional] Union[bool, List[String]], whether to publish fields or list of field names to publish
-  - field_name_1
-  - field_name_2
+  - joint_pos
+  - joint_vel
 
 run:                         # [Optional] run configuration
   task: my_task              # String, name of the task
