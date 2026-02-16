@@ -1,3 +1,5 @@
+#include <set>
+
 #include <stepit/control_input.h>
 
 namespace stepit {
@@ -85,7 +87,8 @@ MultipleControlInputs::MultipleControlInputs(const std::vector<std::string> &inp
   if (input_names.empty()) {
     inputs_.emplace_back(ControlInput::make(""));
   } else {
-    for (const auto &input_name : input_names) {
+    std::set<std::string> inputs(input_names.begin(), input_names.end());
+    for (const auto &input_name : inputs) {
       inputs_.emplace_back(ControlInput::make(input_name));
     }
   }
