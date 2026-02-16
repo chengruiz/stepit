@@ -161,6 +161,7 @@ case "${build_tool}" in
 esac
 
 export STEPIT_WS="${workspace_dir}"
+export CONFIG_HOME="${workspace_dir}/configs"
 if [[ ${#config_files[@]} -gt 0 ]]; then
 	# Allows chaining configs to pass arguments via STEPIT_ARGS and STEPIT_PLUGIN_ARGS
 	for config_file in "${config_files[@]}"; do

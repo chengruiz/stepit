@@ -66,6 +66,8 @@ Usage:
 Options:
 	-w, --workspace DIR    Workspace root (default: inferred from script location)
 	-r, --repo URL         StepIt repository URL (default: https://github.com/chengruiz/stepit.git)
+	--zoo                  Also clone/update the zoo repo (dir: $STEPIT_WS/zoo)
+	--zoo-repo URL         Zoo repository URL (default: https://github.com/chengruiz/stepit_zoo.git)
 	-h, --help             Show this help message
 
 Description:
@@ -73,7 +75,7 @@ Description:
 	and creating config files and script symlinks.
 
 Environment overrides:
-	STEPIT_WS, STEPIT_REPO
+	STEPIT_WS, STEPIT_REPO, STEPIT_ZOO, STEPIT_ZOO_REPO
 
 Notes:
 	- You will be prompted for sudo password if needed.
@@ -92,6 +94,9 @@ default_workspace() {
 
 workspace_dir="${STEPIT_WS:-$(default_workspace)}"
 repo_url="${STEPIT_REPO:-https://github.com/chengruiz/stepit.git}"
+zoo_dir="${STEPIT_ZOO:-}"
+zoo_repo_url="${STEPIT_ZOO_REPO:-https://github.com/chengruiz/stepit_zoo.git}"
+enable_zoo=false
 
 while [[ $# -gt 0 ]]; do
 	case "$1" in
@@ -105,6 +110,16 @@ while [[ $# -gt 0 ]]; do
 			repo_url="$2"
 			shift 2
 			;;
+		--zoo)
+			enable_zoo=true
+			shift
+			;;
+		--zoo-repo)
+			[[ $# -ge 2 ]] || die "--zoo-repo requires a value"
+			zoo_repo_url="$2"
+			enable_zoo=true
+			shift 2
+			;;
 		-h|--help)
 			usage
 			exit 0
@@ -113,10 +128,17 @@ while [[ $# -gt 0 ]]; do
 	esac
 done
 
+[[ -z "${zoo_dir}" ]] && zoo_dir="${workspace_dir}/zoo"
+
+
 log "${GREEN}============================ Setting up ============================${CLEAR}"
 log "Workspace: ${workspace_dir}"
-log "Repo: ${repo_url}"
-require_cmd bash
+log "Repo:      ${repo_url}"
+if [[ "${enable_zoo}" == true ]]; then
+	log "Zoo:       ${zoo_dir}"
+	log "Zoo repo:  ${zoo_repo_url}"
+fi
+log
 
 stepit_dir="${workspace_dir}/src/stepit"
 if [[ -e "${stepit_dir}" ]]; then
@@ -124,7 +146,7 @@ if [[ -e "${stepit_dir}" ]]; then
 
 	require_cmd git
 	git -C "${stepit_dir}" rev-parse --is-inside-work-tree >/dev/null 2>&1 \
-		|| die "${stepit_dir} exists but is not a git repo; remove it or choose a different --workspace."
+		|| die "${stepit_dir} exists but is not a git repo."
 
 	git_dirty="$(git -C "${stepit_dir}" status --porcelain)"
 	if [[ -n "${git_dirty}" ]]; then
@@ -169,6 +191,22 @@ else
 	log "${GREEN}Fetching StepIt source...${CLEAR}"
 	run git clone --depth 1 "$repo_url" "${stepit_dir}"
 	run git -C "${stepit_dir}" submodule update --init extern/llu
+fi
+
+if [[ "${enable_zoo}" == true ]]; then
+	if [[ -e "${zoo_dir}" ]]; then
+		log "${YELLOW}Note:${CLEAR} ${zoo_dir} already exists; checking repo state."
+
+		git -C "${zoo_dir}" rev-parse --is-inside-work-tree >/dev/null 2>&1 \
+			|| die "${zoo_dir} exists but is not a git repo."
+
+		run git -C "${zoo_dir}" fetch --all --prune
+		run git -C "${zoo_dir}" pull --ff-only
+	else
+		run mkdir -p "$(dirname "${zoo_dir}")"
+		log "${GREEN}Fetching StepIt Zoo...${CLEAR}"
+		run git clone --depth 1 "${zoo_repo_url}" "${zoo_dir}"
+	fi
 fi
 
 run mkdir -p "${workspace_dir}/scripts"
