@@ -14,6 +14,7 @@ namespace stepit {
 namespace neuro_policy {
 using FieldId    = std::size_t;
 using FieldMap   = std::map<FieldId, ArrXf>;
+using FieldSize  = std::uint32_t;
 using FieldIdVec = std::vector<FieldId>;
 
 class Module : public Interface<Module, const PolicySpec & /* policy_spec */, const std::string & /* home_dir */> {
@@ -30,7 +31,7 @@ class Module : public Interface<Module, const PolicySpec & /* policy_spec */, co
  protected:
   FieldId registerRequirement(const std::string &field_name);
   FieldId registerRequirement(FieldId field_id);
-  FieldId registerProvision(const std::string &field_name, std::uint32_t size);
+  FieldId registerProvision(const std::string &field_name, FieldSize size);
 
   std::set<FieldId> requirements_, provisions_;
 };
@@ -48,11 +49,11 @@ class FieldManager {
   auto makeSource(const std::string &field_name, const PolicySpec &policy_spec, const std::string &home_dir)
       -> Module::Ptr;
 
-  FieldId registerField(const std::string &name, std::uint32_t size);
+  FieldId registerField(const std::string &name, FieldSize size);
   FieldId getFieldId(const std::string &name);
   const std::string &getFieldName(FieldId id) const;
-  std::uint32_t getFieldSize(FieldId id) const;
-  void setFieldSize(FieldId id, std::uint32_t size);
+  FieldSize getFieldSize(FieldId id) const;
+  void setFieldSize(FieldId id, FieldSize size);
 
  private:
   FieldManager() = default;
@@ -60,19 +61,19 @@ class FieldManager {
   SourceRegistry source_registry_;
   std::map<std::string, FieldId> name_to_id_;
   std::vector<std::string> id_to_name_;
-  std::vector<std::uint32_t> id_to_size_;
+  std::vector<FieldSize> id_to_size_;
   FieldId next_id_{};
 };
 
 // Helper accessors
 inline FieldManager &fieldManager() { return FieldManager::instance(); }
-inline FieldId registerField(const std::string &name, std::uint32_t size) {
+inline FieldId registerField(const std::string &name, FieldSize size) {
   return fieldManager().registerField(name, size);
 }
 inline FieldId getFieldId(const std::string &name) { return fieldManager().getFieldId(name); }
 inline const std::string &getFieldName(FieldId id) { return fieldManager().getFieldName(id); }
-inline std::uint32_t getFieldSize(FieldId id) { return fieldManager().getFieldSize(id); }
-inline void setFieldSize(FieldId id, std::uint32_t size) { fieldManager().setFieldSize(id, size); }
+inline FieldSize getFieldSize(FieldId id) { return fieldManager().getFieldSize(id); }
+inline void setFieldSize(FieldId id, FieldSize size) { fieldManager().setFieldSize(id, size); }
 inline Module::Ptr makeFieldSource(const std::string &field_name, const PolicySpec &policy_spec,
                                    const std::string &home_dir) {
   return fieldManager().makeSource(field_name, policy_spec, home_dir);
@@ -87,7 +88,7 @@ void splitFields(cArrXf data, const FieldIdVec &field_ids, FieldMap &result);
 
 #define STEPIT_REGISTER_MODULE(name, priority, factory) \
   static ::stepit::neuro_policy::Module::Registration _field_source_##name##_registration(#name, priority, factory)
-#define STEPIT_REGISTER_FIELD_SOURCE(field_name, priority, factory)                          \
+#define STEPIT_REGISTER_FIELD_SOURCE(field_name, priority, factory)                              \
   static auto _field_##field_name##_source_registration = ::stepit::neuro_policy::fieldManager() \
                                                               .registerSource(#field_name, priority, factory)
 

@@ -14,8 +14,8 @@ class FieldAssembler : public Module {
 
  private:
   YAML::Node config_;
-  std::vector<FieldId> target_ids_;
-  std::vector<std::uint32_t> target_sizes_;
+  FieldIdVec target_ids_;
+  std::vector<FieldSize> target_sizes_;
   std::vector<FieldIdVec> component_ids_;
 
   std::vector<VecXf> buffers_;

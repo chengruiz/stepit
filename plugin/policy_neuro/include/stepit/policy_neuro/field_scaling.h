@@ -16,7 +16,7 @@ class FieldScaling : public Module {
 
  private:
   YAML::Node config_;
-  std::vector<FieldId> field_ids_{};
+  FieldIdVec field_ids_{};
   std::vector<std::pair<ArrXf, ArrXf>> scalings_{};
 };
 }  // namespace neuro_policy

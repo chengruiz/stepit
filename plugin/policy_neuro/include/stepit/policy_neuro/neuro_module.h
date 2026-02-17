@@ -13,23 +13,22 @@ class NeuroModule : public Module {
   bool update(const LowState &low_state, ControlRequests &requests, FieldMap &result) override;
 
  private:
-  static FieldId addField(const YAML::Node &node, std::vector<std::string> &field_names,
-                          std::vector<std::uint32_t> &field_dims);
-  void parseFields(const std::string &key, const std::vector<std::string> &node_names,
-                   std::vector<std::vector<std::string>> &field_names,
-                   std::vector<std::vector<std::uint32_t>> &field_dims, std::vector<std::uint32_t> &total_dims,
-                   std::vector<std::vector<FieldId>> &fields);
+  using FieldNameVec = std::vector<std::string>;
+  using FieldSizeVec = std::vector<FieldSize>;
+  static FieldId addField(const YAML::Node &node, FieldNameVec &field_names, FieldSizeVec &field_sizes);
+  void parseFields(const std::string &key, const FieldNameVec &node_names, std::vector<FieldNameVec> &field_names,
+                   std::vector<FieldSizeVec> &field_sizes, FieldSizeVec &total_dims, std::vector<FieldIdVec> &fields);
 
   NnrtApi::Ptr nn_;
   YAML::Node config_;
 
   std::string run_name_{};
   bool assert_all_finite_{true};
-  std::vector<std::uint32_t> input_dims_{}, output_dims_{};
-  std::vector<std::string> input_names_{}, output_names_{};
-  std::vector<std::vector<std::string>> input_field_names_, output_field_names_;
-  std::vector<std::vector<std::uint32_t>> input_field_dims_, output_field_dims_;
-  std::vector<std::vector<FieldId>> input_fields_, output_fields_;
+  FieldSizeVec input_dims_{}, output_dims_{};
+  FieldNameVec input_names_{}, output_names_{};
+  std::vector<FieldNameVec> input_field_names_, output_field_names_;
+  std::vector<FieldSizeVec> input_field_sizes_, output_field_sizes_;
+  std::vector<FieldIdVec> input_fields_, output_fields_;
   std::vector<ArrXf> input_arr_;
 };
 

@@ -19,7 +19,7 @@ class FieldHistory : public Module {
     FieldId source_id{};
     FieldId target_id{};
     std::uint32_t history_len{};
-    std::uint32_t source_size{};
+    FieldSize source_size{};
     /* If true, the most recent entry will be placed at the beginning of the output vector.
      * Otherwise, it will be placed at the end. */
     bool newest_first{true};

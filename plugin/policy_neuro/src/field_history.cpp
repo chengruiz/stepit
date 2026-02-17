@@ -33,7 +33,7 @@ void FieldHistory::initFieldProperties() {
     buffer.source_size = getFieldSize(buffer.source_id);
     STEPIT_ASSERT(buffer.source_size > 0, "Size of source field '{}' is undefined.", getFieldName(buffer.source_id));
 
-    std::uint32_t target_size = buffer.source_size * buffer.history_len;
+    FieldSize target_size = buffer.source_size * buffer.history_len;
     setFieldSize(buffer.target_id, target_size);
 
     if (buffer.default_value.size() == 1) {
@@ -69,7 +69,7 @@ bool FieldHistory::update(const LowState &, ControlRequests &, FieldMap &result)
       buffer.history.push_back(frame);
     }
 
-    std::uint32_t offset = 0;
+    FieldSize offset = 0;
     for (const auto &frame : buffer.history) {
       stackField(frame, offset, buffer.output_buffer);
     }

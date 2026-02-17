@@ -20,8 +20,8 @@ NeuroModule::NeuroModule(const std::string &name, const std::string &home_dir)
   }
   STEPIT_ASSERT(input_names_.size() >= 1, "The neural network must have at least one non-recurrent input.");
   STEPIT_ASSERT(output_names_.size() >= 1, "The neural network must have at least one non-recurrent output.");
-  parseFields("input_field", input_names_, input_field_names_, input_field_dims_, input_dims_, input_fields_);
-  parseFields("output_field", output_names_, output_field_names_, output_field_dims_, output_dims_, output_fields_);
+  parseFields("input_field", input_names_, input_field_names_, input_field_sizes_, input_dims_, input_fields_);
+  parseFields("output_field", output_names_, output_field_names_, output_field_sizes_, output_dims_, output_fields_);
 
   input_arr_.resize(input_names_.size());
   for (std::size_t i{}; i < input_names_.size(); ++i) {
@@ -78,28 +78,26 @@ bool NeuroModule::update(const LowState &low_state, ControlRequests &requests, F
   return all_finite;
 }
 
-FieldId NeuroModule::addField(const YAML::Node &node, std::vector<std::string> &field_names,
-                              std::vector<std::uint32_t> &field_dims) {
+FieldId NeuroModule::addField(const YAML::Node &node, FieldNameVec &field_names, FieldSizeVec &field_sizes) {
   std::string field_name;
-  std::uint32_t field_size{};
+  FieldSize field_size{};
   yml::setTo(node, "name", field_name);
   yml::setTo(node, "size", field_size);
 
   field_names.push_back(field_name);
-  field_dims.push_back(field_size);
+  field_sizes.push_back(field_size);
   return registerField(field_name, field_size);
 }
 
-void NeuroModule::parseFields(const std::string &key, const std::vector<std::string> &node_names,
-                              std::vector<std::vector<std::string>> &field_names,
-                              std::vector<std::vector<std::uint32_t>> &field_dims,
-                              std::vector<std::uint32_t> &total_dims, std::vector<std::vector<FieldId>> &fields) {
+void NeuroModule::parseFields(const std::string &key, const FieldNameVec &node_names,
+                              std::vector<FieldNameVec> &field_names, std::vector<FieldSizeVec> &field_sizes,
+                              FieldSizeVec &total_dims, std::vector<FieldIdVec> &fields) {
   yml::assertValid(config_, key);
   auto cfg = config_[key];
 
   std::size_t num_nodes = node_names.size();
   field_names.resize(num_nodes);
-  field_dims.resize(num_nodes);
+  field_sizes.resize(num_nodes);
   total_dims.resize(num_nodes);
   fields.resize(num_nodes);
 
@@ -107,7 +105,7 @@ void NeuroModule::parseFields(const std::string &key, const std::vector<std::str
     STEPIT_ASSERT_EQ(num_nodes, 1UL, "'{}' must be a map if the neural network has multiple non-recurrent inputs.",
                      key);
     for (const auto &node : cfg) {
-      fields[0].push_back(addField(node, field_names[0], field_dims[0]));
+      fields[0].push_back(addField(node, field_names[0], field_sizes[0]));
     }
   } else {
     STEPIT_ASSERT(cfg.IsMap(), "'{}' must be a map if the neural network has multiple non-recurrent inputs.", key);
@@ -118,13 +116,13 @@ void NeuroModule::parseFields(const std::string &key, const std::vector<std::str
       const std::string &node_name = node_names[i];
       yml::assertValid(cfg, node_name);
       for (const auto &node : cfg[node_name]) {
-        fields[i].push_back(addField(node, field_names[i], field_dims[i]));
+        fields[i].push_back(addField(node, field_names[i], field_sizes[i]));
       }
     }
   }
 
   for (std::size_t i{}; i < num_nodes; ++i) {
-    total_dims[i] = std::accumulate(field_dims[i].begin(), field_dims[i].end(), 0U);
+    total_dims[i] = std::accumulate(field_sizes[i].begin(), field_sizes[i].end(), 0U);
   }
 }
 

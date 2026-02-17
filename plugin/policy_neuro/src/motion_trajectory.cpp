@@ -59,7 +59,7 @@ MotionTrajectory::MotionTrajectory(const PolicySpec &policy_spec, const std::str
     field_names_.push_back(field_name);
     key_names_.push_back(key_name);
     field_sizes_.push_back(field_size);
-    field_ids_.push_back(registerProvision(field_name, static_cast<std::uint32_t>(field_size)));
+    field_ids_.push_back(registerProvision(field_name, static_cast<FieldSize>(field_size)));
   }
 
   STEPIT_ASSERT(num_frames_ > 0, "Loaded trajectory '{}' with 0 frames.", npz_filename_);

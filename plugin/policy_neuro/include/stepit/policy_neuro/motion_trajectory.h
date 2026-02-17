@@ -22,7 +22,7 @@ class MotionTrajectory : public Module {
   std::vector<std::string> key_names_;
   std::vector<std::string> field_names_;
   std::vector<std::size_t> field_sizes_;
-  std::vector<FieldId> field_ids_;
+  FieldIdVec field_ids_;
 
   std::size_t frame_idx_{};
 };

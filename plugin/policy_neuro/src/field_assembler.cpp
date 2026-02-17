@@ -28,7 +28,7 @@ void FieldAssembler::initFieldProperties() {
   buffers_.resize(target_ids_.size());
 
   for (std::size_t i{}; i < target_ids_.size(); ++i) {
-    std::uint32_t total_size = 0;
+    FieldSize total_size = 0;
     for (auto component_id : component_ids_[i]) {
       auto component_size = getFieldSize(component_id);
       STEPIT_ASSERT(component_size > 0, "Size of '{}' is undefined.", getFieldName(component_id));

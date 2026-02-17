@@ -11,7 +11,7 @@ FieldId Module::registerRequirement(FieldId field_id) {
   return field_id;
 }
 
-FieldId Module::registerProvision(const std::string &field_name, std::uint32_t size) {
+FieldId Module::registerProvision(const std::string &field_name, FieldSize size) {
   FieldId id = registerField(field_name, size);
   provisions_.insert(id);
   return id;
@@ -34,7 +34,7 @@ auto FieldManager::makeSource(const std::string &field_name, const PolicySpec &p
   return source_registry_.make(field_name, policy_spec, home_dir);
 }
 
-FieldId FieldManager::registerField(const std::string &name, std::uint32_t size) {
+FieldId FieldManager::registerField(const std::string &name, FieldSize size) {
   std::lock_guard<std::recursive_mutex> lock(mutex_);
   auto it = name_to_id_.find(name);
   if (it == name_to_id_.end()) {  // If not registered
@@ -62,12 +62,12 @@ const std::string &FieldManager::getFieldName(FieldId id) const {
   return id_to_name_[id];
 }
 
-std::uint32_t FieldManager::getFieldSize(FieldId id) const {
+FieldSize FieldManager::getFieldSize(FieldId id) const {
   std::lock_guard<std::recursive_mutex> lock(mutex_);
   return id_to_size_[id];
 }
 
-void FieldManager::setFieldSize(FieldId id, std::uint32_t size) {
+void FieldManager::setFieldSize(FieldId id, FieldSize size) {
   std::lock_guard<std::recursive_mutex> lock(mutex_);
   auto registered_size = id_to_size_.at(id);
   if (registered_size == 0) {  // If not registered
@@ -106,9 +106,9 @@ void assembleFields(const FieldMap &field_map, const FieldIdVec &field_ids, rArr
 }
 
 void splitFields(cArrXf data, const FieldIdVec &field_ids, FieldMap &result) {
-  std::uint32_t index = 0;
+  FieldSize index = 0;
   for (auto field_id : field_ids) {
-    std::uint32_t size = getFieldSize(field_id);
+    FieldSize size = getFieldSize(field_id);
     STEPIT_ASSERT(size > 0, "Size of '{}' is undefined.", getFieldName(field_id));
     result[field_id] = data.segment(index, size);
     index += size;
