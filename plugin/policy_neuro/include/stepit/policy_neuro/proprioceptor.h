@@ -18,6 +18,16 @@ class Proprioceptor : public Module {
   FieldId joint_vel_id_{};
   FieldId lin_acc_id_{};
 };
+
+class RollPitchSource : public Module {
+ public:
+  RollPitchSource(const PolicySpec &policy_spec, const std::string &home_dir);
+  bool reset() override { return true; }
+  bool update(const LowState &low_state, ControlRequests &requests, FieldMap &result) override;
+
+ private:
+  FieldId roll_pitch_id_{};
+};
 }  // namespace neuro_policy
 }  // namespace stepit
 

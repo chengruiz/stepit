@@ -26,11 +26,22 @@ bool Proprioceptor::update(const LowState &low_state, ControlRequests &requests,
   return true;
 }
 
+RollPitchSource::RollPitchSource(const PolicySpec &, const std::string &) {
+  roll_pitch_id_ = registerProvision("roll_pitch", 2);
+}
+
+bool RollPitchSource::update(const LowState &low_state, ControlRequests &requests, FieldMap &result) {
+  result[roll_pitch_id_] = Arr2f{low_state.imu.rpy[0], low_state.imu.rpy[1]};
+  return true;
+}
+
 STEPIT_REGISTER_MODULE(proprioceptor, kDefPriority, Module::make<Proprioceptor>);
+STEPIT_REGISTER_MODULE(roll_pitch, kDefPriority, Module::make<RollPitchSource>);
 STEPIT_REGISTER_FIELD_SOURCE(ang_vel, kDefPriority, Module::make<Proprioceptor>);
 STEPIT_REGISTER_FIELD_SOURCE(gravity, kDefPriority, Module::make<Proprioceptor>);
 STEPIT_REGISTER_FIELD_SOURCE(joint_pos, kDefPriority, Module::make<Proprioceptor>);
 STEPIT_REGISTER_FIELD_SOURCE(joint_vel, kDefPriority, Module::make<Proprioceptor>);
 STEPIT_REGISTER_FIELD_SOURCE(lin_acc, kDefPriority, Module::make<Proprioceptor>);
+STEPIT_REGISTER_FIELD_SOURCE(roll_pitch, kDefPriority, Module::make<RollPitchSource>);
 }  // namespace neuro_policy
 }  // namespace stepit

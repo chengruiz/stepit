@@ -17,7 +17,6 @@ stepit_add_plugin(${PROJECT_NAME}
       src/neuro_module.cpp
       src/neuro_policy.cpp
       src/proprioceptor.cpp
-      src/roll_pitch_source.cpp
       src/subscriber_action.cpp
     INCLUDES
       include
