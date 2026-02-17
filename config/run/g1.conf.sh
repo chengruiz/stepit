@@ -1,5 +1,3 @@
-STEPIT_ARGS="-r g1 -c joystick -f joystick@unitree2"
-STEPIT_PLUGIN_ARGS=
+source $CONFIG_HOME/unitree2.conf.sh
 
-# Other environment variables
-export LD_LIBRARY_PATH=$STEPIT_WS/src/stepit/extern/robot_sdk/unitree_sdk2/thirdparty/lib/$(uname -m):$LD_LIBRARY_PATH
+STEPIT_ARGS="${STEPIT_ARGS:-} -r g1"

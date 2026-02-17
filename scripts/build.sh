@@ -51,6 +51,7 @@ Options:
 	-j, --jobs N            Parallelism (default: nproc)
 	--workspace DIR         Workspace root (default: $PWD or STEPIT_WS)
 	--clean                 Remove prior build outputs for this build tool
+	--configure             Force CMake configuration
 	--cmake-arg ARG         Extra CMake arg (repeatable), e.g. --cmake-arg -DSTEPIT_BLACKLIST_PLUGINS=...
 	-D...                   Convenience: any -D... is treated as --cmake-arg
 	-h, --help              Show this help message
@@ -67,6 +68,7 @@ build_tool=""
 build_type="Release"
 jobs="$(nproc 2>/dev/null || echo 4)"
 clean=false
+force_configure=false
 cmake_args=()
 extra_args=()
 
@@ -92,6 +94,10 @@ while [[ $# -gt 0 ]]; do
 			;;
 		--clean)
 			clean=true
+			shift
+			;;
+		--configure)
+			force_configure=true
 			shift
 			;;
 		--cmake-arg)
@@ -168,7 +174,9 @@ case "$build_tool" in
 		)
 
 		skip_configure=false
-		if [[ -f "${build_dir}/CMakeCache.txt" && -f "${workspace_dir}/.stepit/cmake_args" ]]; then
+		if [[ "$force_configure" == false &&
+			  -f "${build_dir}/CMakeCache.txt" &&
+			  -f "${workspace_dir}/.stepit/cmake_args" ]]; then
 			last_cmake_args=$(<"${workspace_dir}/.stepit/cmake_args")
 			[[ "${cmake_args[*]}" == "$last_cmake_args" ]] && skip_configure=true
 		fi

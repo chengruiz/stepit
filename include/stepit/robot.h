@@ -123,7 +123,7 @@ class RobotApi : public Interface<RobotApi> {
       : config_(loadConfigFile(fmt::format("robot/{}.yml", name))), spec_(config_) {}
 
   virtual void getControl(bool enable) = 0;
-  virtual void setSend(const LowCmd &)       = 0;
+  virtual void setSend(const LowCmd &) = 0;
   virtual void getRecv(LowState &)     = 0;
   virtual void send()                  = 0;
   virtual void recv()                  = 0;
@@ -140,8 +140,19 @@ class RobotApi : public Interface<RobotApi> {
 
 class RobotApiReorderingWrapper : public RobotApi {
  public:
-  RobotApiReorderingWrapper(const std::string &wrapped_name, std::vector<std::size_t> joint_order,
-                            std::vector<std::size_t> foot_order = {}, std::vector<bool> joint_reversed = {});
+  /**
+   * @brief Wraps another RobotApi instance and reorders joints and feet.
+   *
+   * @param exposed_name Name of this wrapper in the exposed spec.
+   * @param wrapped_name Registered name of the underlying RobotApi implementation.
+   * @param joint_order Mapping from wrapper joint index to wrapped joint index. Must be a permutation of size `dof`.
+   * @param foot_order Mapping from wrapper foot index to wrapped foot index. If empty, identity mapping is used.
+   * @param joint_reversed Per-joint direction flags. When `true`, position/velocity/torque signs are flipped for that
+   *                       joint during remapping. If empty, all joints are treated as non-reversed.
+   */
+  RobotApiReorderingWrapper(const std::string &exposed_name, const std::string &wrapped_name,
+                            std::vector<std::size_t> joint_order, std::vector<std::size_t> foot_order = {},
+                            std::vector<bool> joint_reversed = {});
 
   void getControl(bool enable) override { wrapped_->getControl(enable); }
   void setSend(const LowCmd &cmd_msg) override;

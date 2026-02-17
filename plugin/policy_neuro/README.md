@@ -36,6 +36,7 @@ StepIt plugin for running neural network-based policy.
   | `field_scaling`     | Scales and biases input fields.                       |
   | `heightmap`         | Provides heightmap observations.                      |
   | `joint_reorder`     | Reorders joint states.                                |
+  | `motion_trajectory` | Provides predefined motion trajectory observations.   |
   | `roll_pitch`        | Provides the roll and pitch observations.             |
   | `proprioceptor`     | Provides proprioceptive observations.                 |
   | `time_step`         | Provides monotonically increasing timestep index.     |

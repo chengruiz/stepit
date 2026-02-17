@@ -47,7 +47,7 @@ void reorderInplace(std::vector<T> &values, const std::vector<std::size_t> &orde
   values = std::move(reordered);
 }
 
-RobotApiReorderingWrapper::RobotApiReorderingWrapper(const std::string &wrapped_name,
+RobotApiReorderingWrapper::RobotApiReorderingWrapper(const std::string &exposed_name, const std::string &wrapped_name,
                                                      std::vector<std::size_t> joint_order,
                                                      std::vector<std::size_t> foot_order,
                                                      std::vector<bool> joint_reversed)
@@ -61,6 +61,7 @@ RobotApiReorderingWrapper::RobotApiReorderingWrapper(const std::string &wrapped_
   STEPIT_ASSERT(joint_reversed_.empty() or joint_reversed_.size() == getDoF(),
                 "joint_reversed size must be either 0 or match DoF");
 
+  spec_.robot_name = exposed_name;
   reorderInplace(spec_.joint_names, joint_order_, "joint_names");
   reorderInplace(spec_.foot_names, foot_order_, "foot_names");
   reorderInplace(spec_.kp, joint_order_, "kp");

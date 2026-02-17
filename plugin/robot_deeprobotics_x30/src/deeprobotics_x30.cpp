@@ -65,6 +65,7 @@ constexpr std::array<std::size_t, 4> kFootOrderDeepRobotics2Unitree{1, 0, 3, 2};
 STEPIT_REGISTER_ROBOTAPI(x30, kDefPriority, RobotApi::make<DeepRoboticsX30Api>);
 STEPIT_REGISTER_ROBOTAPI(x30u, kDefPriority, []() {
   return std::make_unique<RobotApiReorderingWrapper>(  //
+      "x30u",                                          // Exposed name
       "x30",                                           // Wrapped name
       array2vector(kJointOrderDeepRobotics2Unitree),   // Joint 3-5 <-> 0-2, 9-11 <-> 6-8
       array2vector(kFootOrderDeepRobotics2Unitree),    // Foot FR <-> FL, HR <-> HL
