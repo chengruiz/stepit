@@ -18,6 +18,7 @@ stepit_add_plugin(${PROJECT_NAME}
       src/neuro_policy.cpp
       src/proprioceptor.cpp
       src/subscriber_action.cpp
+      src/time_step_source.cpp
     INCLUDES
       include
     FLAGS

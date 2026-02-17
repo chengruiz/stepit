@@ -38,6 +38,7 @@ StepIt plugin for running neural network-based policy.
   | `joint_reorder`     | Reorders joint states.                                |
   | `roll_pitch`        | Provides the roll and pitch observations.             |
   | `proprioceptor`     | Provides proprioceptive observations.                 |
+  | `time_step`         | Provides monotonically increasing timestep index.     |
 
 ### Control Commands
 
