@@ -18,7 +18,7 @@ class AliengoMujocoApi final : public RobotApi {
  public:
   AliengoMujocoApi();
   void getControl(bool enable) override;
-  void setSend(LowCmd &cmd_msg) override;
+  void setSend(const LowCmd &cmd_msg) override;
   void getRecv(LowState &state_msg) override;
   void send() override;
   void recv() override {}

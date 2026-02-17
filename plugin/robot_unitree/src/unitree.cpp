@@ -36,7 +36,7 @@ void UnitreeApi::getControl(bool enable) {
   }
 }
 
-void UnitreeApi::setSend(LowCmd &cmd_msg) {
+void UnitreeApi::setSend(const LowCmd &cmd_msg) {
   for (std::size_t i{}; i < getDoF(); ++i) {
     low_cmd_.motorCmd[i].q   = cmd_msg[i].q;
     low_cmd_.motorCmd[i].dq  = cmd_msg[i].dq;

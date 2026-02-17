@@ -28,7 +28,7 @@ void AliengoMujocoApi::getControl(bool enable) {
   }
 }
 
-void AliengoMujocoApi::setSend(LowCmd &cmd_msg) {
+void AliengoMujocoApi::setSend(const LowCmd &cmd_msg) {
   for (std::size_t i{}; i < getDoF(); ++i) {
     low_cmd_.motor_cmd()[i].q()   = cmd_msg[i].q;
     low_cmd_.motor_cmd()[i].dq()  = cmd_msg[i].dq;

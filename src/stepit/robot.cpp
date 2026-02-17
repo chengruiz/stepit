@@ -76,7 +76,7 @@ RobotApiReorderingWrapper::RobotApiReorderingWrapper(const std::string &wrapped_
   }
 }
 
-void RobotApiReorderingWrapper::setSend(LowCmd &cmd_msg) {
+void RobotApiReorderingWrapper::setSend(const LowCmd &cmd_msg) {
   LowCmd reordered(cmd_msg);
   for (std::size_t i{}; i < getDoF(); ++i) {
     reordered[joint_order_[i]] = cmd_msg[i];

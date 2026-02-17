@@ -18,7 +18,7 @@ void DeepRoboticsX30Api::getControl(bool enable) {
   }
 }
 
-void DeepRoboticsX30Api::setSend(LowCmd &cmd_msg) {
+void DeepRoboticsX30Api::setSend(const LowCmd &cmd_msg) {
   for (std::size_t i{}; i < getDoF(); ++i) {
     cmd_msg_.joint_cmd[i].pos = cmd_msg[i].q;
     cmd_msg_.joint_cmd[i].vel = cmd_msg[i].dq;

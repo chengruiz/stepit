@@ -123,7 +123,7 @@ class RobotApi : public Interface<RobotApi> {
       : config_(loadConfigFile(fmt::format("robot/{}.yml", name))), spec_(config_) {}
 
   virtual void getControl(bool enable) = 0;
-  virtual void setSend(LowCmd &)       = 0;
+  virtual void setSend(const LowCmd &)       = 0;
   virtual void getRecv(LowState &)     = 0;
   virtual void send()                  = 0;
   virtual void recv()                  = 0;
@@ -144,7 +144,7 @@ class RobotApiReorderingWrapper : public RobotApi {
                             std::vector<std::size_t> foot_order = {}, std::vector<bool> joint_reversed = {});
 
   void getControl(bool enable) override { wrapped_->getControl(enable); }
-  void setSend(LowCmd &cmd_msg) override;
+  void setSend(const LowCmd &cmd_msg) override;
   void getRecv(LowState &state_msg) override;
   void send() override { wrapped_->send(); }
   void recv() override { wrapped_->recv(); }

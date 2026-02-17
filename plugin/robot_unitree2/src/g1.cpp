@@ -27,7 +27,7 @@ void G1DoF15Api::getControl(bool enable) {
   }
 }
 
-void G1DoF15Api::setSend(LowCmd &cmd_msg) {
+void G1DoF15Api::setSend(const LowCmd &cmd_msg) {
   setArmCommands();
 
   for (int i{}; i < kLegDoF; ++i) {
@@ -114,7 +114,7 @@ void G1DoF23Api::getControl(bool enable) {
   }
 }
 
-void G1DoF23Api::setSend(LowCmd &cmd_msg) {
+void G1DoF23Api::setSend(const LowCmd &cmd_msg) {
   ArrXf target_arm_pos{6};
   for (int i{}; i < 6; ++i) {
     target_arm_pos[i] = curr_arm_pos_[i] + clamp(des_arm_pos_[i] - curr_arm_pos_[i], -0.05F, 0.05F);
@@ -215,7 +215,7 @@ void G1DoF29Api::getControl(bool enable) {
   }
 }
 
-void G1DoF29Api::setSend(LowCmd &cmd_msg) {
+void G1DoF29Api::setSend(const LowCmd &cmd_msg) {
   for (int i{}; i < getDoF(); ++i) {
     low_cmd_.motor_cmd()[i].mode() = 1;
     low_cmd_.motor_cmd()[i].q()    = cmd_msg[i].q;

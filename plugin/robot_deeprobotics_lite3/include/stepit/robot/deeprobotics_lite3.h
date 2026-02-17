@@ -14,7 +14,7 @@ class DeepRoboticsLite3Api final : public RobotApi {
   DeepRoboticsLite3Api();
   ~DeepRoboticsLite3Api() override;
   void getControl(bool enable) override;
-  void setSend(LowCmd &cmd_msg) override;
+  void setSend(const LowCmd &cmd_msg) override;
   void getRecv(LowState &state_msg) override;
   void send() override {}
   void recv() override {}

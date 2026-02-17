@@ -25,7 +25,7 @@ void DeepRoboticsLite3Api::getControl(bool enable) {
   }
 }
 
-void DeepRoboticsLite3Api::setSend(LowCmd &cmd_msg) {
+void DeepRoboticsLite3Api::setSend(const LowCmd &cmd_msg) {
   for (std::size_t i{}; i < getDoF(); ++i) {
     cmd_msg_.joint_cmd[i].position = cmd_msg[i].q;
     cmd_msg_.joint_cmd[i].velocity = cmd_msg[i].dq;

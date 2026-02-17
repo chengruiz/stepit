@@ -48,7 +48,7 @@ class MyRobot : public RobotApi {
  public:
   explicit MyRobot() : RobotApi("my_robot") {}
   void getControl(bool enable) override {}
-  void setSend(LowCmd &) override {}
+  void setSend(const LowCmd &) override {}
   void getRecv(LowState &) override {}
   void send() override {}
   void recv() override {}

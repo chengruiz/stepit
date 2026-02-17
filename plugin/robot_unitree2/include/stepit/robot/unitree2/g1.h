@@ -17,7 +17,7 @@ class G1DoF15Api : public RobotApi {
  public:
   G1DoF15Api();
   void getControl(bool enable) override;
-  void setSend(LowCmd &cmd_msg) override;
+  void setSend(const LowCmd &cmd_msg) override;
   void getRecv(LowState &state_msg) override;
   void send() override;
   void recv() override {}
@@ -47,7 +47,7 @@ class G1DoF23Api final : public RobotApi {
  public:
   G1DoF23Api();
   void getControl(bool enable) override;
-  void setSend(LowCmd &cmd_msg) override;
+  void setSend(const LowCmd &cmd_msg) override;
   void getRecv(LowState &state_msg) override;
   void send() override;
   void recv() override {}
@@ -71,7 +71,7 @@ class G1DoF29Api final : public RobotApi {
  public:
   G1DoF29Api();
   void getControl(bool enable) override;
-  void setSend(LowCmd &cmd_msg) override;
+  void setSend(const LowCmd &cmd_msg) override;
   void getRecv(LowState &state_msg) override;
   void send() override;
   void recv() override {}

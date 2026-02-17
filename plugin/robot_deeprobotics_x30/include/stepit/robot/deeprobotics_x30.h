@@ -11,7 +11,7 @@ class DeepRoboticsX30Api final : public RobotApi {
  public:
   DeepRoboticsX30Api();
   void getControl(bool enable) override;
-  void setSend(LowCmd &cmd_msg) override;
+  void setSend(const LowCmd &cmd_msg) override;
   void getRecv(LowState &state_msg) override;
   void send() override {}
   void recv() override {}
