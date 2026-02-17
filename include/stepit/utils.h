@@ -48,6 +48,11 @@ Value lookupMap(const Key &key, const std::map<Key, Value> &map, const Value &de
   auto it = map.find(key);
   return it == map.end() ? default_value : it->second;
 }
+
+template <typename T, std::size_t N>
+std::vector<T> array2vector(const std::array<T, N> &arr) {
+  return std::vector<T>(arr.begin(), arr.end());
+}
 }  // namespace stepit
 
 #ifdef STEPIT_FIX_GETTID

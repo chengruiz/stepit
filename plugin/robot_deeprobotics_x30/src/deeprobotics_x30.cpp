@@ -2,14 +2,13 @@
 #include <stepit/robot/deeprobotics_x30.h>
 
 namespace stepit {
-DeepRoboticsX30BaseApi::DeepRoboticsX30BaseApi(const std::string &name)
-    : RobotApi(name), state_msg_(&low_state_sub_.getRecvState()) {
+DeepRoboticsX30Api::DeepRoboticsX30Api() : RobotApi(kRobotName), state_msg_(&low_state_sub_.getRecvState()) {
   std::string host_ip{"192.168.1.120"};
   getenv("STEPIT_HOST_IP", host_ip);
   low_cmd_pub_ = std::make_unique<x30::SendToRobot>(host_ip);
 }
 
-void DeepRoboticsX30BaseApi::getControl(bool enable) {
+void DeepRoboticsX30Api::getControl(bool enable) {
   if (enable) {
     low_state_sub_.startWork();
     low_cmd_pub_->robot_state_init();
@@ -18,8 +17,6 @@ void DeepRoboticsX30BaseApi::getControl(bool enable) {
     low_cmd_pub_->control_get(UNABLE);
   }
 }
-
-DeepRoboticsX30Api::DeepRoboticsX30Api() : DeepRoboticsX30BaseApi(kRobotName) {}
 
 void DeepRoboticsX30Api::setSend(LowCmd &cmd_msg) {
   for (std::size_t i{}; i < getDoF(); ++i) {
@@ -62,35 +59,16 @@ void DeepRoboticsX30Api::getRecv(LowState &state_msg) {
   state_msg.tick = state_msg_->tick;
 }
 
-DeepRoboticsX30uApi::DeepRoboticsX30uApi() : DeepRoboticsX30BaseApi(kRobotName) {}
-
-constexpr std::size_t DeepRoboticsX30uApi::kJointOrder[];
-constexpr std::size_t DeepRoboticsX30uApi::kFootOrder[];
-
-void DeepRoboticsX30uApi::setSend(LowCmd &cmd_msg) {
-  for (std::size_t i{}; i < getDoF(); ++i) {
-    cmd_msg_.joint_cmd[i].pos = -cmd_msg[kJointOrder[i]].q;
-    cmd_msg_.joint_cmd[i].vel = -cmd_msg[kJointOrder[i]].dq;
-    cmd_msg_.joint_cmd[i].tor = -cmd_msg[kJointOrder[i]].tor;
-    cmd_msg_.joint_cmd[i].kp  = cmd_msg[kJointOrder[i]].Kp;
-    cmd_msg_.joint_cmd[i].kd  = cmd_msg[kJointOrder[i]].Kd;
-  }
-  low_cmd_pub_->set_send(cmd_msg_);
-}
-
-void DeepRoboticsX30uApi::getRecv(LowState &state_msg) {
-  copyImuData(state_msg_->imu, state_msg.imu);
-  for (std::size_t i{}; i < getDoF(); ++i) {
-    state_msg.motor_state[kJointOrder[i]].q   = -state_msg_->joint_data[i].pos;
-    state_msg.motor_state[kJointOrder[i]].dq  = -state_msg_->joint_data[i].vel;
-    state_msg.motor_state[kJointOrder[i]].tor = -state_msg_->joint_data[i].tor;
-  }
-  for (std::size_t i{}; i < getNumLegs(); ++i) {
-    state_msg.foot_force[kFootOrder[i]] = cmVec3f(state_msg_->contact_force.data() + i * 3).norm();
-  }
-  state_msg.tick = state_msg_->tick;
-}
+constexpr std::array<std::size_t, 12> kJointOrderDeepRobotics2Unitree{3, 4, 5, 0, 1, 2, 9, 10, 11, 6, 7, 8};
+constexpr std::array<std::size_t, 4> kFootOrderDeepRobotics2Unitree{1, 0, 3, 2};
 
 STEPIT_REGISTER_ROBOTAPI(x30, kDefPriority, RobotApi::make<DeepRoboticsX30Api>);
-STEPIT_REGISTER_ROBOTAPI(x30u, kDefPriority, RobotApi::make<DeepRoboticsX30uApi>);
+STEPIT_REGISTER_ROBOTAPI(x30u, kDefPriority, []() {
+  return std::make_unique<RobotApiReorderingWrapper>(  //
+      "x30",                                           // Wrapped name
+      array2vector(kJointOrderDeepRobotics2Unitree),   // Joint 3-5 <-> 0-2, 9-11 <-> 6-8
+      array2vector(kFootOrderDeepRobotics2Unitree),    // Foot FR <-> FL, HR <-> HL
+      std::vector<bool>(12, true)                      // All joints reversed
+  );
+});
 }  // namespace stepit

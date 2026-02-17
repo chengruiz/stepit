@@ -2,6 +2,7 @@
 #define STEPIT_ROBOT_H_
 
 #include <array>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -117,6 +118,7 @@ struct RobotSpec {
 
 class RobotApi : public Interface<RobotApi> {
  public:
+  RobotApi() = default;
   explicit RobotApi(const std::string &name)
       : config_(loadConfigFile(fmt::format("robot/{}.yml", name))), spec_(config_) {}
 
@@ -135,9 +137,29 @@ class RobotApi : public Interface<RobotApi> {
   YAML::Node config_;
   RobotSpec spec_;
 };
+
+class RobotApiReorderingWrapper : public RobotApi {
+ public:
+  RobotApiReorderingWrapper(const std::string &wrapped_name, std::vector<std::size_t> joint_order,
+                            std::vector<std::size_t> foot_order = {}, std::vector<bool> joint_reversed = {});
+
+  void getControl(bool enable) override { wrapped_->getControl(enable); }
+  void setSend(LowCmd &cmd_msg) override;
+  void getRecv(LowState &state_msg) override;
+  void send() override { wrapped_->send(); }
+  void recv() override { wrapped_->recv(); }
+
+ private:
+  static void validateOrder(const std::vector<std::size_t> &order, std::size_t expected_size, const char *name);
+
+  std::unique_ptr<RobotApi> wrapped_;
+  std::vector<std::size_t> joint_order_;
+  std::vector<std::size_t> foot_order_;
+  std::vector<bool> joint_reversed_;
+};
 }  // namespace stepit
 
 #define STEPIT_REGISTER_ROBOTAPI(name, priority, factory) \
   static ::stepit::RobotApi::Registration _robotapi_##name##_registration(#name, priority, factory)
 
-#endif // STEPIT_ROBOT_H_
+#endif  // STEPIT_ROBOT_H_

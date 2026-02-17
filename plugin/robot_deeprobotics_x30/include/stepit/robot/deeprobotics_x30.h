@@ -7,36 +7,21 @@
 #include <stepit/robot.h>
 
 namespace stepit {
-class DeepRoboticsX30BaseApi : public RobotApi {
+class DeepRoboticsX30Api final : public RobotApi {
  public:
-  DeepRoboticsX30BaseApi(const std::string &name);
+  DeepRoboticsX30Api();
   void getControl(bool enable) override;
+  void setSend(LowCmd &cmd_msg) override;
+  void getRecv(LowState &state_msg) override;
   void send() override {}
   void recv() override {}
+  static constexpr const char *kRobotName = "x30";
 
- protected:
+ private:
   std::unique_ptr<x30::SendToRobot> low_cmd_pub_;
   x30::ParseCommand low_state_sub_;
   x30::RobotDataSDK *state_msg_{nullptr};
   x30::RobotCmdSDK cmd_msg_{};
-};
-
-class DeepRoboticsX30Api final : public DeepRoboticsX30BaseApi {
- public:
-  DeepRoboticsX30Api();
-  void setSend(LowCmd &cmd_msg) override;
-  void getRecv(LowState &state_msg) override;
-  static constexpr const char *kRobotName = "x30";
-};
-
-class DeepRoboticsX30uApi final : public DeepRoboticsX30BaseApi {
- public:
-  DeepRoboticsX30uApi();
-  void setSend(LowCmd &cmd_msg) override;
-  void getRecv(LowState &state_msg) override;
-  static constexpr const char *kRobotName = "x30u";
-  static constexpr std::size_t kJointOrder[]{3, 4, 5, 0, 1, 2, 9, 10, 11, 6, 7, 8};
-  static constexpr std::size_t kFootOrder[]{1, 0, 3, 2};
 };
 }  // namespace stepit
 
