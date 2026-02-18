@@ -62,7 +62,7 @@ class Registry {
 
   struct Entry;
   std::list<Entry> entries_;  // sorted by item priority
-  std::mutex mutex_;
+  mutable std::recursive_mutex mutex_;
 };
 
 template <typename T, typename... Args>
@@ -94,7 +94,7 @@ struct Registry<T, Args...>::Entry {
 
 template <typename T, typename... Args>
 std::unique_ptr<T> Registry<T, Args...>::make(std::string name, Args... args) {
-  std::lock_guard<std::mutex> _(mutex_);
+  std::lock_guard<std::recursive_mutex> _(mutex_);
   std::string full_type_name = llu::getTypeName<T>();
   STEPIT_ASSERT(not entries_.empty(), "No factories registered for type '{}'.", full_type_name);
 
@@ -144,7 +144,7 @@ void Registry<T, Args...>::insertEntry(std::string name, int priority, Factory f
                 kMinPriority, kMaxPriority);
   toLowercaseInplace(name);
 
-  std::lock_guard<std::mutex> _(mutex_);
+  std::lock_guard<std::recursive_mutex> _(mutex_);
   // Find the correct insertion point to maintain descending order by priority
   Entry entry(std::move(name), priority, std::move(factory));
   auto it = std::lower_bound(entries_.begin(), entries_.end(), entry, [](const Entry &entry1, const Entry &entry2) {
@@ -162,8 +162,8 @@ void Registry<T, Args...>::insertEntry(std::string name, int priority, Factory f
 
 template <typename T, typename... Args>
 void Registry<T, Args...>::eraseEntry(std::string name, int priority) {
-  std::lock_guard<std::mutex> _(mutex_);
   toLowercaseInplace(name);
+  std::lock_guard<std::recursive_mutex> _(mutex_);
   auto it = std::find_if(entries_.begin(), entries_.end(), [&name, priority](const Entry &entry) {
     return entry.name == name && entry.priority == priority;
   });
@@ -174,6 +174,7 @@ template <typename T, typename... Args>
 std::string Registry<T, Args...>::entryListString() const {
   std::ostringstream oss;
   int priority = -1;
+  std::lock_guard<std::recursive_mutex> _(mutex_);
   for (const auto &entry : entries_) {
     if (priority != entry.priority) {
       oss << "\n  - priority " << entry.priority << ": ";

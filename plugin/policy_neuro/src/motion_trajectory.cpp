@@ -54,8 +54,11 @@ MotionTrajectory::MotionTrajectory(const PolicySpec &policy_spec, const std::str
     }
 
     std::size_t field_size = std::accumulate(shape.begin() + 1, shape.end(), 1UL, std::multiplies<std::size_t>());
-    STEPIT_ASSERT(not item["size"].IsDefined() or yml::readAs<std::size_t>(item, "size") == field_size,
-                  "Field size specified in motion_trajectory.yml does not match that of array '{}'.", key_name);
+    if (item["size"]) {
+      auto specified_size = yml::readAs<std::size_t>(item, "size");
+      STEPIT_ASSERT(specified_size == field_size, "Field size specified ({}) does not match that ({}) of array '{}'.",
+                    specified_size, field_size, key_name);
+    }
     field_names_.push_back(field_name);
     key_names_.push_back(key_name);
     field_sizes_.push_back(field_size);
