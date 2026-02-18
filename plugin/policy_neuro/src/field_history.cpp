@@ -19,11 +19,8 @@ FieldHistory::FieldHistory(const PolicySpec &policy_spec, const std::string &hom
       yml::setTo(node.second["default_value"], buffer.default_value);
     }
 
-    buffer.source_id = registerField(buffer.source_name, 0);
+    buffer.source_id = registerRequirement(buffer.source_name);
     buffer.target_id = registerProvision(buffer.target_name, 0);
-    if (provisions_.find(buffer.source_id) == provisions_.end()) {
-      registerRequirement(buffer.source_id);
-    }
     buffers_.push_back(std::move(buffer));
   }
 }
@@ -31,8 +28,6 @@ FieldHistory::FieldHistory(const PolicySpec &policy_spec, const std::string &hom
 void FieldHistory::initFieldProperties() {
   for (auto &buffer : buffers_) {
     buffer.source_size = getFieldSize(buffer.source_id);
-    STEPIT_ASSERT(buffer.source_size > 0, "Size of source field '{}' is undefined.", getFieldName(buffer.source_id));
-
     FieldSize target_size = buffer.source_size * buffer.history_len;
     setFieldSize(buffer.target_id, target_size);
 

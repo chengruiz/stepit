@@ -7,7 +7,9 @@ FieldId Module::registerRequirement(const std::string &field_name) {
 }
 
 FieldId Module::registerRequirement(FieldId field_id) {
-  requirements_.insert(field_id);
+  if (provisions_.find(field_id) == provisions_.end()) {
+    requirements_.insert(field_id);
+  }
   return field_id;
 }
 
@@ -64,7 +66,9 @@ const std::string &FieldManager::getFieldName(FieldId id) const {
 
 FieldSize FieldManager::getFieldSize(FieldId id) const {
   std::lock_guard<std::recursive_mutex> lock(mutex_);
-  return id_to_size_[id];
+  FieldSize size = id_to_size_[id];
+  STEPIT_ASSERT(size > 0, "Size of field '{}' is undefined.", getFieldName(id));
+  return size;
 }
 
 void FieldManager::setFieldSize(FieldId id, FieldSize size) {
@@ -109,7 +113,6 @@ void splitFields(cArrXf source, const FieldIdVec &field_ids, FieldMap &context) 
   FieldSize offset = 0;
   for (auto field_id : field_ids) {
     FieldSize size = getFieldSize(field_id);
-    STEPIT_ASSERT(size > 0, "Size of '{}' is undefined.", getFieldName(field_id));
     STEPIT_ASSERT(offset + size <= source.size(), "Field segment size ({} + {}) out of bound ({}).", offset, size,
                   source.size());
     context[field_id] = source.segment(offset, size);

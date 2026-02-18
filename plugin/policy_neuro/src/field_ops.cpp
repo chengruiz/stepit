@@ -38,40 +38,37 @@ FieldOps::FieldOps(const PolicySpec &, const std::string &home_dir)
       STEPIT_ASSERT(node["target"] and node["sources"], "Concat op must contain 'target' and 'sources'.");
       STEPIT_ASSERT(node["sources"].IsSequence(), "'sources' in concat op must be a sequence.");
       for (const auto &source_node : node["sources"]) {
-        auto field_id = registerField(yml::readAs<std::string>(source_node), 0);
-        if (provisions_.find(field_id) == provisions_.end()) registerRequirement(field_id);
-        operation.source_ids.push_back(field_id);
+        operation.source_ids.push_back(registerRequirement(yml::readAs<std::string>(source_node)));
       }
       operation.target_id = registerProvision(yml::readAs<std::string>(node["target"]), 0);
     } else if (op_type == "copy") {
       operation.type = OpType::kCopy;
       STEPIT_ASSERT(node["source"] and node["target"], "Copy op must contain 'source' and 'target'.");
-      auto source_name = yml::readAs<std::string>(node["source"]);
-      auto target_name = yml::readAs<std::string>(node["target"]);
+      auto source_name = yml::readAs<std::string>(node, "source");
+      auto target_name = yml::readAs<std::string>(node, "target");
       STEPIT_ASSERT(source_name != target_name, "Source and target cannot be the same in a copy op.");
       operation.source_id = registerRequirement(source_name);
       operation.target_id = registerProvision(target_name, 0);
     } else if (op_type == "split") {
       operation.type = OpType::kSplit;
       STEPIT_ASSERT(node["source"] and node["targets"], "Split op must contain 'source' and 'targets'.");
-      operation.source_id     = registerRequirement(yml::readAs<std::string>(node["source"]));
+      operation.source_id = registerRequirement(yml::readAs<std::string>(node, "source"));
+
       const auto targets_node = node["targets"];
       STEPIT_ASSERT(targets_node.IsSequence(), "'targets' in split op must be a sequence.");
-      operation.segment_sizes.reserve(targets_node.size());
       for (const auto &target_node : targets_node) {
         STEPIT_ASSERT(target_node.IsMap() and target_node["name"] and target_node["size"],
                       "Each split target must be a map containing keys 'name' and 'size'.");
         auto name = yml::readAs<std::string>(target_node, "name");
         auto size = yml::readAs<FieldSize>(target_node, "size");
-        STEPIT_ASSERT(size > 0, "Split target size for '{}' must be positive.", name);
         operation.target_ids.push_back(registerProvision(name, size));
         operation.segment_sizes.push_back(size);
       }
     } else if (op_type == "slice") {
       operation.type = OpType::kSlice;
       STEPIT_ASSERT(node["source"] and node["target"], "Slice op must contain 'source' and 'target'.");
-      operation.source_id = registerRequirement(yml::readAs<std::string>(node["source"]));
-      operation.target_id = registerProvision(yml::readAs<std::string>(node["target"]), 0);
+      operation.source_id = registerRequirement(yml::readAs<std::string>(node, "source"));
+      operation.target_id = registerProvision(yml::readAs<std::string>(node, "target"), 0);
 
       if (node["indices"] and not node["indices"].IsNull()) {
         const auto indices_node = node["indices"];
@@ -81,8 +78,8 @@ FieldOps::FieldOps(const PolicySpec &, const std::string &home_dir)
           operation.indices.push_back(yml::readAs<FieldSize>(index_node));
         }
       } else {
-        auto start = yml::readAs<FieldSize>(operation.node, "start");
-        auto end   = yml::readAs<FieldSize>(operation.node, "end");
+        auto start = yml::readAs<FieldSize>(node, "start");
+        auto end   = yml::readAs<FieldSize>(node, "end");
         STEPIT_ASSERT(end > start, "Slice range [start={}, end={}) is invalid.", start, end);
         for (FieldSize i{start}; i < end; ++i) operation.indices.push_back(i);
       }
@@ -99,7 +96,6 @@ void FieldOps::initFieldProperties() {
     switch (operation.type) {
       case OpType::kAffine: {
         const auto field_size = getFieldSize(operation.source_id);
-        STEPIT_ASSERT(field_size > 0, "Size of '{}' is undefined.", getFieldName(operation.source_id));
         const auto &node = operation.node;
         operation.scale  = ArrXf::Ones(field_size);
         operation.bias   = ArrXf::Zero(field_size);
@@ -129,7 +125,6 @@ void FieldOps::initFieldProperties() {
         FieldSize total_size = 0;
         for (auto source_id : operation.source_ids) {
           auto source_size = getFieldSize(source_id);
-          STEPIT_ASSERT(source_size > 0, "Size of '{}' is undefined.", getFieldName(source_id));
           total_size += source_size;
         }
         setFieldSize(operation.target_id, total_size);
@@ -138,7 +133,6 @@ void FieldOps::initFieldProperties() {
       }
       case OpType::kSplit: {
         auto source_size = getFieldSize(operation.source_id);
-        STEPIT_ASSERT(source_size > 0, "Size of '{}' is undefined.", getFieldName(operation.source_id));
         FieldSize total_size = std::accumulate(operation.segment_sizes.begin(), operation.segment_sizes.end(),
                                                static_cast<FieldSize>(0));
         STEPIT_ASSERT(total_size == source_size, "Split sizes ({}) do not match source size ({}) for '{}'.", total_size,
@@ -147,7 +141,6 @@ void FieldOps::initFieldProperties() {
       }
       case OpType::kSlice: {
         auto source_size = getFieldSize(operation.source_id);
-        STEPIT_ASSERT(source_size > 0, "Size of '{}' is undefined.", getFieldName(operation.source_id));
         for (auto index : operation.indices) {
           STEPIT_ASSERT(index < source_size, "Slice index {} is out of range [0, {}) for '{}'.", index, source_size,
                         getFieldName(operation.source_id));
@@ -159,7 +152,6 @@ void FieldOps::initFieldProperties() {
       }
       case OpType::kCopy: {
         auto source_size = getFieldSize(operation.source_id);
-        STEPIT_ASSERT(source_size > 0, "Size of '{}' is undefined.", getFieldName(operation.source_id));
         setFieldSize(operation.target_id, source_size);
         break;
       }

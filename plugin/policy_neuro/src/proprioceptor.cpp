@@ -11,9 +11,9 @@ Proprioceptor::Proprioceptor(const PolicySpec &policy_spec, const std::string &)
 }
 
 bool Proprioceptor::update(const LowState &low_state, ControlRequests &requests, FieldMap &context) {
-  std::size_t joint_dim{getFieldSize(joint_pos_id_)};
-  ArrXf joint_pos{joint_dim}, joint_vel{joint_dim};
-  for (std::size_t i{}; i < joint_dim; ++i) {
+  std::uint32_t num_joints = getFieldSize(joint_pos_id_);
+  ArrXf joint_pos{num_joints}, joint_vel{num_joints};
+  for (std::uint32_t i{}; i < num_joints; ++i) {
     joint_pos[i] = low_state.motor_state[i].q;
     joint_vel[i] = low_state.motor_state[i].dq;
   }
