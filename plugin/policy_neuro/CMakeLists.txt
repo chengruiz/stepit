@@ -8,9 +8,8 @@ stepit_add_plugin(${PROJECT_NAME}
       src/cmd_posture_source.cpp
       src/cmd_vel_source.cpp
       src/field.cpp
-      src/field_assembler.cpp
       src/field_history.cpp
-      src/field_scaling.cpp
+      src/field_ops.cpp
       src/heightmap_source.cpp
       src/joint_reordering.cpp
       src/motion_trajectory.cpp

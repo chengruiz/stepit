@@ -11,11 +11,11 @@ input_field:                        # Dict[List[Dict]], mapping from the input n
   - { name: ang_vel,    size: 3  }
 
 output_field:                       # Dict[List[Dict]], mapping from the output name of the neural network to it component fields
-- { name: action, size: 12}         # The format is similar to "input_field"
+- { name: action, size: 12 }        # The format is similar to "input_field"
 
-assert_all_finite: true             # Bool, whether to assert all finite values in inputs
+assert_all_finite: true             # [Optional] Bool, whether to assert all finite values in inputs
 run:                                # [Optional] run configuration
-  task: my_task                     # String, name of the task
-  name: my_name                     # String, name of the run
-  time: 2026-01-01-00-00-00         # String, start time of the run
-  iter: 10000                       # Int, number of iterations
+  task: my_task                     #   [Optional] String, name of the task
+  name: my_name                     #   [Optional] String, name of the run
+  time: 2026-01-01-00-00-00         #   [Optional] String, start time of the run
+  iter: 10000                       #   [Optional] Int, number of iterations

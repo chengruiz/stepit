@@ -11,7 +11,6 @@ ActionHistory::ActionHistory(const PolicySpec &, const std::string &home_dir) {
   action_id_      = getFieldId("action");
   last_action_id_ = registerProvision("last_action", 0);
   action_p1_id_   = registerProvision("action_p1", 0);
-  action_p1_id_   = registerProvision("action_p1", 0);
   action_p2_id_   = registerProvision("action_p2", 0);
 }
 

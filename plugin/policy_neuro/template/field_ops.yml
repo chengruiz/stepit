@@ -1,0 +1,48 @@
+# Generic field operations executed in order
+# Root can be either this sequence or a map with key "ops".
+
+ops:
+  - type: affine                 # Literal["affine"]
+    # Field selection
+    # Option 1: In-place transform
+    field: joint_pos             # In-place transform for existing field
+    # Option 2: Source-target transform
+    # source: joint_pos          # [Optional] String, source field name
+    # target : joint_pos_scaled  # [Optional] String, target field name
+
+    # Affine parameters
+    # Option 1: target = scale * source + bias
+    scale: 0.1                   # [Optional] Union[Float, List[Float]], multiplied with the field
+    bias: -0.1                   # [Optional] Union[Float, List[Float]], added to the field
+    # Option 2: target = (source - mean) / std
+    # mean: 0.1                  # [Optional] Union[Float, List[Float]], used when bias is not provided
+    # std: 10.0                  # [Optional] Union[Float, List[Float]], used when scale is not provided
+
+  - type: concat                 # Literal["concat"]
+    target: proprioception       # String, target field name
+    sources:                     # List[String], source fields to concatenate in order
+      - gravity
+      - ang_vel
+      - joint_pos
+      - joint_vel
+
+  - type: split                  # Literal["split"]
+    source: action               # String, source field name
+    targets:                     # List[Dict], each entry requires {name: String, size: Int > 0}
+      - name: action_pos
+        size: 12
+      - name: action_vel
+        size: 12
+
+  - type: slice                  # Literal["slice"]
+    source: proprioception       # String, source field name
+    target: gravity_copy         # String, target field name
+    # Option 1: specify indices by start / end
+    start: 0                     # Int, inclusive start index when indices is not provided
+    end: 3                       # Int, exclusive end index when indices is not provided
+    # Option 2: specify explicit indices
+    # indices: [0, 1, 2]         # List[Int], explicit index selection
+
+  - type: copy                   # Literal["copy"]
+    source: action_pos           # String, source field name
+    target: action_pos_copy      # String, target field name

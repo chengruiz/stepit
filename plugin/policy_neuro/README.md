@@ -32,8 +32,7 @@ StepIt plugin for running neural network-based policy.
   | `cmd_roll`          | Provides roll command input.                          |
   | `cmd_vel`           | Provides velocity command input.                      |
   | `estimator`         | Infers the neural network state estimator.            |
-  | `field_assembler`   | Assembles multiple fields into a single output field. |
-  | `field_scaling`     | Scales and biases input fields.                       |
+  | `field_ops`         | Applies generic field operations.                     |
   | `heightmap`         | Provides heightmap observations.                      |
   | `joint_reorder`     | Reorders joint states.                                |
   | `motion_trajectory` | Provides predefined motion trajectory observations.   |

@@ -101,18 +101,22 @@ void concatFields(const FieldMap &context, const FieldIdVec &field_ids, rArrXf r
   for (auto field_id : field_ids) {
     stackField(context.at(field_id), offset, result);
   }
-  STEPIT_ASSERT(offset == result.size(), "Assembled field size ({}) does not match the context size ({}).", offset,
+  STEPIT_ASSERT(offset == result.size(), "Concat field size ({}) does not match the result size ({}).", offset,
                 result.size());
 }
 
-void splitFields(cArrXf data, const FieldIdVec &field_ids, FieldMap &context) {
-  FieldSize index = 0;
+void splitFields(cArrXf source, const FieldIdVec &field_ids, FieldMap &context) {
+  FieldSize offset = 0;
   for (auto field_id : field_ids) {
     FieldSize size = getFieldSize(field_id);
     STEPIT_ASSERT(size > 0, "Size of '{}' is undefined.", getFieldName(field_id));
-    context[field_id] = data.segment(index, size);
-    index += size;
+    STEPIT_ASSERT(offset + size <= source.size(), "Field segment size ({} + {}) out of bound ({}).", offset, size,
+                  source.size());
+    context[field_id] = source.segment(offset, size);
+    offset += size;
   }
+  STEPIT_ASSERT(offset == source.size(), "Split field size ({}) does not match the source size ({}).", offset,
+                source.size());
 }
 }  // namespace neuro_policy
 }  // namespace stepit

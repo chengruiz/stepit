@@ -82,7 +82,7 @@ inline Module::Ptr makeFieldSource(const std::string &field_name, const PolicySp
 void parseFieldIds(const YAML::Node &node, FieldIdVec &result);
 void stackField(cArrXf vec, uint32_t &index, rArrXf result);
 void concatFields(const FieldMap &context, const FieldIdVec &field_ids, rArrXf result);
-void splitFields(cArrXf data, const FieldIdVec &field_ids, FieldMap &result);
+void splitFields(cArrXf source, const FieldIdVec &field_ids, FieldMap &result);
 }  // namespace neuro_policy
 }  // namespace stepit
 
