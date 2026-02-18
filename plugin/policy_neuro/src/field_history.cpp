@@ -15,8 +15,8 @@ FieldHistory::FieldHistory(const PolicySpec &policy_spec, const std::string &hom
     yml::setTo(node.second["history_len"], buffer.history_len);
     STEPIT_ASSERT(buffer.history_len > 0, "History length for '{}' must be greater than 0.", buffer.target_name);
     yml::setIf(node.second["newest_first"], buffer.newest_first);
-    if (node.second["default_value"] and not node.second["default_value"].IsNull()) {
-      yml::setTo(node.second["default_value"], buffer.default_value);
+    if (yml::hasValue(node.second, "default_value")) {
+      yml::setTo(node.second, "default_value", buffer.default_value);
     }
 
     buffer.source_id = registerRequirement(buffer.source_name);
@@ -27,7 +27,7 @@ FieldHistory::FieldHistory(const PolicySpec &policy_spec, const std::string &hom
 
 void FieldHistory::initFieldProperties() {
   for (auto &buffer : buffers_) {
-    buffer.source_size = getFieldSize(buffer.source_id);
+    buffer.source_size    = getFieldSize(buffer.source_id);
     FieldSize target_size = buffer.source_size * buffer.history_len;
     setFieldSize(buffer.target_id, target_size);
 

@@ -12,7 +12,7 @@ ros::TransportHints parseTransportHints(const yml::Node &node);
 
 template <class M, class T>
 ros::Subscriber makeSubscriber(const YAML::Node &cfg, void (T::*fp)(M), T *obj, const std::string &default_topic = "") {
-  if (default_topic.empty()) yml::assertValid(cfg, "topic");
+  if (default_topic.empty()) yml::assertHasValue(cfg, "topic");
   std::string topic    = yml::readIf(cfg, "topic", default_topic);
   uint32_t queue_size  = yml::readIf(cfg, "queue_size", 1UL);
   auto transport_hints = parseTransportHints(cfg["transport_hints"]);
@@ -21,7 +21,7 @@ ros::Subscriber makeSubscriber(const YAML::Node &cfg, void (T::*fp)(M), T *obj, 
 
 template <class T>
 ros::Publisher makePublisher(const YAML::Node &cfg, const std::string &default_topic = "") {
-  if (default_topic.empty()) yml::assertValid(cfg, "topic");
+  if (default_topic.empty()) yml::assertHasValue(cfg, "topic");
   std::string topic   = yml::readIf(cfg, "topic", default_topic);
   uint32_t queue_size = yml::readIf(cfg, "queue_size", 1UL);
   bool latch          = yml::readIf(cfg, "latch", false);

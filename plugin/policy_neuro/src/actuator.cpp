@@ -15,9 +15,9 @@ Actuator::Actuator(const PolicySpec &policy_spec, const std::string &home_dir) {
   kp_.setZero(policy_spec.dof);
   kd_.setZero(policy_spec.dof);
 
-  if (config_["parameters"]) {
+  if (yml::hasValue(config_, "parameters")) {
+    yml::assertSequenceOfSize(config_, "parameters", policy_spec.dof);
     yml::Node parameters = config_["parameters"];
-    yml::assertNTuple(parameters, policy_spec.dof);
     for (std::size_t i{}; i < policy_spec.dof; ++i) {
       STEPIT_ASSERT(parameters[i].IsMap(), "Each element in 'parameters' should be a map.");
       auto param = parameters[i];
@@ -132,13 +132,13 @@ const std::map<std::string, HybridActuator::Mode> HybridActuator::kModeMap = {
 
 HybridActuator::HybridActuator(const PolicySpec &policy_spec, const std::string &home_dir)
     : Actuator(policy_spec, home_dir) {
-  if (config_["parameters"]) {
+  if (yml::hasValue(config_, "parameters")) {
     yml::Node parameters = config_["parameters"];
     for (const auto &node : config_["parameters"]) {
       modes_.push_back(lookupMap(yml::readAs<std::string>(node, "mode"), kModeMap));
     }
   } else {
-    yml::assertNTuple(config_, "mode", policy_spec.dof);
+    yml::assertSequenceOfSize(config_, "mode", policy_spec.dof);
     for (const auto &node : config_["mode"]) {
       modes_.push_back(lookupMap(yml::readAs<std::string>(node), kModeMap));
     }

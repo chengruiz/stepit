@@ -11,7 +11,7 @@ FieldOps::FieldOps(const PolicySpec &, const std::string &home_dir)
 
   for (const auto &node : ops_node) {
     STEPIT_ASSERT(node.IsMap(), "Each field op must be a map.");
-    STEPIT_ASSERT(node["type"], "Each field op must contain a 'type'.");
+    STEPIT_ASSERT(yml::hasValue(node, "type"), "Each field op must contain a 'type'.");
     Operation operation;
     operation.node = YAML::Clone(node);
 
@@ -70,7 +70,7 @@ FieldOps::FieldOps(const PolicySpec &, const std::string &home_dir)
       operation.source_id = registerRequirement(yml::readAs<std::string>(node, "source"));
       operation.target_id = registerProvision(yml::readAs<std::string>(node, "target"), 0);
 
-      if (node["indices"] and not node["indices"].IsNull()) {
+      if (yml::hasValue(node, "indices")) {
         const auto indices_node = node["indices"];
         STEPIT_ASSERT(indices_node.IsSequence() and indices_node.size() > 0,
                       "'indices' in slice op must be a non-empty sequence.");
@@ -95,22 +95,22 @@ void FieldOps::initFieldProperties() {
   for (auto &operation : operations_) {
     switch (operation.type) {
       case OpType::kAffine: {
-        const auto field_size = getFieldSize(operation.source_id);
+        auto field_size  = getFieldSize(operation.source_id);
         const auto &node = operation.node;
         operation.scale  = ArrXf::Ones(field_size);
         operation.bias   = ArrXf::Zero(field_size);
 
-        if (node["scale"]) {
+        if (yml::hasValue(node, "scale")) {
           yml::setTo(node, "scale", operation.scale);
-        } else if (node["std"]) {
+        } else if (yml::hasValue(node, "std")) {
           ArrXf std{ArrXf::Ones(field_size)};
           yml::setTo(node, "std", std);
           STEPIT_ASSERT((std > kEPS).all(), "'std' values of affine op must be positive.");
           operation.scale = std.cwiseInverse();
         }
-        if (node["bias"]) {
+        if (yml::hasValue(node, "bias")) {
           yml::setTo(node, "bias", operation.bias);
-        } else if (node["mean"]) {
+        } else if (yml::hasValue(node, "mean")) {
           ArrXf mean{ArrXf::Zero(field_size)};
           yml::setTo(node, "mean", mean);
           operation.bias = -mean.cwiseProduct(operation.scale);
@@ -132,7 +132,7 @@ void FieldOps::initFieldProperties() {
         break;
       }
       case OpType::kSplit: {
-        auto source_size = getFieldSize(operation.source_id);
+        auto source_size     = getFieldSize(operation.source_id);
         FieldSize total_size = std::accumulate(operation.segment_sizes.begin(), operation.segment_sizes.end(),
                                                static_cast<FieldSize>(0));
         STEPIT_ASSERT(total_size == source_size, "Split sizes ({}) do not match source size ({}) for '{}'.", total_size,

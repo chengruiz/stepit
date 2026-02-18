@@ -92,7 +92,7 @@ FieldId NeuroModule::addField(const YAML::Node &node, FieldNameVec &field_names,
 void NeuroModule::parseFields(const std::string &key, const FieldNameVec &node_names,
                               std::vector<FieldNameVec> &field_names, std::vector<FieldSizeVec> &field_sizes,
                               FieldSizeVec &total_dims, std::vector<FieldIdVec> &fields) {
-  yml::assertValid(config_, key);
+  yml::assertDefined(config_, key);
   auto cfg = config_[key];
 
   std::size_t num_nodes = node_names.size();
@@ -102,8 +102,7 @@ void NeuroModule::parseFields(const std::string &key, const FieldNameVec &node_n
   fields.resize(num_nodes);
 
   if (cfg.IsSequence()) {
-    STEPIT_ASSERT_EQ(num_nodes, 1UL, "'{}' must be a map if the neural network has multiple non-recurrent inputs.",
-                     key);
+    STEPIT_ASSERT(num_nodes == 1, "'{}' must be a map if the neural network has multiple non-recurrent inputs.", key);
     for (const auto &node : cfg) {
       fields[0].push_back(addField(node, field_names[0], field_sizes[0]));
     }
@@ -114,7 +113,7 @@ void NeuroModule::parseFields(const std::string &key, const FieldNameVec &node_n
                      key);
     for (std::size_t i{}; i < num_nodes; ++i) {
       const std::string &node_name = node_names[i];
-      yml::assertValid(cfg, node_name);
+      yml::assertDefined(cfg, node_name);
       for (const auto &node : cfg[node_name]) {
         fields[i].push_back(addField(node, field_names[i], field_sizes[i]));
       }
