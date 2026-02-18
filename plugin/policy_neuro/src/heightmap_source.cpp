@@ -36,9 +36,9 @@ DummyHeightmapSource::DummyHeightmapSource(const PolicySpec &, const std::string
   uncertainty_id_ = registerProvision("heightmap_uncertainty", numHeightSamples());
 }
 
-bool DummyHeightmapSource::update(const LowState &low_state, ControlRequests &requests, FieldMap &result) {
-  result[heightmap_id_]   = elevation_;
-  result[uncertainty_id_] = uncertainty_;
+bool DummyHeightmapSource::update(const LowState &low_state, ControlRequests &requests, FieldMap &context) {
+  context[heightmap_id_]   = elevation_;
+  context[uncertainty_id_] = uncertainty_;
   return true;
 }
 

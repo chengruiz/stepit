@@ -11,8 +11,8 @@ bool TimeStepSource::reset() {
   return true;
 }
 
-bool TimeStepSource::update(const LowState &, ControlRequests &, FieldMap &result) {
-  result[time_step_id_] = Arr1f{static_cast<float>(step_index_)};
+bool TimeStepSource::update(const LowState &, ControlRequests &, FieldMap &context) {
+  context[time_step_id_] = Arr1f{static_cast<float>(step_index_)};
   ++step_index_;
   return true;
 }

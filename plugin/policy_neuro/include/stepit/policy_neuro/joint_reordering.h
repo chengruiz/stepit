@@ -10,7 +10,7 @@ class JointReordering : public Module {
   JointReordering(const PolicySpec &, const std::string &home_dir);
   void initFieldProperties() override;
   bool reset() override { return true; }
-  bool update(const LowState &low_state, ControlRequests &requests, FieldMap &result) override;
+  bool update(const LowState &low_state, ControlRequests &requests, FieldMap &context) override;
 
  private:
   ArrXf reorder(const ArrXf &in);
@@ -25,7 +25,7 @@ class ActionReordering : public Module {
   ActionReordering(const PolicySpec &, const std::string &home_dir);
   void initFieldProperties() override;
   bool reset() override { return true; }
-  bool update(const LowState &low_state, ControlRequests &requests, FieldMap &result) override;
+  bool update(const LowState &low_state, ControlRequests &requests, FieldMap &context) override;
 
  private:
   ArrXf reorder(const ArrXf &in);

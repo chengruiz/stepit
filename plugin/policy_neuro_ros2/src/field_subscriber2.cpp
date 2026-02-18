@@ -35,7 +35,7 @@ bool FieldSubscriber2::reset() {
   return true;
 }
 
-bool FieldSubscriber2::update(const LowState &low_state, ControlRequests &requests, FieldMap &result) {
+bool FieldSubscriber2::update(const LowState &low_state, ControlRequests &requests, FieldMap &context) {
   std::lock_guard<std::mutex> _(mutex_);
   for (const auto &field : fields_) {
     if (field.timeout_threshold > 0.0 and getElapsedTime(field.stamp) > field.timeout_threshold) {
@@ -46,7 +46,7 @@ bool FieldSubscriber2::update(const LowState &low_state, ControlRequests &reques
       STEPIT_WARN("Field '{}' has unexpected size: expected {}, got {}.", field.name, field.size, field.data.size());
       return false;
     }
-    result[field.id] = field.data;
+    context[field.id] = field.data;
   }
   return true;
 }

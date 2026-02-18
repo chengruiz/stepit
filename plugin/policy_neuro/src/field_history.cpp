@@ -54,9 +54,9 @@ bool FieldHistory::reset() {
   return true;
 }
 
-bool FieldHistory::update(const LowState &, ControlRequests &, FieldMap &result) {
+bool FieldHistory::update(const LowState &, ControlRequests &, FieldMap &context) {
   for (auto &buffer : buffers_) {
-    const auto &frame = result.at(buffer.source_id);
+    const auto &frame = context.at(buffer.source_id);
     if (buffer.history.empty()) {
       buffer.history.fill(buffer.default_value.size() > 0 ? buffer.default_value : frame);
     }
@@ -73,7 +73,7 @@ bool FieldHistory::update(const LowState &, ControlRequests &, FieldMap &result)
     for (const auto &frame : buffer.history) {
       stackField(frame, offset, buffer.output_buffer);
     }
-    result[buffer.target_id] = buffer.output_buffer;
+    context[buffer.target_id] = buffer.output_buffer;
   }
   return true;
 }

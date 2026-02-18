@@ -39,9 +39,9 @@ ArrXf JointReordering::reorder(const ArrXf &in) {
   return out;
 }
 
-bool JointReordering::update(const LowState &, ControlRequests &, FieldMap &result) {
-  result[joint_pos_id_] = reorder(result.at(joint_pos_id_));
-  result[joint_vel_id_] = reorder(result.at(joint_vel_id_));
+bool JointReordering::update(const LowState &, ControlRequests &, FieldMap &context) {
+  context[joint_pos_id_] = reorder(context.at(joint_pos_id_));
+  context[joint_vel_id_] = reorder(context.at(joint_vel_id_));
   return true;
 }
 
@@ -77,8 +77,8 @@ ArrXf ActionReordering::reorder(const ArrXf &in) {
   return out;
 }
 
-bool ActionReordering::update(const LowState &, ControlRequests &, FieldMap &result) {
-  result[action_id_] = reorder(result.at(action_id_));
+bool ActionReordering::update(const LowState &, ControlRequests &, FieldMap &context) {
+  context[action_id_] = reorder(context.at(action_id_));
   return true;
 }
 

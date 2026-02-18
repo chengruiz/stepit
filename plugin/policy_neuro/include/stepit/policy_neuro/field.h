@@ -21,7 +21,7 @@ class Module : public Interface<Module, const PolicySpec & /* policy_spec */, co
  public:
   virtual void initFieldProperties() {}
   virtual bool reset() { return true; }
-  virtual bool update(const LowState &low_state, ControlRequests &requests, FieldMap &result) = 0;
+  virtual bool update(const LowState &low_state, ControlRequests &requests, FieldMap &context) = 0;
   virtual void postUpdate(const FieldMap &field_map) {}
   virtual void exit() {}
 
@@ -81,7 +81,7 @@ inline Module::Ptr makeFieldSource(const std::string &field_name, const PolicySp
 
 void parseFieldIds(const YAML::Node &node, FieldIdVec &result);
 void stackField(cArrXf vec, uint32_t &index, rArrXf result);
-void assembleFields(const FieldMap &field_map, const FieldIdVec &field_ids, rArrXf result);
+void concatFields(const FieldMap &context, const FieldIdVec &field_ids, rArrXf result);
 void splitFields(cArrXf data, const FieldIdVec &field_ids, FieldMap &result);
 }  // namespace neuro_policy
 }  // namespace stepit

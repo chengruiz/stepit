@@ -43,7 +43,7 @@ void CmdVelSubscriber2::twistStampedCallback(const geometry_msgs::msg::TwistStam
   cmd_vel_stamp_ = msg->header.stamp;
 }
 
-bool CmdVelSubscriber2::update(const LowState &low_state, ControlRequests &requests, FieldMap &result) {
+bool CmdVelSubscriber2::update(const LowState &low_state, ControlRequests &requests, FieldMap &context) {
   bool subscriber_enabled = subscriber_enabled_.load(std::memory_order_acquire);
   subscribing_status_->update(subscriber_enabled ? 1 : 0);
   if (subscriber_enabled and getElapsedTime(cmd_vel_stamp_) < timeout_threshold_) {
@@ -53,7 +53,7 @@ bool CmdVelSubscriber2::update(const LowState &low_state, ControlRequests &reque
   } else {
     target_cmd_vel_.setZero();
   }
-  return CmdVelSource::update(low_state, requests, result);
+  return CmdVelSource::update(low_state, requests, context);
 }
 
 void CmdVelSubscriber2::exit() {

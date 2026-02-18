@@ -105,7 +105,7 @@ bool HeightmapSubscriber2::reset() {
   return true;
 }
 
-bool HeightmapSubscriber2::update(const LowState &low_state, ControlRequests &requests, FieldMap &result) {
+bool HeightmapSubscriber2::update(const LowState &low_state, ControlRequests &requests, FieldMap &context) {
   for (auto &&request : requests.filterByChannel("Policy/Heightmap")) {
     handleControlRequest(std::move(request));
   }
@@ -117,7 +117,7 @@ bool HeightmapSubscriber2::update(const LowState &low_state, ControlRequests &re
   if (not status) {
     elevation_.setZero();
     uncertainty_.setConstant(max_uncertainty_);
-    return DummyHeightmapSource::update(low_state, requests, result);
+    return DummyHeightmapSource::update(low_state, requests, context);
   }
   {
     std::lock_guard<std::mutex> lock(msg_mtx_);
@@ -175,7 +175,7 @@ bool HeightmapSubscriber2::update(const LowState &low_state, ControlRequests &re
     sample_pub_->publish(sample_msg_);
   }
   if (elevation_zero_mean_) elevation_ -= mean;
-  return DummyHeightmapSource::update(low_state, requests, result);
+  return DummyHeightmapSource::update(low_state, requests, context);
 }
 
 void HeightmapSubscriber2::exit() {

@@ -13,7 +13,7 @@ class ActionHistory : public Module {
   ActionHistory(const PolicySpec &policy_spec, const std::string &home_dir);
   void initFieldProperties() override;
   bool reset() override;
-  bool update(const LowState &low_state, ControlRequests &requests, FieldMap &result) override;
+  bool update(const LowState &low_state, ControlRequests &requests, FieldMap &context) override;
   void postUpdate(const FieldMap &field_map) override;
 
  private:
@@ -30,7 +30,7 @@ class ActionFilter : public Module {
   ActionFilter(const PolicySpec &policy_spec, const std::string &home_dir);
   void initFieldProperties() override;
   bool reset() override;
-  bool update(const LowState &low_state, ControlRequests &requests, FieldMap &result) override;
+  bool update(const LowState &low_state, ControlRequests &requests, FieldMap &context) override;
 
  private:
   int window_size_{};

@@ -75,7 +75,7 @@ bool MotionTrajectory::reset() {
   return true;
 }
 
-bool MotionTrajectory::update(const LowState &low_state, ControlRequests &requests, FieldMap &result) {
+bool MotionTrajectory::update(const LowState &low_state, ControlRequests &requests, FieldMap &context) {
   for (std::size_t i{}; i < field_ids_.size(); ++i) {
     const auto &key   = key_names_[i];
     const auto &array = npz_[key];
@@ -85,9 +85,9 @@ bool MotionTrajectory::update(const LowState &low_state, ControlRequests &reques
 
     std::size_t offset = frame_idx_ * field_size;
     if (array.dtype == "float64") {
-      result[field_id] = cmArrXd(array.data<double>() + offset, field_size).cast<float>();
+      context[field_id] = cmArrXd(array.data<double>() + offset, field_size).cast<float>();
     } else {
-      result[field_id] = cmArrXf(array.data<float>() + offset, field_size);
+      context[field_id] = cmArrXf(array.data<float>() + offset, field_size);
     }
   }
 

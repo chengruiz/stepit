@@ -29,10 +29,10 @@ bool ActionHistory::reset() {
   return true;
 }
 
-bool ActionHistory::update(const LowState &low_state, ControlRequests &requests, FieldMap &result) {
-  result[last_action_id_] = action_buf_.at(-1, action_mean_);
-  result[action_p1_id_]   = action_buf_.at(-1, action_mean_);
-  result[action_p2_id_]   = action_buf_.at(-2, action_mean_);
+bool ActionHistory::update(const LowState &low_state, ControlRequests &requests, FieldMap &context) {
+  context[last_action_id_] = action_buf_.at(-1, action_mean_);
+  context[action_p1_id_]   = action_buf_.at(-1, action_mean_);
+  context[action_p2_id_]   = action_buf_.at(-2, action_mean_);
   return true;
 }
 
@@ -59,8 +59,8 @@ bool ActionFilter::reset() {
   return true;
 }
 
-bool ActionFilter::update(const LowState &low_state, ControlRequests &requests, FieldMap &result) {
-  auto &action = result.at(action_id_);
+bool ActionFilter::update(const LowState &low_state, ControlRequests &requests, FieldMap &context) {
+  auto &action = context.at(action_id_);
   action_buf_.push_back(action);
   for (int i{1}; i < window_size_; ++i) {
     action += action_buf_.at(-i - 1, action_mean_);

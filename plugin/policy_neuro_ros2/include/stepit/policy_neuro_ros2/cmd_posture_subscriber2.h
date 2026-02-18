@@ -13,7 +13,7 @@ class CmdRollSubscriber2 : public CmdRollSource {
  public:
   CmdRollSubscriber2(const PolicySpec &policy_spec, const std::string &home_dir);
   bool reset() override;
-  bool update(const LowState &low_state, ControlRequests &requests, FieldMap &result) override;
+  bool update(const LowState &low_state, ControlRequests &requests, FieldMap &context) override;
   void exit() override;
 
  private:
@@ -37,7 +37,7 @@ class CmdPitchSubscriber2 : public CmdPitchSource {
  public:
   CmdPitchSubscriber2(const PolicySpec &policy_spec, const std::string &home_dir);
   bool reset() override;
-  bool update(const LowState &low_state, ControlRequests &requests, FieldMap &result) override;
+  bool update(const LowState &low_state, ControlRequests &requests, FieldMap &context) override;
   void exit() override;
 
  private:
@@ -61,7 +61,7 @@ class CmdHeightSubscriber2 : public CmdHeightSource {
  public:
   CmdHeightSubscriber2(const PolicySpec &policy_spec, const std::string &home_dir);
   bool reset() override;
-  bool update(const LowState &low_state, ControlRequests &requests, FieldMap &result) override;
+  bool update(const LowState &low_state, ControlRequests &requests, FieldMap &context) override;
   void exit() override;
 
  private:

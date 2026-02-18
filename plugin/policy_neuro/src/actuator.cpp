@@ -45,7 +45,7 @@ bool PositionActuator::reset() {
   return true;
 }
 
-bool PositionActuator::update(const LowState &low_state, ControlRequests &requests, FieldMap &result) {
+bool PositionActuator::update(const LowState &low_state, ControlRequests &requests, FieldMap &context) {
   if (is_first_update_) {
     // Initialize last target position to current position
     for (Eigen::Index i{}; i < target_joint_pos_.size(); ++i) {
@@ -53,7 +53,7 @@ bool PositionActuator::update(const LowState &low_state, ControlRequests &reques
     }
     is_first_update_ = false;
   }
-  result[last_target_joint_pos_id_] = target_joint_pos_;
+  context[last_target_joint_pos_id_] = target_joint_pos_;
   return true;
 }
 
@@ -79,8 +79,8 @@ bool VelocityActuator::reset() {
   return true;
 }
 
-bool VelocityActuator::update(const LowState &low_state, ControlRequests &requests, FieldMap &result) {
-  result[last_target_joint_vel_id_] = target_joint_vel_;
+bool VelocityActuator::update(const LowState &low_state, ControlRequests &requests, FieldMap &context) {
+  context[last_target_joint_vel_id_] = target_joint_vel_;
   return true;
 }
 
@@ -106,8 +106,8 @@ bool TorqueActuator::reset() {
   return true;
 }
 
-bool TorqueActuator::update(const LowState &low_state, ControlRequests &requests, FieldMap &result) {
-  result[last_target_joint_tor_id_] = target_joint_tor_;
+bool TorqueActuator::update(const LowState &low_state, ControlRequests &requests, FieldMap &context) {
+  context[last_target_joint_tor_id_] = target_joint_tor_;
   return true;
 }
 
@@ -153,8 +153,8 @@ bool HybridActuator::reset() {
   return true;
 }
 
-bool HybridActuator::update(const LowState &low_state, ControlRequests &requests, FieldMap &result) {
-  result[last_joint_command_id_] = joint_command_;
+bool HybridActuator::update(const LowState &low_state, ControlRequests &requests, FieldMap &context) {
+  context[last_joint_command_id_] = joint_command_;
   return true;
 }
 

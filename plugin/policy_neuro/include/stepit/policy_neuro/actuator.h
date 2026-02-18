@@ -17,7 +17,7 @@ class Actuator : public Module,
 
   Actuator(const PolicySpec &policy_spec, const std::string &home_dir);
 
-  bool update(const LowState &low_state, ControlRequests &requests, FieldMap &result) override { return true; }
+  bool update(const LowState &low_state, ControlRequests &requests, FieldMap &context) override { return true; }
   virtual void setLowCmd(LowCmd &cmd, cArrXf action) = 0;
 
  protected:
@@ -30,7 +30,7 @@ class PositionActuator : public Actuator {
  public:
   PositionActuator(const PolicySpec &policy_spec, const std::string &home_dir);
   bool reset() override;
-  bool update(const LowState &low_state, ControlRequests &requests, FieldMap &result) override;
+  bool update(const LowState &low_state, ControlRequests &requests, FieldMap &context) override;
   void setLowCmd(LowCmd &cmd, cArrXf action) override;
 
  private:
@@ -43,7 +43,7 @@ class VelocityActuator : public Actuator {
  public:
   VelocityActuator(const PolicySpec &policy_spec, const std::string &home_dir);
   bool reset() override;
-  bool update(const LowState &low_state, ControlRequests &requests, FieldMap &result) override;
+  bool update(const LowState &low_state, ControlRequests &requests, FieldMap &context) override;
   void setLowCmd(LowCmd &cmd, cArrXf action) override;
 
  private:
@@ -55,7 +55,7 @@ class TorqueActuator : public Actuator {
  public:
   TorqueActuator(const PolicySpec &policy_spec, const std::string &home_dir);
   bool reset() override;
-  bool update(const LowState &low_state, ControlRequests &requests, FieldMap &result) override;
+  bool update(const LowState &low_state, ControlRequests &requests, FieldMap &context) override;
   void setLowCmd(LowCmd &cmd, cArrXf action) override;
 
  private:
@@ -67,7 +67,7 @@ class HybridActuator : public Actuator {
  public:
   HybridActuator(const PolicySpec &policy_spec, const std::string &home_dir);
   bool reset() override;
-  bool update(const LowState &low_state, ControlRequests &requests, FieldMap &result) override;
+  bool update(const LowState &low_state, ControlRequests &requests, FieldMap &context) override;
   void setLowCmd(LowCmd &cmd, cArrXf action) override;
 
  private:

@@ -55,10 +55,10 @@ bool NeuroModule::reset() {
   return true;
 }
 
-bool NeuroModule::update(const LowState &low_state, ControlRequests &requests, FieldMap &result) {
+bool NeuroModule::update(const LowState &low_state, ControlRequests &requests, FieldMap &context) {
   bool all_finite = true;
   for (std::size_t i{}; i < input_names_.size(); ++i) {
-    assembleFields(result, input_fields_[i], input_arr_[i]);
+    concatFields(context, input_fields_[i], input_arr_[i]);
     if (assert_all_finite_ and not input_arr_[i].allFinite()) {
       STEPIT_CRIT("Indices '{}' of input '{}' is not all-finite.", getNonFiniteIndices(input_arr_[i]), input_names_[i]);
       all_finite = false;
@@ -73,7 +73,7 @@ bool NeuroModule::update(const LowState &low_state, ControlRequests &requests, F
       STEPIT_CRIT("Indices '{}' of output '{}' is not all-finite.", getNonFiniteIndices(output), output_names_[i]);
       all_finite = false;
     }
-    splitFields(output, output_fields_[i], result);
+    splitFields(output, output_fields_[i], context);
   }
   return all_finite;
 }

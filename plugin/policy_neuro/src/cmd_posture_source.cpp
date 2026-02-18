@@ -31,12 +31,12 @@ bool CmdRollSource::reset() {
   return true;
 }
 
-bool CmdRollSource::update(const LowState &low_state, ControlRequests &requests, FieldMap &result) {
+bool CmdRollSource::update(const LowState &low_state, ControlRequests &requests, FieldMap &context) {
   for (auto &&request : requests.filterByChannel("Policy/CmdRoll")) {
     handleControlRequest(std::move(request));
   }
 
-  result[cmd_roll_id_] = Arr1f{cmd_roll_};
+  context[cmd_roll_id_] = Arr1f{cmd_roll_};
   return true;
 }
 
@@ -102,12 +102,12 @@ bool CmdPitchSource::reset() {
   return true;
 }
 
-bool CmdPitchSource::update(const LowState &low_state, ControlRequests &requests, FieldMap &result) {
+bool CmdPitchSource::update(const LowState &low_state, ControlRequests &requests, FieldMap &context) {
   for (auto &&request : requests.filterByChannel("Policy/CmdPitch")) {
     handleControlRequest(std::move(request));
   }
 
-  result[cmd_pitch_id_] = Arr1f{cmd_pitch_};
+  context[cmd_pitch_id_] = Arr1f{cmd_pitch_};
   return true;
 }
 
@@ -178,12 +178,12 @@ bool CmdHeightSource::reset() {
   return true;
 }
 
-bool CmdHeightSource::update(const LowState &low_state, ControlRequests &requests, FieldMap &result) {
+bool CmdHeightSource::update(const LowState &low_state, ControlRequests &requests, FieldMap &context) {
   for (auto &&request : requests.filterByChannel("Policy/CmdHeight")) {
     handleControlRequest(std::move(request));
   }
 
-  result[cmd_height_id_] = Arr1f{cmd_height_};
+  context[cmd_height_id_] = Arr1f{cmd_height_};
   return true;
 }
 

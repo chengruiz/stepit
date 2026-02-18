@@ -12,7 +12,7 @@ class FieldSubscriber2 : public Module {
  public:
   FieldSubscriber2(const PolicySpec &policy_spec, const std::string &home_dir);
   bool reset() override;
-  bool update(const LowState &low_state, ControlRequests &requests, FieldMap &result) override;
+  bool update(const LowState &low_state, ControlRequests &requests, FieldMap &context) override;
 
  private:
   void callback(std::size_t index, const std_msgs::msg::Float32MultiArray::SharedPtr msg);

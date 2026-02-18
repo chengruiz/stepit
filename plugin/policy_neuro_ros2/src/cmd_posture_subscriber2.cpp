@@ -36,7 +36,7 @@ bool CmdRollSubscriber2::reset() {
   return CmdRollSource::reset();
 }
 
-bool CmdRollSubscriber2::update(const LowState &low_state, ControlRequests &requests, FieldMap &result) {
+bool CmdRollSubscriber2::update(const LowState &low_state, ControlRequests &requests, FieldMap &context) {
   bool subscriber_enabled = subscriber_enabled_.load(std::memory_order_acquire);
   subscribing_status_->update(subscriber_enabled ? 1 : 0);
   if (subscriber_enabled) {
@@ -47,7 +47,7 @@ bool CmdRollSubscriber2::update(const LowState &low_state, ControlRequests &requ
       cmd_roll_ = 0.0F;
     }
   }
-  return CmdRollSource::update(low_state, requests, result);
+  return CmdRollSource::update(low_state, requests, context);
 }
 
 void CmdRollSubscriber2::exit() {
@@ -140,7 +140,7 @@ bool CmdPitchSubscriber2::reset() {
   return CmdPitchSource::reset();
 }
 
-bool CmdPitchSubscriber2::update(const LowState &low_state, ControlRequests &requests, FieldMap &result) {
+bool CmdPitchSubscriber2::update(const LowState &low_state, ControlRequests &requests, FieldMap &context) {
   bool subscriber_enabled = subscriber_enabled_.load(std::memory_order_acquire);
   subscribing_status_->update(subscriber_enabled ? 1 : 0);
   if (subscriber_enabled) {
@@ -151,7 +151,7 @@ bool CmdPitchSubscriber2::update(const LowState &low_state, ControlRequests &req
       cmd_pitch_ = 0.0F;
     }
   }
-  return CmdPitchSource::update(low_state, requests, result);
+  return CmdPitchSource::update(low_state, requests, context);
 }
 
 void CmdPitchSubscriber2::exit() {
@@ -245,7 +245,7 @@ bool CmdHeightSubscriber2::reset() {
   return CmdHeightSource::reset();
 }
 
-bool CmdHeightSubscriber2::update(const LowState &low_state, ControlRequests &requests, FieldMap &result) {
+bool CmdHeightSubscriber2::update(const LowState &low_state, ControlRequests &requests, FieldMap &context) {
   bool subscriber_enabled = subscriber_enabled_.load(std::memory_order_acquire);
   subscribing_status_->update(subscriber_enabled ? 1 : 0);
   if (subscriber_enabled) {
@@ -256,7 +256,7 @@ bool CmdHeightSubscriber2::update(const LowState &low_state, ControlRequests &re
       cmd_height_ = default_cmd_height_;
     }
   }
-  return CmdHeightSource::update(low_state, requests, result);
+  return CmdHeightSource::update(low_state, requests, context);
 }
 
 void CmdHeightSubscriber2::exit() {

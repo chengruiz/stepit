@@ -80,12 +80,12 @@ void FieldManager::setFieldSize(FieldId id, FieldSize size) {
   }
 }
 
-void parseFieldIds(const YAML::Node &node, FieldIdVec &result) {
+void parseFieldIds(const YAML::Node &node, FieldIdVec &context) {
   STEPIT_ASSERT(node.IsSequence(), "Expected sequence node for field IDs.");
   for (const auto &item : node) {
     auto name  = item.as<std::string>();
     FieldId id = getFieldId(name);
-    result.push_back(id);
+    context.push_back(id);
   }
 }
 
@@ -96,21 +96,21 @@ void stackField(cArrXf vec, uint32_t &offset, rArrXf result) {
   offset += vec.size();
 }
 
-void assembleFields(const FieldMap &field_map, const FieldIdVec &field_ids, rArrXf result) {
+void concatFields(const FieldMap &context, const FieldIdVec &field_ids, rArrXf result) {
   uint32_t offset = 0;
   for (auto field_id : field_ids) {
-    stackField(field_map.at(field_id), offset, result);
+    stackField(context.at(field_id), offset, result);
   }
-  STEPIT_ASSERT(offset == result.size(), "Assembled field size ({}) does not match the result size ({}).", offset,
+  STEPIT_ASSERT(offset == result.size(), "Assembled field size ({}) does not match the context size ({}).", offset,
                 result.size());
 }
 
-void splitFields(cArrXf data, const FieldIdVec &field_ids, FieldMap &result) {
+void splitFields(cArrXf data, const FieldIdVec &field_ids, FieldMap &context) {
   FieldSize index = 0;
   for (auto field_id : field_ids) {
     FieldSize size = getFieldSize(field_id);
     STEPIT_ASSERT(size > 0, "Size of '{}' is undefined.", getFieldName(field_id));
-    result[field_id] = data.segment(index, size);
+    context[field_id] = data.segment(index, size);
     index += size;
   }
 }

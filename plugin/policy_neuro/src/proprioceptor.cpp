@@ -10,7 +10,7 @@ Proprioceptor::Proprioceptor(const PolicySpec &policy_spec, const std::string &)
   lin_acc_id_   = registerProvision("lin_acc", 3);
 }
 
-bool Proprioceptor::update(const LowState &low_state, ControlRequests &requests, FieldMap &result) {
+bool Proprioceptor::update(const LowState &low_state, ControlRequests &requests, FieldMap &context) {
   std::size_t joint_dim{getFieldSize(joint_pos_id_)};
   ArrXf joint_pos{joint_dim}, joint_vel{joint_dim};
   for (std::size_t i{}; i < joint_dim; ++i) {
@@ -18,11 +18,11 @@ bool Proprioceptor::update(const LowState &low_state, ControlRequests &requests,
     joint_vel[i] = low_state.motor_state[i].dq;
   }
 
-  result[lin_acc_id_]   = cmArr3f(low_state.imu.accelerometer.data());
-  result[ang_vel_id_]   = cmArr3f(low_state.imu.gyroscope.data());
-  result[gravity_id_]   = Quatf(low_state.imu.quaternion).inverse() * Vec3f{0, 0, -1.};
-  result[joint_pos_id_] = joint_pos;
-  result[joint_vel_id_] = joint_vel;
+  context[lin_acc_id_]   = cmArr3f(low_state.imu.accelerometer.data());
+  context[ang_vel_id_]   = cmArr3f(low_state.imu.gyroscope.data());
+  context[gravity_id_]   = Quatf(low_state.imu.quaternion).inverse() * Vec3f{0, 0, -1.};
+  context[joint_pos_id_] = joint_pos;
+  context[joint_vel_id_] = joint_vel;
   return true;
 }
 
@@ -30,8 +30,8 @@ RollPitchSource::RollPitchSource(const PolicySpec &, const std::string &) {
   roll_pitch_id_ = registerProvision("roll_pitch", 2);
 }
 
-bool RollPitchSource::update(const LowState &low_state, ControlRequests &requests, FieldMap &result) {
-  result[roll_pitch_id_] = Arr2f{low_state.imu.rpy[0], low_state.imu.rpy[1]};
+bool RollPitchSource::update(const LowState &low_state, ControlRequests &requests, FieldMap &context) {
+  context[roll_pitch_id_] = Arr2f{low_state.imu.rpy[0], low_state.imu.rpy[1]};
   return true;
 }
 

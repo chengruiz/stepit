@@ -9,7 +9,7 @@ class DummyHeightmapSource : public Module {
  public:
   DummyHeightmapSource(const PolicySpec &policy_spec, const std::string &home_dir);
   bool reset() override { return true; }
-  bool update(const LowState &low_state, ControlRequests &requests, FieldMap &result) override;
+  bool update(const LowState &low_state, ControlRequests &requests, FieldMap &context) override;
 
  protected:
   YAML::Node config_;

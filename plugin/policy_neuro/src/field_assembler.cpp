@@ -42,7 +42,7 @@ void FieldAssembler::initFieldProperties() {
 
 bool FieldAssembler::update(const LowState &, ControlRequests &, FieldMap &result) {
   for (std::size_t i{}; i < target_ids_.size(); ++i) {
-    assembleFields(result, component_ids_[i], buffers_[i]);
+    concatFields(result, component_ids_[i], buffers_[i]);
     result[target_ids_[i]] = buffers_[i];
   }
   return true;

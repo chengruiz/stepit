@@ -59,7 +59,7 @@ bool CmdVelSource::reset() {
   return true;
 }
 
-bool CmdVelSource::update(const LowState &low_state, ControlRequests &requests, FieldMap &result) {
+bool CmdVelSource::update(const LowState &low_state, ControlRequests &requests, FieldMap &context) {
   for (auto &&request : requests.filterByChannel("Policy/CmdVel")) {
     handleControlRequest(std::move(request));
   }
@@ -90,8 +90,8 @@ bool CmdVelSource::update(const LowState &low_state, ControlRequests &requests, 
       break;
   }
 
-  result[cmd_vel_id_]   = cmd_vel_;
-  result[cmd_stall_id_] = Arr1f{cmd_stall_};
+  context[cmd_vel_id_]   = cmd_vel_;
+  context[cmd_stall_id_] = Arr1f{cmd_stall_};
   return true;
 }
 

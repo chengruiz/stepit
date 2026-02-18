@@ -22,7 +22,7 @@ bool CmdVelSubscriber::reset() {
   return CmdVelSource::reset();
 }
 
-bool CmdVelSubscriber::update(const LowState &low_state, ControlRequests &requests, FieldMap &result) {
+bool CmdVelSubscriber::update(const LowState &low_state, ControlRequests &requests, FieldMap &context) {
   bool subscriber_enabled = subscriber_enabled_.load(std::memory_order_acquire);
   subscribing_status_->update(subscriber_enabled ? 1 : 0);
   if (subscriber_enabled) {
@@ -35,7 +35,7 @@ bool CmdVelSubscriber::update(const LowState &low_state, ControlRequests &reques
       target_cmd_vel_.setZero();
     }
   }
-  return CmdVelSource::update(low_state, requests, result);
+  return CmdVelSource::update(low_state, requests, context);
 }
 
 void CmdVelSubscriber::exit() {
