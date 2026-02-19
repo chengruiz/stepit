@@ -13,10 +13,11 @@ NeuroPolicy::NeuroPolicy(const RobotSpec &robot_spec, const std::string &home_di
   action_id_ = registerField("action", 0);
   displayFormattedBanner(60, kGreen, "NeuroPolicy {} ({}Hz)", spec_.policy_name, getControlFreq());
 
-  // Add field sources read from the YAML file
-  auto module_node = config_["modules"] ? config_["modules"] : config_["module"];  // backward compatibility
+  // Add modules read from the YAML file
+  std::string module_key = yml::getDefinedKey(config_, "field_source", "module", "modules");
+  auto module_node = config_[module_key];
   if (module_node) {
-    STEPIT_ASSERT(module_node.IsSequence(), "'modules' must be a sequence.");
+    STEPIT_ASSERT(module_node.IsSequence(), "'{}' must be a sequence.", module_key);
     for (const auto &module : module_node) {
       addModule(Module::make(module.as<std::string>(), spec_, home_dir), false);
     }
@@ -65,7 +66,7 @@ NeuroPolicy::NeuroPolicy(const RobotSpec &robot_spec, const std::string &home_di
     }
   }
 
-  STEPIT_DBUGNT("Field sources:");
+  STEPIT_DBUGNT("Modules:");
   for (const auto &module : resolved_modules_) {
     module->initFieldProperties();
     STEPIT_DBUGNT("- {}", getTypeName(*module));

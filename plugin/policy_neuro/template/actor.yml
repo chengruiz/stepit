@@ -1,4 +1,4 @@
-input_field:                        # Dict[List[Dict]], mapping from the input name of the neural network to it component fields
+inputs:                             # Dict[List[Dict]], mapping from the input name of the neural network to it component fields
   observation:                      # Assuming the input name of the neural network is "observation"
   - { name: cmd_vel,    size: 3  }  # For each field, specify the name and size (dimension)
   - { name: cmd_stall,  size: 1  }  # The input fields will be concatenated in the given order
@@ -10,8 +10,8 @@ input_field:                        # Dict[List[Dict]], mapping from the input n
   - { name: joint_vel,  size: 12 }
   - { name: ang_vel,    size: 3  }
 
-output_field:                       # Dict[List[Dict]], mapping from the output name of the neural network to it component fields
-- { name: action, size: 12 }        # The format is similar to "input_field"
+outputs:                            # Dict[List[Dict]], mapping from the output name of the neural network to it component fields
+- { name: action, size: 12 }        # The format is similar to "inputs"
 
 assert_all_finite: true             # [Optional] Bool, whether to assert all finite values in inputs
 run:                                # [Optional] run configuration

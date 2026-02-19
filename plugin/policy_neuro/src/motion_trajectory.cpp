@@ -14,7 +14,7 @@ MotionTrajectory::MotionTrajectory(const PolicySpec &policy_spec, const std::str
 
   if (npz_.hasKey("fps")) {
     const auto &fps = npz_["fps"];
-    STEPIT_ASSERT(fps.shape.size() == 1 && fps.shape[0] == 1,
+    STEPIT_ASSERT(fps.shape.size() == 1 and fps.shape[0] == 1,
                   "Expected 'fps' in 'motion_trajectory.npz' to be a scalar.");
     std::size_t fps_value = 0;
     if (fps.dtype == "float64") {
@@ -36,10 +36,10 @@ MotionTrajectory::MotionTrajectory(const PolicySpec &policy_spec, const std::str
 
   STEPIT_ASSERT(config_["field"].IsDefined(), "Missing 'field' in motion_trajectory.yml.");
   STEPIT_ASSERT(config_["field"].IsSequence(), "Expected 'field' to be a sequence.");
-  for (const auto &item : config_["field"]) {
-    STEPIT_ASSERT(item.IsMap(), "Expected each field to be a map.");
-    auto field_name = yml::readAs<std::string>(item, "name");
-    auto key_name   = yml::readAs<std::string>(item, "key");
+  for (const auto &node : config_["field"]) {
+    STEPIT_ASSERT(node.IsMap(), "Expected each field to be a map.");
+    auto field_name = yml::readAs<std::string>(node, "name");
+    auto key_name   = yml::readAs<std::string>(node, "key");
     STEPIT_ASSERT(npz_.hasKey(key_name), "Key '{}' not found in '{}'.", key_name, npz_filename_);
 
     const auto &array = npz_[key_name];
@@ -49,13 +49,13 @@ MotionTrajectory::MotionTrajectory(const PolicySpec &policy_spec, const std::str
                   "Expected array '{}' to have dtype 'float32' or 'float64', but got '{}'.", key_name, array.dtype);
     if (num_frames_ == 0) {
       num_frames_ = shape[0];
-    } else if (num_frames_ != shape[0]) {
+    } else if (num_frames_ != shape[0]) {  // raise error
       STEPIT_ERROR("Arrays in '{}' have different frame counts.", npz_filename_);
     }
 
     std::size_t field_size = std::accumulate(shape.begin() + 1, shape.end(), 1UL, std::multiplies<std::size_t>());
-    if (item["size"]) {
-      auto specified_size = yml::readAs<std::size_t>(item, "size");
+    if (yml::hasValue(node, "size")) {
+      auto specified_size = yml::readAs<std::size_t>(node, "size");
       STEPIT_ASSERT(specified_size == field_size, "Field size specified ({}) does not match that ({}) of array '{}'.",
                     specified_size, field_size, key_name);
     }

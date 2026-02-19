@@ -15,8 +15,7 @@ class NeuroModule : public Module {
  private:
   using FieldNameVec = std::vector<std::string>;
   using FieldSizeVec = std::vector<FieldSize>;
-  static FieldId addField(const YAML::Node &node, FieldNameVec &field_names, FieldSizeVec &field_sizes);
-  void parseFields(const std::string &key, const FieldNameVec &node_names, std::vector<FieldNameVec> &field_names,
+  void parseFields(bool is_input, const FieldNameVec &node_names, std::vector<FieldNameVec> &field_names,
                    std::vector<FieldSizeVec> &field_sizes, FieldSizeVec &total_dims, std::vector<FieldIdVec> &fields);
 
   NnrtApi::Ptr nn_;

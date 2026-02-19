@@ -1,6 +1,6 @@
 # policy_neuro_ros2
 
-StepIt plugin for ROS2-based field sources that subscribe ROS2 topics and feed data into the StepIt neuro policy.
+StepIt plugin for ROS2-based modules that subscribe ROS2 topics and feed data into the StepIt neuro policy.
 
 ### Provided Factories
 

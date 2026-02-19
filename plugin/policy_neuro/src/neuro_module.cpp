@@ -18,10 +18,10 @@ NeuroModule::NeuroModule(const std::string &name, const std::string &home_dir)
   for (const auto &output_name : nn_->getOutputNames()) {
     if (not nn_->isOutputRecurrent(output_name)) output_names_.push_back(output_name);
   }
-  STEPIT_ASSERT(input_names_.size() >= 1, "The neural network must have at least one non-recurrent input.");
-  STEPIT_ASSERT(output_names_.size() >= 1, "The neural network must have at least one non-recurrent output.");
-  parseFields("input_field", input_names_, input_field_names_, input_field_sizes_, input_dims_, input_fields_);
-  parseFields("output_field", output_names_, output_field_names_, output_field_sizes_, output_dims_, output_fields_);
+  STEPIT_ASSERT(input_names_.size() >= 1, "The neural network must have at least one ordinary input.");
+  STEPIT_ASSERT(output_names_.size() >= 1, "The neural network must have at least one ordinary output.");
+  parseFields(true, input_names_, input_field_names_, input_field_sizes_, input_dims_, input_fields_);
+  parseFields(false, output_names_, output_field_names_, output_field_sizes_, output_dims_, output_fields_);
 
   input_arr_.resize(input_names_.size());
   for (std::size_t i{}; i < input_names_.size(); ++i) {
@@ -55,73 +55,77 @@ bool NeuroModule::reset() {
   return true;
 }
 
-bool NeuroModule::update(const LowState &low_state, ControlRequests &requests, FieldMap &context) {
-  bool all_finite = true;
+bool NeuroModule::update(const LowState &, ControlRequests &, FieldMap &context) {
   for (std::size_t i{}; i < input_names_.size(); ++i) {
     concatFields(context, input_fields_[i], input_arr_[i]);
     if (assert_all_finite_ and not input_arr_[i].allFinite()) {
-      STEPIT_CRIT("Indices '{}' of input '{}' is not all-finite.", getNonFiniteIndices(input_arr_[i]), input_names_[i]);
-      all_finite = false;
+      STEPIT_CRIT("Indices '{}' of input '{}' are not all-finite.", getNonFiniteIndices(input_arr_[i]), input_names_[i]);
+      return false;
     }
     nn_->setInput(input_names_[i], input_arr_[i].data());
   }
-  if (not all_finite) return false;
   nn_->runInference();
   for (std::size_t i{}; i < output_names_.size(); ++i) {
     cmArrXf output{nn_->getOutput(output_names_[i]), output_dims_[i]};
     if (assert_all_finite_ and not output.allFinite()) {
-      STEPIT_CRIT("Indices '{}' of output '{}' is not all-finite.", getNonFiniteIndices(output), output_names_[i]);
-      all_finite = false;
+      STEPIT_CRIT("Indices '{}' of output '{}' are not all-finite.", getNonFiniteIndices(output), output_names_[i]);
+      return false;
     }
     splitFields(output, output_fields_[i], context);
   }
-  return all_finite;
+  return true;
 }
 
-FieldId NeuroModule::addField(const YAML::Node &node, FieldNameVec &field_names, FieldSizeVec &field_sizes) {
-  std::string field_name;
-  FieldSize field_size{};
-  yml::setTo(node, "name", field_name);
-  yml::setTo(node, "size", field_size);
+void NeuroModule::parseFields(bool is_input, const FieldNameVec &node_names, std::vector<FieldNameVec> &field_names,
+                              std::vector<FieldSizeVec> &field_sizes, FieldSizeVec &total_dims,
+                              std::vector<FieldIdVec> &fields) {
+  std::string key = is_input ? yml::getDefinedKey(config_, "input_field", "inputs")
+                             : yml::getDefinedKey(config_, "output_field", "outputs");
+  yml::assertHasValue(config_, key);
+  std::string identifier = is_input ? "input" : "output";
 
-  field_names.push_back(field_name);
-  field_sizes.push_back(field_size);
-  return registerField(field_name, field_size);
-}
+  const auto &fields_config = config_[key];
+  std::size_t num_nodes     = node_names.size();
+  STEPIT_ASSERT(fields_config.IsSequence() or fields_config.IsMap(),
+                "'{}' must be a map, or a sequence only if the neural network has only one ordinary {}.", key,
+                identifier);
+  STEPIT_ASSERT(not fields_config.IsSequence() or num_nodes == 1,
+                "'{}' must be a map if the neural network has multiple ordinary {}s.", key, identifier);
+  STEPIT_ASSERT(
+      not fields_config.IsMap() or num_nodes == fields_config.size(),
+      "Expected '{}' to contain exactly {} entries corresponding to the neural network's ordinary {}s, but got {}.",
+      key, num_nodes, identifier, fields_config.size());
 
-void NeuroModule::parseFields(const std::string &key, const FieldNameVec &node_names,
-                              std::vector<FieldNameVec> &field_names, std::vector<FieldSizeVec> &field_sizes,
-                              FieldSizeVec &total_dims, std::vector<FieldIdVec> &fields) {
-  yml::assertDefined(config_, key);
-  auto cfg = config_[key];
-
-  std::size_t num_nodes = node_names.size();
   field_names.resize(num_nodes);
   field_sizes.resize(num_nodes);
   total_dims.resize(num_nodes);
   fields.resize(num_nodes);
 
-  if (cfg.IsSequence()) {
-    STEPIT_ASSERT(num_nodes == 1, "'{}' must be a map if the neural network has multiple non-recurrent inputs.", key);
-    for (const auto &node : cfg) {
-      fields[0].push_back(addField(node, field_names[0], field_sizes[0]));
+  auto buildNodeFieldProperties = [&](const YAML::Node &field_entries, std::size_t node_index) {
+    for (const auto &entry : field_entries) {
+      std::string field_name;
+      FieldSize field_size{};
+      yml::setTo(entry, "name", field_name);
+      yml::setTo(entry, "size", field_size);
+
+      field_names[node_index].push_back(field_name);
+      field_sizes[node_index].push_back(field_size);
+      fields[node_index].push_back(registerField(field_name, field_size));
     }
+  };
+  if (fields_config.IsSequence()) {
+    buildNodeFieldProperties(fields_config, 0);
   } else {
-    STEPIT_ASSERT(cfg.IsMap(), "'{}' must be a map if the neural network has multiple non-recurrent inputs.", key);
-    STEPIT_ASSERT_EQ(num_nodes, cfg.size(),
-                     "The number of keys in '{}' must match the number of non-recurrent inputs of the neural network.",
-                     key);
     for (std::size_t i{}; i < num_nodes; ++i) {
       const std::string &node_name = node_names[i];
-      yml::assertDefined(cfg, node_name);
-      for (const auto &node : cfg[node_name]) {
-        fields[i].push_back(addField(node, field_names[i], field_sizes[i]));
-      }
+      STEPIT_ASSERT(yml::hasValue(fields_config, node_name) and fields_config[node_name].IsSequence(),
+                    "Expected '{}' for node '{}' to be a sequence.", key, node_name);
+      buildNodeFieldProperties(fields_config[node_name], i);
     }
   }
 
   for (std::size_t i{}; i < num_nodes; ++i) {
-    total_dims[i] = std::accumulate(field_sizes[i].begin(), field_sizes[i].end(), 0U);
+    total_dims[i] = std::accumulate(field_sizes[i].begin(), field_sizes[i].end(), static_cast<FieldSize>(0));
   }
 }
 

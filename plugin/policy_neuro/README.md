@@ -11,6 +11,7 @@ StepIt plugin for running neural network-based policy.
 
 - `stepit::Policy`:
     - `neuro`: neural network-based locomotion policy.
+
 - `stepit::neuro_policy::Actuator`:
 
   | Name       | Description                                            |
@@ -19,6 +20,7 @@ StepIt plugin for running neural network-based policy.
   | `velocity` | Translates actions to joint velocity commands.         |
   | `torque`   | Translates actions to joint torque commands.           |
   | `hybrid`   | Translates actions to a combination of joint commands. |
+
 - `stepit::neuro_policy::Module`:
 
   | Name                | Description                                           |
@@ -104,17 +106,17 @@ StepIt plugin for running neural network-based policy.
 ### Module
 
 Classes derived from `Module` require to declare their input dependencies (`requirements`) and output fields
-(`provisions`) by registering named fields through a global FieldManager. At runtime, FieldManager assigns a unique ID
-and size to each field, and maintains a registry of source factories. Then the field sources sequentially produce or
-process data segments identified by FieldId.
+(`provisions`) by registering named fields through a global FieldManager. At runtime, FieldManager assigns a
+unique ID and size to each field, and maintains a registry of source factories. Then the modules sequentially
+produce or process data segments identified by FieldId.
 
 ### NeuroPolicy
 
 `NeuroPolicy` orchestrates a set of `Module` instances into a neural‐network policy pipeline. It:
 
-1. Loads YAML configuration and registers the main `action` field.
-2. Reads user‐specified field sources and ensures an actor source is present.
-3. Automatically resolves and orders sources based on declared requirements, detecting circular dependencies.
-4. Calls `init()` on each source before control loop start.
-5. In each `act()` step, sequentially invokes `update()` and `postUpdate()`, assembles the action vector and
-   passes it to the `Agent`.
+1. Loads YAML configuration, reads user‐specified modules and adds a configured `Actuator`.
+2. Ensures the `action` field has a source, then resolves dependencies by creating modules from unresolved requirements.
+3. Resolves execution order from declared `requirements`/`provisions`, and reports circular or duplicate providers.
+4. On `reset()`, calls `reset()` on each resolved module.
+5. In each `act()` step, sequentially invokes `update()` and `postUpdate()`, takes `action` from the field map, and
+  sends it to the robot through the `Actuator`.
