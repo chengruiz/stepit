@@ -23,8 +23,11 @@ stepit_add_plugin(${PROJECT_NAME}
       src/cmd_vel_subscriber2.cpp
       src/field_subscriber2.cpp
       src/heightmap_subscriber2.cpp
-    INCLUDES include
-    DEPENDS policy_neuro ros2_base
+    INCLUDES
+      include
+    DEPENDS
+      policy_neuro
+      ros2_base
 )
 ament_target_dependencies(${PROJECT_NAME} PUBLIC
     geometry_msgs

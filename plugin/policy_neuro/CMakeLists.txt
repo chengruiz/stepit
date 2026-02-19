@@ -12,7 +12,6 @@ stepit_add_plugin(${PROJECT_NAME}
       src/field_ops.cpp
       src/heightmap_source.cpp
       src/joint_reordering.cpp
-      src/motion_trajectory.cpp
       src/neuro_module.cpp
       src/neuro_policy.cpp
       src/proprioceptor.cpp
@@ -25,5 +24,4 @@ stepit_add_plugin(${PROJECT_NAME}
     DEPENDS
       joystick_base
       nnrt_base
-      pyutils
 )

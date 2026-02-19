@@ -1,0 +1,10 @@
+npz_filename: "motion_trajectory.npz"  # String, Name of the NPZ file containing the motion trajectory data
+                                       #   Relative paths are resolved against this config directory.
+
+field:                                 # Sequence[Dict], Sequence of mappings defining the fields
+  - name: "target_joint_pos"           # String, name of the field
+    key: "joint_pos"                   # String, key in the NPZ file corresponding to this field
+    size: 29                           # [Optional] Int, the field size
+  - name: "target_joint_vel"
+    key: "joint_vel"
+    size: 29

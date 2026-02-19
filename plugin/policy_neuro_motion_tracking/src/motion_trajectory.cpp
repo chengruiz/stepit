@@ -9,7 +9,8 @@ namespace stepit {
 namespace neuro_policy {
 MotionTrajectory::MotionTrajectory(const PolicySpec &policy_spec, const std::string &home_dir)
     : config_(yml::loadFile(home_dir + "/motion_trajectory.yml")) {
-  npz_filename_ = yml::readIf<std::string>(config_["npz_filename"], "motion_trajectory.npz");
+  npz_filename_ = yml::readIf<std::string>(config_, "npz_filename", "motion_trajectory.npz");
+  STEPIT_ASSERT(not npz_filename_.empty(), "'npz_filename' cannot be empty.");
   npz_.readFile((npz_filename_[0] == '/') ? npz_filename_ : (home_dir + "/" + npz_filename_));
 
   if (npz_.hasKey("fps")) {
