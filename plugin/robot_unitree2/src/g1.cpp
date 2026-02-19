@@ -53,7 +53,7 @@ void G1DoF15Api::getRecv(LowState &state_msg) {
   state_msg = low_state_;
 }
 
-void G1DoF15Api::send() { 
+void G1DoF15Api::send() {
   fillLowCmdCrc(low_cmd_);
   low_cmd_pub_->Write(low_cmd_);
 }
@@ -159,9 +159,9 @@ void G1DoF23Api::getRecv(LowState &state_msg) {
   state_msg = low_state_;
 }
 
-void G1DoF23Api::send() { 
+void G1DoF23Api::send() {
   fillLowCmdCrc(low_cmd_);
-  low_cmd_pub_->Write(low_cmd_); 
+  low_cmd_pub_->Write(low_cmd_);
 }
 
 void G1DoF23Api::callback(const hg_msg::LowState_ *msg) {
@@ -231,7 +231,7 @@ void G1DoF29Api::getRecv(LowState &state_msg) {
   state_msg = low_state_;
 }
 
-void G1DoF29Api::send() { 
+void G1DoF29Api::send() {
   fillLowCmdCrc(low_cmd_);
   low_cmd_pub_->Write(low_cmd_);
 }
@@ -251,7 +251,42 @@ void G1DoF29Api::callback(const hg_msg::LowState_ *msg) {
   low_state_.tick = msg->tick();
 }
 
+const std::array<std::size_t, 29> kJointOrderG1Dfs2Bfs = {
+    0,   // left_hip_pitch_joint
+    6,   // right_hip_pitch_joint
+    12,  // waist_yaw_joint
+    1,   // left_hip_roll_joint
+    7,   // right_hip_roll_joint
+    13,  // waist_roll_joint
+    2,   // left_hip_yaw_joint
+    8,   // right_hip_yaw_joint
+    14,  // waist_pitch_joint
+    3,   // left_knee_joint
+    9,   // right_knee_joint
+    15,  // left_shoulder_pitch_joint
+    22,  // right_shoulder_pitch_joint
+    4,   // left_ankle_pitch_joint
+    10,  // right_ankle_pitch_joint
+    16,  // left_shoulder_roll_joint
+    23,  // right_shoulder_roll_joint
+    5,   // left_ankle_roll_joint
+    11,  // right_ankle_roll_joint
+    17,  // left_shoulder_yaw_joint
+    24,  // right_shoulder_yaw_joint
+    18,  // left_elbow_joint
+    25,  // right_elbow_joint
+    19,  // left_wrist_roll_joint
+    26,  // right_wrist_roll_joint
+    20,  // left_wrist_pitch_joint
+    27,  // right_wrist_pitch_joint
+    21,  // left_wrist_yaw_joint
+    28,  // right_wrist_yaw_joint
+};
+
 STEPIT_REGISTER_ROBOTAPI(g1_15dof, kDefPriority, RobotApi::make<G1DoF15Api>);
 STEPIT_REGISTER_ROBOTAPI(g1_23dof, kDefPriority, RobotApi::make<G1DoF23Api>);
-STEPIT_REGISTER_ROBOTAPI(g1_29dof, kDefPriority, RobotApi::make<G1DoF29Api>);
+STEPIT_REGISTER_ROBOTAPI(g1, kDefPriority, RobotApi::make<G1DoF29Api>);
+STEPIT_REGISTER_ROBOTAPI(g1_bfs, kDefPriority, []() {
+  return std::make_unique<RobotApiReorderingWrapper>("g1_bfs", "g1", array2vector(kJointOrderG1Dfs2Bfs));
+});
 }  // namespace stepit
