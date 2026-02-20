@@ -7,6 +7,7 @@ stepit_add_plugin(${PROJECT_NAME}
       src/actuator.cpp
       src/cmd_posture_source.cpp
       src/cmd_vel_source.cpp
+      src/const_field_source.cpp
       src/field.cpp
       src/field_history.cpp
       src/field_ops.cpp

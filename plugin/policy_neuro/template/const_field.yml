@@ -1,0 +1,14 @@
+# Mappings from field names to their values
+
+# Option 1: directly specify the constant value as a sequence
+unit_quat: [1.0, 0.0, 0.0, 0.0]  # List[Float]
+
+# Option 2: specify the scalar value and the size to expand to
+zero_1:
+  value: 0.0                     # Float
+  size: 1                        # Int
+
+# Option 3: specify the sequence value and optionally the size
+zeros_3:
+  value: [0.0, 0.0, 0.0]         # List[Float]
+  size: 3                        # [Optional] Int
