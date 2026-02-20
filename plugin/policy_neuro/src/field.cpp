@@ -2,8 +2,8 @@
 
 namespace stepit {
 namespace neuro_policy {
-FieldId Module::registerRequirement(const std::string &field_name) {
-  return registerRequirement(registerField(field_name, 0));
+FieldId Module::registerRequirement(const std::string &field_name, FieldSize field_size) {
+  return registerRequirement(registerField(field_name, field_size));
 }
 
 FieldId Module::registerRequirement(FieldId field_id) {
@@ -13,8 +13,8 @@ FieldId Module::registerRequirement(FieldId field_id) {
   return field_id;
 }
 
-FieldId Module::registerProvision(const std::string &field_name, FieldSize size) {
-  FieldId id = registerField(field_name, size);
+FieldId Module::registerProvision(const std::string &field_name, FieldSize field_size) {
+  FieldId id = registerField(field_name, field_size);
   provisions_.insert(id);
   return id;
 }

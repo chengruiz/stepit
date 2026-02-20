@@ -29,9 +29,9 @@ class Module : public Interface<Module, const PolicySpec & /* policy_spec */, co
   const std::set<FieldId> &provisions() const { return provisions_; }
 
  protected:
-  FieldId registerRequirement(const std::string &field_name);
+  FieldId registerRequirement(const std::string &field_name, FieldSize field_size = 0);
   FieldId registerRequirement(FieldId field_id);
-  FieldId registerProvision(const std::string &field_name, FieldSize size);
+  FieldId registerProvision(const std::string &field_name, FieldSize field_size);
 
   std::set<FieldId> requirements_, provisions_;
 };
