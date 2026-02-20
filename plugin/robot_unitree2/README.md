@@ -11,7 +11,7 @@ StepIt plugin for controlling the Unitree Go2, B2 and G1 robots, and with the Un
 
 - `stepit::RobotApi`:
   - Quadrupeds: `b2`, `go2`
-  - Humanoids: `g1`, `g1_15dof`, `g1_23dof`, `g1_bfs`
+  - Humanoids: `g1` (29DoF), `g1_bfs` (29DoF)
 - `stepit::joystick::Joystick`:
     - `unitree2`: providing joystick input with the Unitree joystick. The `LAS` button is binded to the `L1` + `L2` buttons, and the `RAS` button is binded to the `R1` + `R2` buttons.
 
