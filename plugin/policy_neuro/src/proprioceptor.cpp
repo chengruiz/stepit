@@ -2,7 +2,8 @@
 
 namespace stepit {
 namespace neuro_policy {
-Proprioceptor::Proprioceptor(const PolicySpec &policy_spec, const std::string &) {
+Proprioceptor::Proprioceptor(const NeuroPolicySpec &policy_spec, const std::string &name)
+    : Module(nonEmptyOr(name, "proprioceptor")) {
   ang_vel_id_   = registerProvision("ang_vel", 3);
   gravity_id_   = registerProvision("gravity", 3);
   joint_pos_id_ = registerProvision("joint_pos", policy_spec.dof);
@@ -26,7 +27,8 @@ bool Proprioceptor::update(const LowState &low_state, ControlRequests &requests,
   return true;
 }
 
-RollPitchSource::RollPitchSource(const PolicySpec &, const std::string &) {
+RollPitchSource::RollPitchSource(const NeuroPolicySpec &, const std::string &name)
+    : Module(nonEmptyOr(name, "roll_pitch")) {
   roll_pitch_id_ = registerProvision("roll_pitch", 2);
 }
 

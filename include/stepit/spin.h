@@ -13,7 +13,7 @@ namespace stepit {
  *
  * Spin implementations define a main loop or wait mechanism via the spin() method.
  */
-class Spin: public Interface<Spin> {
+class Spin : public Interface<Spin> {
  public:
   virtual ~Spin() = default;
   /**

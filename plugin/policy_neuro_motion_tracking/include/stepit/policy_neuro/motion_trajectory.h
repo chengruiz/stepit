@@ -9,7 +9,7 @@ namespace stepit {
 namespace neuro_policy {
 class MotionTrajectory : public Module {
  public:
-  MotionTrajectory(const PolicySpec &policy_spec, const std::string &home_dir);
+  MotionTrajectory(const NeuroPolicySpec &policy_spec, const std::string &name);
 
   bool reset() override;
   bool update(const LowState &low_state, ControlRequests &requests, FieldMap &context) override;

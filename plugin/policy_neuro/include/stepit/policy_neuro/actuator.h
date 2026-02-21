@@ -6,17 +6,16 @@
 namespace stepit {
 namespace neuro_policy {
 class Actuator : public Module,
-                 public Interface<Actuator, const PolicySpec & /* policy_spec */, const std::string & /* home_dir */> {
+                 public Interface<Actuator, const NeuroPolicySpec & /* policy_spec */, const std::string & /* name */> {
  public:
-  using Interface    = Interface<Actuator, const PolicySpec &, const std::string &>;
+  using Interface    = Interface<Actuator, const NeuroPolicySpec &, const std::string &>;
   using Ptr          = Interface::Ptr;
   using Registry     = Interface::Registry;
   using Registration = Interface::Registration;
   using Factory      = Interface::Factory;
   using Interface::make;
 
-  Actuator(const PolicySpec &policy_spec, const std::string &home_dir);
-
+  Actuator(const NeuroPolicySpec &policy_spec, const std::string &name);
   bool update(const LowState &low_state, ControlRequests &requests, FieldMap &context) override { return true; }
   virtual void setLowCmd(LowCmd &cmd, cArrXf action) = 0;
 
@@ -28,7 +27,7 @@ class Actuator : public Module,
 
 class PositionActuator : public Actuator {
  public:
-  PositionActuator(const PolicySpec &policy_spec, const std::string &home_dir);
+  PositionActuator(const NeuroPolicySpec &policy_spec, const std::string &name);
   bool reset() override;
   bool update(const LowState &low_state, ControlRequests &requests, FieldMap &context) override;
   void setLowCmd(LowCmd &cmd, cArrXf action) override;
@@ -41,7 +40,7 @@ class PositionActuator : public Actuator {
 
 class VelocityActuator : public Actuator {
  public:
-  VelocityActuator(const PolicySpec &policy_spec, const std::string &home_dir);
+  VelocityActuator(const NeuroPolicySpec &policy_spec, const std::string &name);
   bool reset() override;
   bool update(const LowState &low_state, ControlRequests &requests, FieldMap &context) override;
   void setLowCmd(LowCmd &cmd, cArrXf action) override;
@@ -53,7 +52,7 @@ class VelocityActuator : public Actuator {
 
 class TorqueActuator : public Actuator {
  public:
-  TorqueActuator(const PolicySpec &policy_spec, const std::string &home_dir);
+  TorqueActuator(const NeuroPolicySpec &policy_spec, const std::string &name);
   bool reset() override;
   bool update(const LowState &low_state, ControlRequests &requests, FieldMap &context) override;
   void setLowCmd(LowCmd &cmd, cArrXf action) override;
@@ -65,7 +64,7 @@ class TorqueActuator : public Actuator {
 
 class HybridActuator : public Actuator {
  public:
-  HybridActuator(const PolicySpec &policy_spec, const std::string &home_dir);
+  HybridActuator(const NeuroPolicySpec &policy_spec, const std::string &name);
   bool reset() override;
   bool update(const LowState &low_state, ControlRequests &requests, FieldMap &context) override;
   void setLowCmd(LowCmd &cmd, cArrXf action) override;

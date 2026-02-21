@@ -13,8 +13,8 @@ grid_map::InterpolationMethods parseInterpolationMethod(const std::string &metho
   STEPIT_ERROR("Unsupported interpolation method '{}'. ", method);
 }
 
-HeightmapSubscriber2::HeightmapSubscriber2(const PolicySpec &policy_spec, const std::string &home_dir)
-    : DummyHeightmapSource(policy_spec, home_dir) {
+HeightmapSubscriber2::HeightmapSubscriber2(const NeuroPolicySpec &policy_spec, const std::string &name)
+    : DummyHeightmapSource(policy_spec, name) {
   YAML::Node map_sub_cfg = config_["grid_map_subscriber"];
   yml::setIf(map_sub_cfg, "timeout_threshold", map_timeout_threshold_);
   yml::setIf(map_sub_cfg, "default_enabled", default_subscriber_enabled_);

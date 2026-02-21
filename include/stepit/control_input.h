@@ -74,7 +74,7 @@ class ControlInput : public Interface<ControlInput> {
  public:
   /**
    * @brief Checks if there are any control requests available to be processed.
-   * 
+   *
    * @return true if the internal request queue is not empty, false otherwise.
    */
   virtual bool available() const = 0;
@@ -86,7 +86,7 @@ class ControlInput : public Interface<ControlInput> {
 
   /**
    * @brief Retrieves and removes the next control request from the queue.
-   * 
+   *
    * @return A boost::optional containing the next ControlRequest if available,
    *         or boost::none if the queue is empty.
    */
@@ -95,7 +95,7 @@ class ControlInput : public Interface<ControlInput> {
  protected:
   /**
    * @brief Parses a raw string request and pushes it onto the internal queue.
-   * 
+   *
    * @param request_str The raw string representation of the control command.
    * @return std::future<ControlResponse> A future that will eventually contain the
    *         result of processing this request.

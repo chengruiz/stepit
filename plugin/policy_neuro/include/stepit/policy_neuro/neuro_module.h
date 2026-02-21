@@ -8,7 +8,7 @@ namespace stepit {
 namespace neuro_policy {
 class NeuroModule : public Module {
  public:
-  NeuroModule(const std::string &name, const std::string &home_dir);
+  NeuroModule(const NeuroPolicySpec &policy_spec, const std::string &name);
   bool reset() override;
   bool update(const LowState &low_state, ControlRequests &requests, FieldMap &context) override;
 
@@ -40,12 +40,12 @@ class NeuroModule : public Module {
 
 class NeuroActor : public NeuroModule {
  public:
-  NeuroActor(const PolicySpec &policy_spec, const std::string &home_dir);
+  NeuroActor(const NeuroPolicySpec &policy_spec, const std::string &name);
 };
 
 class NeuroEstimator : public NeuroModule {
  public:
-  NeuroEstimator(const PolicySpec &policy_spec, const std::string &home_dir);
+  NeuroEstimator(const NeuroPolicySpec &policy_spec, const std::string &name);
 };
 }  // namespace neuro_policy
 }  // namespace stepit

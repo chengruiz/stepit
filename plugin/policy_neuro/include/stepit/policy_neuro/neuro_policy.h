@@ -5,6 +5,7 @@
 
 #include <stepit/policy.h>
 #include <stepit/utils.h>
+#include <stepit/policy_neuro/field.h>
 #include <stepit/policy_neuro/actuator.h>
 
 namespace stepit {
@@ -12,6 +13,7 @@ namespace neuro_policy {
 class NeuroPolicy : public Policy {
  public:
   NeuroPolicy(const RobotSpec &robot_spec, const std::string &home_dir);
+  const PolicySpec &getSpec() const override { return spec_; }
   bool reset() override;
   bool act(const LowState &low_state, ControlRequests &requests, LowCmd &cmd) override;
   void exit() override;
@@ -20,6 +22,7 @@ class NeuroPolicy : public Policy {
   void addModule(Module::Ptr module, bool first);
   bool isSatisfied(const std::set<FieldId> &requirements) const;
 
+  NeuroPolicySpec spec_;
   YAML::Node config_;
   std::string tailored_;
   Actuator *actuator_{nullptr};

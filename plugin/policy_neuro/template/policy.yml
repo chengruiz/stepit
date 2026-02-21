@@ -56,18 +56,20 @@ actuator:            # [Optional] actuator configuration
     - velocity
     - torque
 
-action_mean: 0.0     # [Optional] Union[Float, List[Float]], the default action
-modules:             # [Optional] List[String], modules of the policy
-  - actor            # If not specified, stepit will try to resolve the modules automatically
-  - action_filter    # Addtional modules for action filtering, scaling, etc. should be included here
-                     # NOTICE: the order of modules matters! The behavior of following modules is affected by previous ones.
+action_mean: 0.0      # [Optional] Union[Float, List[Float]], the default action
+modules:              # [Optional] List[String], modules of the policy to run in order
+                      #   If not specified, stepit will try to resolve the modules automatically
+  - actor            
+  - action_filter
+  - <module_name>@<factory_name>  #   Specify the module name to avoid ambiguity
+                                  #   This module will typically read <module_name>.yml for configuration
 
-publish_fields:      # [Optional] Union[bool, List[String]], whether to publish fields or list of field names to publish
+publish_fields:       # [Optional] Union[bool, List[String]], whether to publish fields or list of field names to publish
   - joint_pos
   - joint_vel
 
 run:                         # [Optional] run configuration
-  task: my_task              # String, name of the task
-  name: my_name              # String, name of the run
-  time: 2026-01-01-00-00-00  # String, start time of the run
-  iter: 10000                # Int, number of iterations
+  task: my_task              #   String, name of the task
+  name: my_name              #   String, name of the run
+  time: 2026-01-01-00-00-00  #   String, start time of the run
+  iter: 10000                #   Int, number of iterations

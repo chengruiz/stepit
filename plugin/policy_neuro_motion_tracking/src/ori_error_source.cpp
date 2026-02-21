@@ -2,8 +2,8 @@
 
 namespace stepit {
 namespace neuro_policy {
-OriErrorSource::OriErrorSource(const PolicySpec &, const std::string &home_dir)
-    : config_(yml::loadFileIf(home_dir + "/ori_error.yml")) {
+OriErrorSource::OriErrorSource(const NeuroPolicySpec &policy_spec, const std::string &name)
+    : Module(nonEmptyOr(name, "ori_error")), config_(loadConfigIf(policy_spec)) {
   current_ori_name_ = yml::readIf<std::string>(config_, "current_ori_name", "base_global_ori");
   target_ori_name_  = yml::readIf<std::string>(config_, "target_ori_name", "base_target_ori");
   auto rot6d_order  = yml::readIf<std::string>(config_, "rotation_6d_order", "row_major");

@@ -53,6 +53,24 @@ template <typename T, std::size_t N>
 std::vector<T> array2vector(const std::array<T, N> &arr) {
   return std::vector<T>(arr.begin(), arr.end());
 }
+
+inline std::string nonEmptyOr(const std::string &str1, const std::string &str2) { return str1.empty() ? str2 : str1; }
+
+inline void appendPaths(fs::path &) {}
+
+template <typename Path, typename... Paths>
+inline void appendPaths(fs::path &result, const Path &path, const Paths &...paths) {
+  result /= fs::path(path);
+  appendPaths(result, paths...);
+}
+
+template <typename... Paths>
+std::string joinPaths(const std::string &path1, const std::string &path2, const Paths &...paths) {
+  fs::path result(path1);
+  result /= fs::path(path2);
+  appendPaths(result, paths...);
+  return result.string();
+}
 }  // namespace stepit
 
 #ifdef STEPIT_FIX_GETTID

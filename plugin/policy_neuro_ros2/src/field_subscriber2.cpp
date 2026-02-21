@@ -2,8 +2,8 @@
 #include <stepit/ros2/node.h>
 
 namespace stepit::neuro_policy {
-FieldSubscriber2::FieldSubscriber2(const PolicySpec &policy_spec, const std::string &home_dir)
-    : config_(yml::loadFile(home_dir + "/field_subscriber.yml")) {
+FieldSubscriber2::FieldSubscriber2(const NeuroPolicySpec &policy_spec, const std::string &name)
+    : Module(nonEmptyOr(name, "field_subscriber")), config_(loadConfig(policy_spec)) {
   STEPIT_ASSERT(config_.IsMap(), "'field_subscriber.yml' must contain a map of field configurations.");
   using std_msgs::msg::Float32MultiArray;
   for (auto it = config_.begin(); it != config_.end(); ++it) {

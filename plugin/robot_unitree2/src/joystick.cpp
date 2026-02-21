@@ -49,6 +49,7 @@ void Unitree2Joystick::callback(const u2_msg::WirelessController_ *msg) {
 }
 
 STEPIT_REGISTER_JOYSTICK(unitree2, kDefPriority, Joystick::make<Unitree2Joystick>);
-STEPIT_REGISTER_CTRLINPUT(joystick_unitree2, kDefPriority, []() { return std::make_unique<JoystickControl>("unitree2"); });
+STEPIT_REGISTER_CTRLINPUT(joystick_unitree2, kDefPriority,
+                          []() { return std::make_unique<JoystickControl>("unitree2"); });
 }  // namespace joystick
 }  // namespace stepit

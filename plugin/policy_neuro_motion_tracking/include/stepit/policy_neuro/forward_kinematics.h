@@ -10,7 +10,7 @@ namespace stepit {
 namespace neuro_policy {
 class ForwardKinematics : public Module {
  public:
-  ForwardKinematics(const PolicySpec &policy_spec, const std::string &home_dir);
+  ForwardKinematics(const NeuroPolicySpec &policy_spec, const std::string &name);
 
   bool reset() override;
   bool update(const LowState &low_state, ControlRequests &requests, FieldMap &context) override;

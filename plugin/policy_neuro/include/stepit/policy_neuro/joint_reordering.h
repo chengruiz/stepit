@@ -7,7 +7,7 @@ namespace stepit {
 namespace neuro_policy {
 class JointReordering : public Module {
  public:
-  JointReordering(const PolicySpec &, const std::string &home_dir);
+  JointReordering(const NeuroPolicySpec &, const std::string &name);
   void initFieldProperties() override;
   bool reset() override { return true; }
   bool update(const LowState &low_state, ControlRequests &requests, FieldMap &context) override;
@@ -15,6 +15,7 @@ class JointReordering : public Module {
  private:
   ArrXf reorder(const ArrXf &in);
 
+  YAML::Node config_;
   FieldId joint_pos_id_, joint_vel_id_;
   std::vector<std::size_t> joint_order_;
   std::vector<bool> joint_reversed_;
@@ -22,7 +23,7 @@ class JointReordering : public Module {
 
 class ActionReordering : public Module {
  public:
-  ActionReordering(const PolicySpec &, const std::string &home_dir);
+  ActionReordering(const NeuroPolicySpec &, const std::string &name);
   void initFieldProperties() override;
   bool reset() override { return true; }
   bool update(const LowState &low_state, ControlRequests &requests, FieldMap &context) override;
@@ -30,6 +31,7 @@ class ActionReordering : public Module {
  private:
   ArrXf reorder(const ArrXf &in);
 
+  YAML::Node config_;
   FieldId action_id_;
   std::vector<std::size_t> joint_order_;
   std::vector<bool> joint_reversed_;

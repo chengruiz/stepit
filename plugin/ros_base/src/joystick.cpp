@@ -12,14 +12,13 @@ std::string getJoyName() {
   return joy_name;
 }
 
-RosJoystick::RosJoystick()
-    : RosJoystick(loadConfigFile(fmt::format("joystick/{}.yml", getJoyName()))) {}
+RosJoystick::RosJoystick() : RosJoystick(loadConfigFile(fmt::format("joystick/{}.yml", getJoyName()))) {}
 
 RosJoystick::RosJoystick(const Keymap &keymap) : keymap_(keymap) {
   std::string topic_name{"/joy"};
   getNodeHandle().getParam("joy_topic", topic_name);
-  joy_sub_ = getNodeHandle().subscribe(topic_name, 10, &RosJoystick::callback, this,
-                                       ros::TransportHints().tcpNoDelay());
+  joy_sub_ = getNodeHandle()
+                 .subscribe(topic_name, 10, &RosJoystick::callback, this, ros::TransportHints().tcpNoDelay());
 }
 
 bool RosJoystick::connected() const { return connected_ and getElapsedTime(stamp_) < 0.1; }

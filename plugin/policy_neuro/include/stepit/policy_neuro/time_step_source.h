@@ -7,7 +7,7 @@ namespace stepit {
 namespace neuro_policy {
 class TimeStepSource : public Module {
  public:
-  TimeStepSource(const PolicySpec &, const std::string &);
+  TimeStepSource(const NeuroPolicySpec &, const std::string &name);
   bool reset() override;
   bool update(const LowState &, ControlRequests &, FieldMap &context) override;
 

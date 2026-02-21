@@ -6,8 +6,8 @@
 #include <rclcpp/rclcpp.hpp>
 #include <std_msgs/msg/string.hpp>
 
-#include <stepit/control_input.h>
 #include <stepit_ros2_msgs/srv/control.hpp>
+#include <stepit/control_input.h>
 
 namespace stepit {
 class Ros2MsgControl final : public ControlInput {

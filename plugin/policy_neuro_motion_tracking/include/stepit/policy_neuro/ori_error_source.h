@@ -7,7 +7,7 @@ namespace stepit {
 namespace neuro_policy {
 class OriErrorSource : public Module {
  public:
-  OriErrorSource(const PolicySpec &, const std::string &home_dir);
+  OriErrorSource(const NeuroPolicySpec &, const std::string &name);
   bool update(const LowState &, ControlRequests &, FieldMap &context) override;
 
   enum Rotation6dOrder { kRowMajor, kColumnMajor };

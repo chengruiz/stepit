@@ -3,11 +3,13 @@
 namespace stepit {
 namespace neuro_policy {
 NeuroPolicy::NeuroPolicy(const RobotSpec &robot_spec, const std::string &home_dir)
-    : Policy(robot_spec), config_(yml::loadFile(home_dir + "/policy.yml")) {
+    : spec_(robot_spec, home_dir), config_(yml::loadFile(joinPaths(home_dir, "policy.yml"))) {
   yml::setTo(config_, "control_freq", spec_.control_freq);
   yml::setIf(config_, "name", spec_.policy_name);
   yml::setIf(config_, "trusted", spec_.trusted);
   yml::setIf(config_, "tailored", tailored_);
+  std::string default_action_key = yml::getDefinedKey(config_, "default_action", "action_mean");
+  yml::setIf(config_, default_action_key, spec_.default_action);
   STEPIT_ASSERT(tailored_.empty() or tailored_ == robot_spec.robot_name,
                 "Policy tailored for '{}' cannot be used with robot '{}'.", tailored_, robot_spec.robot_name);
   action_id_ = registerField("action", 0);
@@ -15,23 +17,31 @@ NeuroPolicy::NeuroPolicy(const RobotSpec &robot_spec, const std::string &home_di
 
   // Add modules read from the YAML file
   std::string module_key = yml::getDefinedKey(config_, "field_source", "module", "modules");
-  auto module_node       = config_[module_key];
-  if (module_node) {
-    STEPIT_ASSERT(module_node.IsSequence(), "'{}' must be a sequence.", module_key);
-    for (const auto &module : module_node) {
-      addModule(Module::make(module.as<std::string>(), spec_, home_dir), false);
+  auto modules_config    = config_[module_key];
+  if (modules_config) {
+    STEPIT_ASSERT(modules_config.IsSequence(), "'{}' must be a sequence.", module_key);
+    for (const auto &module_node : modules_config) {
+      std::string factory_name = yml::readAs<std::string>(module_node);
+      std::string module_name  = "";
+
+      auto at_pos = factory_name.find("@");
+      if (at_pos != std::string::npos) {
+        module_name  = factory_name.substr(0, at_pos);
+        factory_name = factory_name.substr(at_pos + 1);
+      }
+      addModule(Module::make(factory_name, spec_, module_name), false);
     }
   }
   // Add the actuator and the actor
   std::string actuator_type = "position";
   if (config_["actuator"]) yml::setIf(config_["actuator"], "type", actuator_type);
-  auto actuator = Actuator::make(actuator_type, spec_, home_dir);
+  auto actuator = Actuator::make(actuator_type, spec_, "");
   actuator_     = actuator.get();
   addModule(std::move(actuator), true);
   if (available_fields_.find(action_id_) == available_fields_.end() and
       unavailable_fields_.find(action_id_) == unavailable_fields_.end() and
       unresolved_fields_.find(action_id_) == unresolved_fields_.end()) {
-    addModule(makeFieldSource("action", spec_, home_dir), false);
+    addModule(makeFieldSource("action", spec_, ""), false);
   }
   // Automatically resolve field dependencies
   while (not unresolved_modules_.empty()) {
@@ -45,7 +55,7 @@ NeuroPolicy::NeuroPolicy(const RobotSpec &robot_spec, const std::string &home_di
       requirement = field;
       break;
     }
-    addModule(makeFieldSource(getFieldName(requirement), spec_, home_dir), true);
+    addModule(makeFieldSource(getFieldName(requirement), spec_, ""), true);
   }
   STEPIT_ASSERT(unavailable_fields_.empty() and unresolved_modules_.empty(), "Policy is not fully resolved.");
 
@@ -69,7 +79,7 @@ NeuroPolicy::NeuroPolicy(const RobotSpec &robot_spec, const std::string &home_di
   STEPIT_DBUGNT("Modules:");
   for (const auto &module : resolved_modules_) {
     module->initFieldProperties();
-    STEPIT_DBUGNT("- {}", getTypeName(*module));
+    STEPIT_DBUGNT("- {} ({})", module->name(), getTypeName(*module));
   }
   displayFormattedBanner(60);
 }

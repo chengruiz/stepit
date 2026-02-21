@@ -9,11 +9,12 @@ std::string getConfigPath(const std::string &relative_path) {
       config_dir = STEPIT_CONFIG_DIR;
 #else
       const char *home_dir = std::getenv("HOME");
-      config_dir           = fmt::format("{}/.config/stepit", home_dir != nullptr ? home_dir : ".");
+
+      config_dir = joinPaths(home_dir != nullptr ? home_dir : ".", ".config", "stepit");
 #endif  // STEPIT_CONFIG_DIR
     }
   }
-  return relative_path.empty() ? config_dir : fmt::format("{}/{}", config_dir, relative_path);
+  return relative_path.empty() ? config_dir : joinPaths(config_dir, relative_path);
 }
 
 YAML::Node loadConfigFile(const std::string &relative_path) { return YAML::LoadFile(getConfigPath(relative_path)); }

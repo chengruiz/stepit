@@ -2,13 +2,11 @@
 
 namespace stepit {
 namespace neuro_policy {
-Actuator::Actuator(const PolicySpec &policy_spec, const std::string &home_dir) {
-  YAML::Node policy_config = yml::loadFile(home_dir + "/policy.yml");
-  if (policy_config["actuator"]) {
-    config_ = policy_config["actuator"];
-  } else {
-    config_ = policy_config;
-  }
+Actuator::Actuator(const NeuroPolicySpec &policy_spec, const std::string &name) : Module(nonEmptyOr(name, "actuator")) {
+  YAML::Node policy_config = loadConfig(policy_spec, "policy");
+  yml::assertHasValue(policy_config, "actuator");
+  config_ = policy_config["actuator"];
+  STEPIT_ASSERT(config_.IsMap(), "'actuator' entry in policy.yml should be a map.");
 
   scale_.setOnes(policy_spec.dof);
   bias_.setZero(policy_spec.dof);
@@ -34,8 +32,8 @@ Actuator::Actuator(const PolicySpec &policy_spec, const std::string &home_dir) {
   }
 }
 
-PositionActuator::PositionActuator(const PolicySpec &policy_spec, const std::string &home_dir)
-    : Actuator(policy_spec, home_dir) {
+PositionActuator::PositionActuator(const NeuroPolicySpec &policy_spec, const std::string &name)
+    : Actuator(policy_spec, nonEmptyOr(name, "position_actuator")) {
   target_joint_pos_.setZero(policy_spec.dof);
   last_target_joint_pos_id_ = registerProvision("last_target_joint_pos", target_joint_pos_.size());
 }
@@ -68,8 +66,8 @@ void PositionActuator::setLowCmd(LowCmd &cmd, cArrXf action) {
   }
 }
 
-VelocityActuator::VelocityActuator(const PolicySpec &policy_spec, const std::string &home_dir)
-    : Actuator(policy_spec, home_dir) {
+VelocityActuator::VelocityActuator(const NeuroPolicySpec &policy_spec, const std::string &name)
+    : Actuator(policy_spec, nonEmptyOr(name, "velocity_actuator")) {
   target_joint_vel_         = bias_;
   last_target_joint_vel_id_ = registerProvision("last_target_joint_vel", target_joint_vel_.size());
 }
@@ -95,8 +93,8 @@ void VelocityActuator::setLowCmd(LowCmd &cmd, cArrXf action) {
   }
 }
 
-TorqueActuator::TorqueActuator(const PolicySpec &policy_spec, const std::string &home_dir)
-    : Actuator(policy_spec, home_dir) {
+TorqueActuator::TorqueActuator(const NeuroPolicySpec &policy_spec, const std::string &name)
+    : Actuator(policy_spec, nonEmptyOr(name, "torque_actuator")) {
   target_joint_tor_         = bias_;
   last_target_joint_tor_id_ = registerProvision("last_target_joint_tor", target_joint_tor_.size());
 }
@@ -130,8 +128,8 @@ const std::map<std::string, HybridActuator::Mode> HybridActuator::kModeMap = {
 };
 // clang-format on
 
-HybridActuator::HybridActuator(const PolicySpec &policy_spec, const std::string &home_dir)
-    : Actuator(policy_spec, home_dir) {
+HybridActuator::HybridActuator(const NeuroPolicySpec &policy_spec, const std::string &name)
+    : Actuator(policy_spec, nonEmptyOr(name, "hybrid_actuator")) {
   if (yml::hasValue(config_, "parameters")) {
     yml::Node parameters = config_["parameters"];
     for (const auto &node : config_["parameters"]) {

@@ -3,8 +3,8 @@
 #include <stepit/ros2/node.h>
 
 namespace stepit::neuro_policy {
-CmdRollSubscriber2::CmdRollSubscriber2(const PolicySpec &policy_spec, const std::string &home_dir)
-    : CmdRollSource(policy_spec, home_dir) {
+CmdRollSubscriber2::CmdRollSubscriber2(const NeuroPolicySpec &policy_spec, const std::string &name)
+    : CmdRollSource(policy_spec, name) {
   YAML::Node subscriber_cfg = config_["cmd_roll_subscriber"];
   yml::setIf(subscriber_cfg, "timeout_threshold", timeout_threshold_);
   yml::setIf(subscriber_cfg, "default_enabled", default_subscriber_enabled_);
@@ -107,8 +107,8 @@ void CmdRollSubscriber2::handleControlRequest(ControlRequest request) {
       break;
   }
 }
-CmdPitchSubscriber2::CmdPitchSubscriber2(const PolicySpec &policy_spec, const std::string &home_dir)
-    : CmdPitchSource(policy_spec, home_dir) {
+CmdPitchSubscriber2::CmdPitchSubscriber2(const NeuroPolicySpec &policy_spec, const std::string &name)
+    : CmdPitchSource(policy_spec, name) {
   YAML::Node subscriber_cfg = config_["cmd_pitch_subscriber"];
   yml::setIf(subscriber_cfg, "timeout_threshold", timeout_threshold_);
   yml::setIf(subscriber_cfg, "default_enabled", default_subscriber_enabled_);
@@ -212,8 +212,8 @@ void CmdPitchSubscriber2::handleControlRequest(ControlRequest request) {
   }
 }
 
-CmdHeightSubscriber2::CmdHeightSubscriber2(const PolicySpec &policy_spec, const std::string &home_dir)
-    : CmdHeightSource(policy_spec, home_dir) {
+CmdHeightSubscriber2::CmdHeightSubscriber2(const NeuroPolicySpec &policy_spec, const std::string &name)
+    : CmdHeightSource(policy_spec, name) {
   YAML::Node subscriber_cfg = config_["cmd_height_subscriber"];
   yml::setIf(subscriber_cfg, "timeout_threshold", timeout_threshold_);
   yml::setIf(subscriber_cfg, "default_enabled", default_subscriber_enabled_);

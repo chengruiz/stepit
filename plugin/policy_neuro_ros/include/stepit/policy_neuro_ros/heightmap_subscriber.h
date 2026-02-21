@@ -17,7 +17,7 @@ namespace stepit {
 namespace neuro_policy {
 class HeightmapSubscriber : public DummyHeightmapSource {
  public:
-  HeightmapSubscriber(const PolicySpec &policy_spec, const std::string &home_dir);
+  HeightmapSubscriber(const NeuroPolicySpec &policy_spec, const std::string &name);
   bool reset() override;
   bool update(const LowState &low_state, ControlRequests &requests, FieldMap &context) override;
   void exit() override;

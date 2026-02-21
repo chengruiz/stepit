@@ -3,9 +3,9 @@
 
 namespace stepit {
 namespace neuro_policy {
-ActionHistory::ActionHistory(const PolicySpec &, const std::string &home_dir) {
-  auto policy_cfg = yml::loadFile(home_dir + "/policy.yml");
-  yml::setIf(policy_cfg, "action_mean", action_mean_);
+ActionHistory::ActionHistory(const NeuroPolicySpec &policy_spec, const std::string &name)
+    : Module(nonEmptyOr(name, "action_history")) {
+  default_action_ = policy_spec.default_action;
   action_buf_.allocate(5);
 
   action_id_      = getFieldId("action");
@@ -17,7 +17,7 @@ ActionHistory::ActionHistory(const PolicySpec &, const std::string &home_dir) {
 void ActionHistory::initFieldProperties() {
   auto action_dim = getFieldSize(action_id_);
 
-  populateArray(action_mean_, action_dim);
+  populateArray(default_action_, action_dim);
   setFieldSize(last_action_id_, action_dim);
   setFieldSize(action_p1_id_, action_dim);
   setFieldSize(action_p2_id_, action_dim);
@@ -29,28 +29,27 @@ bool ActionHistory::reset() {
 }
 
 bool ActionHistory::update(const LowState &low_state, ControlRequests &requests, FieldMap &context) {
-  context[last_action_id_] = action_buf_.at(-1, action_mean_);
-  context[action_p1_id_]   = action_buf_.at(-1, action_mean_);
-  context[action_p2_id_]   = action_buf_.at(-2, action_mean_);
+  context[last_action_id_] = action_buf_.at(-1, default_action_);
+  context[action_p1_id_]   = action_buf_.at(-1, default_action_);
+  context[action_p2_id_]   = action_buf_.at(-2, default_action_);
   return true;
 }
 
 void ActionHistory::postUpdate(const FieldMap &field_map) { action_buf_.push_back(field_map.at(action_id_)); }
 
-ActionFilter::ActionFilter(const PolicySpec &, const std::string &home_dir) {
-  auto policy_cfg = yml::loadFile(home_dir + "/policy.yml");
-  yml::setIf(policy_cfg, "action_mean", action_mean_);
-  auto config = yml::loadFile(home_dir + "/action_filter.yml");
-  yml::setTo(config, "window_size", window_size_);
-  action_buf_.allocate(window_size_);
+ActionFilter::ActionFilter(const NeuroPolicySpec &policy_spec, const std::string &name)
+    : Module(nonEmptyOr(name, "action_filter")), config_(loadConfig(policy_spec)) {
+  default_action_ = policy_spec.default_action;
+  yml::setTo(config_, "window_size", window_size_);
   STEPIT_ASSERT(window_size_ > 1, "'window_size' must be greater than 1.");
   STEPIT_LOGNT("Action low-pass filter is applied with a window size of {}.", window_size_);
+  action_buf_.allocate(window_size_);
   action_id_ = registerRequirement("action");
 }
 
 void ActionFilter::initFieldProperties() {
   auto action_dim = getFieldSize(action_id_);
-  populateArray(action_mean_, action_dim);
+  populateArray(default_action_, action_dim);
 }
 
 bool ActionFilter::reset() {
@@ -62,7 +61,7 @@ bool ActionFilter::update(const LowState &low_state, ControlRequests &requests, 
   auto &action = context.at(action_id_);
   action_buf_.push_back(action);
   for (int i{1}; i < window_size_; ++i) {
-    action += action_buf_.at(-i - 1, action_mean_);
+    action += action_buf_.at(-i - 1, default_action_);
   }
   action /= static_cast<float>(window_size_);
   return true;

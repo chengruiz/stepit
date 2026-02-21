@@ -7,8 +7,11 @@
 
 namespace stepit {
 struct PolicySpec : RobotSpec {
-  explicit PolicySpec(const RobotSpec &robot_spec) : RobotSpec(robot_spec) {}
+  explicit PolicySpec(const RobotSpec &robot_spec, std::string home_dir)
+      : RobotSpec(robot_spec), home_dir(std::move(home_dir)) {}
 
+  /* Home directory for the policy to read configuration files. */
+  std::string home_dir;
   /* Name of the policy */
   std::string policy_name;
   /* Control frequency in Hz */
@@ -19,11 +22,11 @@ struct PolicySpec : RobotSpec {
 
 class Policy : public Interface<Policy, const RobotSpec & /* robot_spec */, const std::string & /* home_dir */> {
  public:
-  explicit Policy(const RobotSpec &spec) : spec_(spec) {}
-  std::size_t getControlFreq() const { return spec_.control_freq; }
-  std::string getName() const { return spec_.policy_name; }
-  bool isTrusted() const { return spec_.trusted; }
-  const PolicySpec &getSpec() const { return spec_; }
+  virtual const PolicySpec &getSpec() const = 0;
+  std::string getHomeDir() const { return getSpec().home_dir; }
+  std::size_t getControlFreq() const { return getSpec().control_freq; }
+  std::string getName() const { return getSpec().policy_name; }
+  bool isTrusted() const { return getSpec().trusted; }
 
   /**
    * @brief Resets the policy to its initial state.
@@ -44,9 +47,6 @@ class Policy : public Interface<Policy, const RobotSpec & /* robot_spec */, cons
    * @brief Shuts down the policy, releasing resources and performing any necessary finalization.
    */
   virtual void exit() = 0;
-
- protected:
-  PolicySpec spec_;
 };
 }  // namespace stepit
 

@@ -11,11 +11,11 @@ const std::map<std::string, CmdRollSource::Action> CmdRollSource::kActionMap = {
 };
 // clang-format on
 
-CmdRollSource::CmdRollSource(const PolicySpec &policy_spec, const std::string &home_dir) {
+CmdRollSource::CmdRollSource(const NeuroPolicySpec &policy_spec, const std::string &name)
+    : Module(nonEmptyOr(name, "cmd_roll")), config_(loadConfigIf(policy_spec, "cmd_posture")) {
   cmd_roll_id_ = registerProvision("cmd_roll", 1);
 
-  if (fs::exists(home_dir + "/cmd_posture.yml")) {
-    config_ = yml::loadFile(home_dir + "/cmd_posture.yml");
+  if (config_) {
     yml::setIf(config_, "roll_scale_factor", roll_scale_factor_);
     yml::setIf(config_, "joystick_enabled", joystick_enabled_);
   }
@@ -83,11 +83,11 @@ const std::map<std::string, CmdPitchSource::Action> CmdPitchSource::kActionMap =
 };
 // clang-format on
 
-CmdPitchSource::CmdPitchSource(const PolicySpec &policy_spec, const std::string &home_dir) {
+CmdPitchSource::CmdPitchSource(const NeuroPolicySpec &policy_spec, const std::string &name)
+    : Module(nonEmptyOr(name, "cmd_pitch")), config_(loadConfigIf(policy_spec, "cmd_posture")) {
   cmd_pitch_id_ = registerProvision("cmd_pitch", 1);
 
-  if (fs::exists(home_dir + "/cmd_posture.yml")) {
-    config_ = yml::loadFile(home_dir + "/cmd_posture.yml");
+  if (config_) {
     yml::setIf(config_, "pitch_scale_factor", pitch_scale_factor_);
     yml::setIf(config_, "joystick_enabled", joystick_enabled_);
   }
@@ -155,11 +155,11 @@ const std::map<std::string, CmdHeightSource::Action> CmdHeightSource::kActionMap
 };
 // clang-format on
 
-CmdHeightSource::CmdHeightSource(const PolicySpec &policy_spec, const std::string &home_dir) {
+CmdHeightSource::CmdHeightSource(const NeuroPolicySpec &policy_spec, const std::string &name)
+    : Module(nonEmptyOr(name, "cmd_height")), config_(loadConfigIf(policy_spec, "cmd_posture")) {
   cmd_height_id_ = registerProvision("cmd_height", 1);
 
-  if (fs::exists(home_dir + "/cmd_posture.yml")) {
-    config_ = yml::loadFile(home_dir + "/cmd_posture.yml");
+  if (config_) {
     yml::setIf(config_, "default_cmd_height", default_cmd_height_);
     yml::setIf(config_, "height_scale_factor", height_scale_factor_);
     yml::setIf(config_, "height_range", height_range_);

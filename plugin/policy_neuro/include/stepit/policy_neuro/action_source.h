@@ -10,7 +10,7 @@ namespace stepit {
 namespace neuro_policy {
 class ActionHistory : public Module {
  public:
-  ActionHistory(const PolicySpec &policy_spec, const std::string &home_dir);
+  ActionHistory(const NeuroPolicySpec &policy_spec, const std::string &name);
   void initFieldProperties() override;
   bool reset() override;
   bool update(const LowState &low_state, ControlRequests &requests, FieldMap &context) override;
@@ -21,21 +21,23 @@ class ActionHistory : public Module {
   FieldId last_action_id_{};
   FieldId action_p1_id_{};
   FieldId action_p2_id_{};
-  ArrXf action_mean_;
+  ArrXf default_action_;
   RingBuffer<ArrXf> action_buf_;
 };
 
 class ActionFilter : public Module {
  public:
-  ActionFilter(const PolicySpec &policy_spec, const std::string &home_dir);
+  ActionFilter(const NeuroPolicySpec &policy_spec, const std::string &name);
   void initFieldProperties() override;
   bool reset() override;
   bool update(const LowState &low_state, ControlRequests &requests, FieldMap &context) override;
 
  private:
+  YAML::Node config_;
   int window_size_{};
   FieldId action_id_{};
-  ArrXf action_mean_;
+  ArrXf default_action_;
+
   RingBuffer<ArrXf> action_buf_;
 };
 }  // namespace neuro_policy

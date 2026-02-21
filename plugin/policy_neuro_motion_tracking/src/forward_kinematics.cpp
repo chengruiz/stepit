@@ -6,11 +6,11 @@
 
 namespace stepit {
 namespace neuro_policy {
-ForwardKinematics::ForwardKinematics(const PolicySpec &policy_spec, const std::string &home_dir)
-    : config_(yml::loadFile(home_dir + "/forward_kinematics.yml")) {
+ForwardKinematics::ForwardKinematics(const NeuroPolicySpec &policy_spec, const std::string &name)
+    : Module(nonEmptyOr(name, "forward_kinematics")), config_(loadConfig(policy_spec)) {
   urdf_filename_ = yml::readIf<std::string>(config_, "urdf_filename", "robot.urdf");
   STEPIT_ASSERT(not urdf_filename_.empty(), "'urdf_filename' cannot be empty.");
-  urdf_filename_ = urdf_filename_[0] == '/' ? urdf_filename_ : (home_dir + "/" + urdf_filename_);
+  urdf_filename_ = urdf_filename_[0] == '/' ? urdf_filename_ : joinPaths(policy_spec.home_dir, urdf_filename_);
 
   pinocchio::urdf::buildModel(urdf_filename_, pinocchio::JointModelFreeFlyer(), model_);
   data_ = pinocchio::Data(model_);

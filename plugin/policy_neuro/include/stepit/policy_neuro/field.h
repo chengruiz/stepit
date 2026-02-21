@@ -3,6 +3,7 @@
 
 #include <map>
 #include <mutex>
+#include <utility>
 #include <vector>
 
 #include <stepit/control_input.h>
@@ -19,7 +20,13 @@ using FieldIdVec = std::vector<FieldId>;
 
 constexpr FieldId kInvalidFieldId = static_cast<FieldId>(-1);
 
-class Module : public Interface<Module, const PolicySpec & /* policy_spec */, const std::string & /* home_dir */> {
+struct NeuroPolicySpec : PolicySpec {
+  using PolicySpec::PolicySpec;
+  /* The default action to take */
+  ArrXf default_action;
+};
+
+class Module : public Interface<Module, const NeuroPolicySpec & /* policy_spec */, const std::string & /* name */> {
  public:
   virtual void initFieldProperties() {}
   virtual bool reset() { return true; }
@@ -27,14 +34,27 @@ class Module : public Interface<Module, const PolicySpec & /* policy_spec */, co
   virtual void postUpdate(const FieldMap &field_map) {}
   virtual void exit() {}
 
+  const std::string &name() const { return name_; }
   const std::set<FieldId> &requirements() const { return requirements_; }
   const std::set<FieldId> &provisions() const { return provisions_; }
 
  protected:
+  explicit Module(std::string name) : name_(std::move(name)) {
+    STEPIT_ASSERT(not name_.empty(), "Module name should not be empty.");
+  }
+
   FieldId registerRequirement(const std::string &field_name, FieldSize field_size = 0);
   FieldId registerRequirement(FieldId field_id);
   FieldId registerProvision(const std::string &field_name, FieldSize field_size);
 
+  YAML::Node loadConfig(const NeuroPolicySpec &policy_spec, const std::string &name = "") const {
+    return yml::loadFile(joinPaths(policy_spec.home_dir, nonEmptyOr(name, name_) + ".yml"));
+  }
+  YAML::Node loadConfigIf(const NeuroPolicySpec &policy_spec, const std::string &name = "") const {
+    return yml::loadFileIf(joinPaths(policy_spec.home_dir, nonEmptyOr(name, name_) + ".yml"));
+  }
+
+  const std::string name_;
   std::set<FieldId> requirements_, provisions_;
 };
 
@@ -45,10 +65,10 @@ class FieldManager {
   FieldManager &operator=(const FieldManager &) = delete;
   static FieldManager &instance();
 
-  using SourceRegistry = Registry<Module, const PolicySpec &, const std::string &>;
+  using SourceRegistry = Registry<Module, const NeuroPolicySpec &, const std::string &>;
   auto registerSource(const std::string &field_name, int priority, SourceRegistry::Factory factory)
       -> SourceRegistry::Registration;
-  auto makeSource(const std::string &field_name, const PolicySpec &policy_spec, const std::string &home_dir)
+  auto makeSource(const std::string &field_name, const NeuroPolicySpec &policy_spec, const std::string &name)
       -> Module::Ptr;
 
   FieldId registerField(const std::string &name, FieldSize size);
@@ -76,9 +96,9 @@ inline FieldId getFieldId(const std::string &name) { return fieldManager().getFi
 inline const std::string &getFieldName(FieldId id) { return fieldManager().getFieldName(id); }
 inline FieldSize getFieldSize(FieldId id) { return fieldManager().getFieldSize(id); }
 inline void setFieldSize(FieldId id, FieldSize size) { fieldManager().setFieldSize(id, size); }
-inline Module::Ptr makeFieldSource(const std::string &field_name, const PolicySpec &policy_spec,
-                                   const std::string &home_dir) {
-  return fieldManager().makeSource(field_name, policy_spec, home_dir);
+inline auto makeFieldSource(const std::string &field_name, const NeuroPolicySpec &policy_spec, const std::string &name)
+    -> Module::Ptr {
+  return fieldManager().makeSource(field_name, policy_spec, name);
 }
 
 void parseFieldIds(const YAML::Node &node, FieldIdVec &result);

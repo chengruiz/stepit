@@ -4,13 +4,13 @@
 
 namespace stepit {
 namespace neuro_policy {
-NeuroModule::NeuroModule(const std::string &name, const std::string &home_dir)
-    : config_(yml::loadFile(fmt::format("{}/{}.yml", home_dir, name))) {
+NeuroModule::NeuroModule(const NeuroPolicySpec &policy_spec, const std::string &name)
+    : Module(nonEmptyOr(name, "neuro_module")), config_(loadConfig(policy_spec)) {
   run_name_ = yml::readIf<std::string>(config_["run"], "name", "unknown");
   yml::setIf(config_, "assert_all_finite", assert_all_finite_);
 
-  displayFormattedBanner(60, kGreen, "NeuroModule {} ({})", name, run_name_);
-  nn_ = NnrtApi::make("", fmt::format("{}/{}.onnx", home_dir, name), config_);
+  displayFormattedBanner(60, kGreen, "NeuroModule {} ({})", name_, run_name_);
+  nn_ = NnrtApi::make("", joinPaths(policy_spec.home_dir, name_ + ".onnx"), config_);
 
   for (const auto &input_name : nn_->getInputNames()) {
     if (not nn_->isInputRecurrent(input_name)) {
@@ -155,9 +155,11 @@ void NeuroModule::printNodeFields(const std::vector<std::string> &node_names,
   }
 }
 
-NeuroActor::NeuroActor(const PolicySpec &, const std::string &home_dir) : NeuroModule("actor", home_dir) {}
+NeuroActor::NeuroActor(const NeuroPolicySpec &policy_spec, const std::string &name)
+    : NeuroModule(policy_spec, nonEmptyOr(name, "actor")) {}
 
-NeuroEstimator::NeuroEstimator(const PolicySpec &, const std::string &home_dir) : NeuroModule("estimator", home_dir) {}
+NeuroEstimator::NeuroEstimator(const NeuroPolicySpec &policy_spec, const std::string &name)
+    : NeuroModule(policy_spec, nonEmptyOr(name, "estimator")) {}
 
 STEPIT_REGISTER_MODULE(actor, kDefPriority, Module::make<NeuroActor>);
 STEPIT_REGISTER_MODULE(estimator, kDefPriority, Module::make<NeuroEstimator>);

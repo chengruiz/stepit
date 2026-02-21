@@ -30,10 +30,10 @@ auto FieldManager::registerSource(const std::string &field_name, int priority, S
   return source_registry_.createRegistration(field_name, priority, std::move(factory));
 }
 
-auto FieldManager::makeSource(const std::string &field_name, const PolicySpec &policy_spec, const std::string &home_dir)
-    -> Module::Ptr {
+auto FieldManager::makeSource(const std::string &field_name, const NeuroPolicySpec &policy_spec,
+                              const std::string &name) -> Module::Ptr {
   std::lock_guard<std::recursive_mutex> lock(mutex_);
-  return source_registry_.make(field_name, policy_spec, home_dir);
+  return source_registry_.make(field_name, policy_spec, name);
 }
 
 FieldId FieldManager::registerField(const std::string &name, FieldSize size) {

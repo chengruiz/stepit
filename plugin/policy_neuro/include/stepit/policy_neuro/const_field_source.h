@@ -10,7 +10,7 @@ namespace stepit {
 namespace neuro_policy {
 class ConstFieldSource : public Module {
  public:
-  ConstFieldSource(const PolicySpec &, const std::string &home_dir);
+  ConstFieldSource(const NeuroPolicySpec &, const std::string &name);
   bool update(const LowState &, ControlRequests &, FieldMap &context) override;
 
  private:

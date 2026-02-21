@@ -7,7 +7,7 @@ namespace stepit {
 namespace neuro_policy {
 class FieldHistory : public Module {
  public:
-  FieldHistory(const PolicySpec &policy_spec, const std::string &home_dir);
+  FieldHistory(const NeuroPolicySpec &policy_spec, const std::string &name);
   void initFieldProperties() override;
   bool reset() override;
   bool update(const LowState &low_state, ControlRequests &requests, FieldMap &context) override;

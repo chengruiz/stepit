@@ -5,8 +5,8 @@
 
 namespace stepit {
 namespace neuro_policy {
-CmdVelSubscriber::CmdVelSubscriber(const PolicySpec &policy_spec, const std::string &home_dir)
-    : CmdVelSource(policy_spec, home_dir) {
+CmdVelSubscriber::CmdVelSubscriber(const NeuroPolicySpec &policy_spec, const std::string &name)
+    : CmdVelSource(policy_spec, name) {
   YAML::Node subscriber_cfg = config_["cmd_vel_subscriber"];
   yml::setIf(subscriber_cfg, "timeout_threshold", timeout_threshold_);
   yml::setIf(subscriber_cfg, "default_enabled", default_subscriber_enabled_);

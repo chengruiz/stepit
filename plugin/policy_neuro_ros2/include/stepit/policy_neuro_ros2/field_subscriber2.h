@@ -10,7 +10,7 @@
 namespace stepit::neuro_policy {
 class FieldSubscriber2 : public Module {
  public:
-  FieldSubscriber2(const PolicySpec &policy_spec, const std::string &home_dir);
+  FieldSubscriber2(const NeuroPolicySpec &policy_spec, const std::string &name);
   bool reset() override;
   bool update(const LowState &low_state, ControlRequests &requests, FieldMap &context) override;
 

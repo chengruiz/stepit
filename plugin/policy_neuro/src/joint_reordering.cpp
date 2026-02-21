@@ -4,10 +4,10 @@
 
 namespace stepit {
 namespace neuro_policy {
-JointReordering::JointReordering(const PolicySpec &, const std::string &home_dir) {
-  auto cfg = yml::loadFile(home_dir + "/joint_reordering.yml");
-  yml::setTo(cfg, "order", joint_order_);
-  yml::setIf(cfg, "reversed", joint_reversed_);
+JointReordering::JointReordering(const NeuroPolicySpec &policy_spec, const std::string &name)
+    : Module(nonEmptyOr(name, "joint_reordering")), config_(loadConfig(policy_spec, "joint_order")) {
+  yml::setTo(config_, "order", joint_order_);
+  yml::setIf(config_, "reversed", joint_reversed_);
 
   auto sorted = joint_order_;
   std::sort(sorted.begin(), sorted.end());
@@ -45,10 +45,10 @@ bool JointReordering::update(const LowState &, ControlRequests &, FieldMap &cont
   return true;
 }
 
-ActionReordering::ActionReordering(const PolicySpec &, const std::string &home_dir) {
-  auto cfg = yml::loadFile(home_dir + "/joint_order.yml");
-  yml::setTo(cfg, "order", joint_order_);
-  yml::setIf(cfg, "reversed", joint_reversed_);
+ActionReordering::ActionReordering(const NeuroPolicySpec &policy_spec, const std::string &name)
+    : Module(nonEmptyOr(name, "action_reordering")), config_(loadConfig(policy_spec, "joint_order")) {
+  yml::setTo(config_, "order", joint_order_);
+  yml::setIf(config_, "reversed", joint_reversed_);
 
   auto sorted = joint_order_;
   std::sort(sorted.begin(), sorted.end());

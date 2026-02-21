@@ -22,13 +22,13 @@ const std::map<std::string, CmdVelSource::Action> CmdVelSource::kActionMap = {
 };
 // clang-format on
 
-CmdVelSource::CmdVelSource(const PolicySpec &policy_spec, const std::string &home_dir) {
+CmdVelSource::CmdVelSource(const NeuroPolicySpec &policy_spec, const std::string &name)
+    : Module(nonEmptyOr(name, "cmd_vel")), config_(loadConfigIf(policy_spec)) {
   cmd_vel_id_   = registerProvision("cmd_vel", 3);
   cmd_stall_id_ = registerProvision("cmd_stall", 1);
   timestep_     = 1.0F / static_cast<float>(policy_spec.control_freq);
 
-  if (fs::exists(home_dir + "/cmd_vel.yml")) {
-    config_ = yml::loadFile(home_dir + "/cmd_vel.yml");
+  if (config_) {
     yml::setIf(config_, "velocity_scale_factor", velocity_scale_factor_);
     yml::setIf(config_, "velocity_turbo_factor", velocity_turbo_factor_);
     yml::setIf(config_, "velocity_deadzone", velocity_deadzone_);
@@ -53,9 +53,8 @@ bool CmdVelSource::reset() {
     if (not joystick_enabled_) return "";
     return fmt::format("Policy/CmdVel/SetVelocityUnscaled:{},{},{}", -js.las_y(), -js.las_x(), -js.ras_x());
   });
-  joystick_rules_.emplace_back([](const joystick::State &js) -> std::string {
-    return js.Start().on_press ? "Policy/CmdVel/CycleMode" : "";
-  });
+  joystick_rules_.emplace_back(
+      [](const joystick::State &js) -> std::string { return js.Start().on_press ? "Policy/CmdVel/CycleMode" : ""; });
   return true;
 }
 
