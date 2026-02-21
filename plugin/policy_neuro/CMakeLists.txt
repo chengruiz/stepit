@@ -15,6 +15,7 @@ stepit_add_plugin(${PROJECT_NAME}
       src/joint_reordering.cpp
       src/neuro_module.cpp
       src/neuro_policy.cpp
+      src/odometry_source.cpp
       src/proprioceptor.cpp
       src/subscriber_action.cpp
       src/time_step_source.cpp

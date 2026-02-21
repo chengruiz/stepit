@@ -33,11 +33,12 @@ StepIt plugin for running neural network-based policy.
   | `cmd_pitch`         | Provides pitch command input.                         |
   | `cmd_roll`          | Provides roll command input.                          |
   | `cmd_vel`           | Provides velocity command input.                      |
-  | `const_field`       | Provides constant values for configured fields.        |
+  | `const_field`       | Provides constant values for configured fields.       |
   | `estimator`         | Infers the neural network state estimator.            |
   | `field_ops`         | Applies generic field operations.                     |
-  | `heightmap`         | Provides heightmap observations.                      |
+  | `heightmap`         | Provides dummy heightmap observations.                |
   | `joint_reorder`     | Reorders joint states.                                |
+  | `odometry`          | Provides dummy odometry observations.                 |
   | `roll_pitch`        | Provides the roll and pitch observations.             |
   | `proprioceptor`     | Provides proprioceptive observations.                 |
   | `time_step`         | Provides monotonically increasing timestep index.     |
