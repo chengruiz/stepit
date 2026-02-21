@@ -7,9 +7,9 @@ namespace stepit {
 namespace neuro_policy {
 class TimeStepSource : public Module {
  public:
-  TimeStepSource(const PolicySpec &policy_spec, const std::string &home_dir);
+  TimeStepSource(const PolicySpec &, const std::string &);
   bool reset() override;
-  bool update(const LowState &low_state, ControlRequests &requests, FieldMap &context) override;
+  bool update(const LowState &, ControlRequests &, FieldMap &context) override;
 
  private:
   FieldId time_step_id_{};
