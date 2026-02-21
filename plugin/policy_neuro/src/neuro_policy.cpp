@@ -15,7 +15,7 @@ NeuroPolicy::NeuroPolicy(const RobotSpec &robot_spec, const std::string &home_di
 
   // Add modules read from the YAML file
   std::string module_key = yml::getDefinedKey(config_, "field_source", "module", "modules");
-  auto module_node = config_[module_key];
+  auto module_node       = config_[module_key];
   if (module_node) {
     STEPIT_ASSERT(module_node.IsSequence(), "'{}' must be a sequence.", module_key);
     for (const auto &module : module_node) {
@@ -123,19 +123,19 @@ bool NeuroPolicy::reset() {
 }
 
 bool NeuroPolicy::act(const LowState &low_state, ControlRequests &requests, LowCmd &cmd) {
-  FieldMap field_map;
+  FieldMap context;
   for (const auto &module : resolved_modules_) {
-    if (not module->update(low_state, requests, field_map)) {
+    if (not module->update(low_state, requests, context)) {
       STEPIT_CRIT("Failed to update '{}'.", getTypeName(*module));
       return false;
     }
   }
-  for (const auto &module : resolved_modules_) module->postUpdate(field_map);
-  action_ = field_map.at(action_id_);
+  for (const auto &module : resolved_modules_) module->postUpdate(context);
+  action_ = context.at(action_id_);
   actuator_->setLowCmd(cmd, action_);
 
   if (publish_fields_) {
-    for (const auto &it : field_map) {
+    for (const auto &it : context) {
       if (published_fields_.empty() or published_fields_.find(it.first) != published_fields_.end()) {
         publisher::publishArray("field/" + getFieldName(it.first), it.second);
       }

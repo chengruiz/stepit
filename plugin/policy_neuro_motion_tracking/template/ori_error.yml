@@ -1,0 +1,4 @@
+current_ori_name: base_global_ori  # String, the name of the current orientation
+target_ori_name: base_target_ori   # String, the name of the target orientation
+
+rotation_6d_order: row_major  # Literal["row_major", "column_major"], the order of the 6D rotation representation

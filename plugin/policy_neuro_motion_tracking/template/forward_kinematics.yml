@@ -1,0 +1,14 @@
+urdf_filename: "robot.urdf"   # String, URDF filename of the robot.
+                              #  Relative paths are resolved against this config directory.
+
+body_names:                   # [Optional] List[String], body frame names to export.
+  - "base_link"               #   If omitted, all BODY frames found in the URDF will be used.
+  - "FL_hip"
+  - "FL_thigh"
+  - "FL_calf"
+
+anchor_body: "base_link"      # [Optional] String, anchor frame name used to compute local poses.
+                              #   Default: the first entry in body_names.
+
+anchor_global_pos_field: "base_global_pos"  # [Optional] String, field name for anchor world position to compute whole-body world position.
+anchor_global_ori_field: "base_global_ori"  # [Optional] String, field name for anchor world orientation to compute whole-body world orientation.

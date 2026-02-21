@@ -17,6 +17,8 @@ using FieldMap   = std::map<FieldId, ArrXf>;
 using FieldSize  = std::uint32_t;
 using FieldIdVec = std::vector<FieldId>;
 
+constexpr FieldId kInvalidFieldId = static_cast<FieldId>(-1);
+
 class Module : public Interface<Module, const PolicySpec & /* policy_spec */, const std::string & /* home_dir */> {
  public:
   virtual void initFieldProperties() {}

@@ -3,7 +3,7 @@
 
 namespace stepit {
 uint32_t crc32core(const uint32_t *ptr, uint32_t len) {
-  constexpr uint32_t dw_polynomial = 0x04c11db7;
+  static constexpr uint32_t dw_polynomial = 0x04c11db7;
 
   uint32_t xbit  = 0;
   uint32_t data  = 0;
