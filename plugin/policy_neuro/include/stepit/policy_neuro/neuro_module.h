@@ -15,8 +15,15 @@ class NeuroModule : public Module {
  private:
   using FieldNameVec = std::vector<std::string>;
   using FieldSizeVec = std::vector<FieldSize>;
-  void parseFields(bool is_input, const FieldNameVec &node_names, std::vector<FieldNameVec> &field_names,
-                   std::vector<FieldSizeVec> &field_sizes, FieldSizeVec &total_dims, std::vector<FieldIdVec> &fields);
+  void parseFields(                            // Parse field properties from the configuration
+      bool is_input,                           // true for input fields, false for output fields
+      const FieldNameVec &node_names,          // Names of the neural network's ordinary inputs/outputs
+      const FieldSizeVec &node_sizes,          // Sizes of the neural network's ordinary inputs/outputs
+      std::vector<FieldNameVec> &field_names,  // Output vector of field names for each ordinary input/output
+      std::vector<FieldSizeVec> &field_sizes,  // Output vector of field sizes for each ordinary input/output
+      std::vector<FieldIdVec> &fields_ids      // Output vector of field IDs for each ordinary input/output
+  );
+  static void printNodeFields(const std::vector<std::string> &node_names, const std::vector<FieldIdVec> &field_ids);
 
   NnrtApi::Ptr nn_;
   YAML::Node config_;
@@ -27,7 +34,7 @@ class NeuroModule : public Module {
   FieldNameVec input_names_{}, output_names_{};
   std::vector<FieldNameVec> input_field_names_, output_field_names_;
   std::vector<FieldSizeVec> input_field_sizes_, output_field_sizes_;
-  std::vector<FieldIdVec> input_fields_, output_fields_;
+  std::vector<FieldIdVec> input_field_ids_, output_field_ids_;
   std::vector<ArrXf> input_arr_;
 };
 

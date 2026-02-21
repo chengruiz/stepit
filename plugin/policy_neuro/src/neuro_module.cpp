@@ -5,47 +5,38 @@
 namespace stepit {
 namespace neuro_policy {
 NeuroModule::NeuroModule(const std::string &name, const std::string &home_dir)
-    : config_(yml::loadFile(home_dir + "/" + name + ".yml")) {
+    : config_(yml::loadFile(fmt::format("{}/{}.yml", home_dir, name))) {
   run_name_ = yml::readIf<std::string>(config_["run"], "name", "unknown");
   yml::setIf(config_, "assert_all_finite", assert_all_finite_);
 
   displayFormattedBanner(60, kGreen, "NeuroModule {} ({})", name, run_name_);
-  nn_ = NnrtApi::make("", home_dir + "/" + name + ".onnx", config_);
+  nn_ = NnrtApi::make("", fmt::format("{}/{}.onnx", home_dir, name), config_);
 
   for (const auto &input_name : nn_->getInputNames()) {
-    if (not nn_->isInputRecurrent(input_name)) input_names_.push_back(input_name);
+    if (not nn_->isInputRecurrent(input_name)) {
+      input_names_.push_back(input_name);
+      std::size_t input_size = nn_->getInputSize(input_name);
+      input_dims_.push_back(input_size);
+      input_arr_.push_back(ArrXf::Zero(input_size));
+    }
   }
   for (const auto &output_name : nn_->getOutputNames()) {
-    if (not nn_->isOutputRecurrent(output_name)) output_names_.push_back(output_name);
+    if (not nn_->isOutputRecurrent(output_name)) {
+      output_names_.push_back(output_name);
+      output_dims_.push_back(nn_->getOutputSize(output_name));
+    }
   }
   STEPIT_ASSERT(input_names_.size() >= 1, "The neural network must have at least one ordinary input.");
   STEPIT_ASSERT(output_names_.size() >= 1, "The neural network must have at least one ordinary output.");
-  parseFields(true, input_names_, input_field_names_, input_field_sizes_, input_dims_, input_fields_);
-  parseFields(false, output_names_, output_field_names_, output_field_sizes_, output_dims_, output_fields_);
-
-  input_arr_.resize(input_names_.size());
-  for (std::size_t i{}; i < input_names_.size(); ++i) {
-    STEPIT_ASSERT_EQ(nn_->getInputSize(input_names_[i]), input_dims_[i], "Input dimension mismatch.");
-    input_arr_[i].setZero(input_dims_[i]);
-    requirements_.insert(input_fields_[i].begin(), input_fields_[i].end());
-  }
-  for (std::size_t i{}; i < output_names_.size(); ++i) {
-    STEPIT_ASSERT_EQ(nn_->getOutputSize(output_names_[i]), output_dims_[i], "Output dimension mismatch.");
-    provisions_.insert(output_fields_[i].begin(), output_fields_[i].end());
-  }
+  parseFields(true, input_names_, input_dims_, input_field_names_, input_field_sizes_, input_field_ids_);
+  parseFields(false, output_names_, output_dims_, output_field_names_, output_field_sizes_, output_field_ids_);
 
   if (STEPIT_VERBOSITY >= kInfo) {
     nn_->printInfo();
     STEPIT_LOGNT("Input:");
-    for (std::size_t i{}; i < input_names_.size(); ++i) {
-      STEPIT_LOGNT("- {}:", input_names_[i]);
-      for (auto field : input_fields_[i]) STEPIT_LOGNT("  - {} ({})", getFieldName(field), getFieldSize(field));
-    }
+    printNodeFields(input_names_, input_field_ids_);
     STEPIT_LOGNT("Output:");
-    for (std::size_t i{}; i < output_names_.size(); ++i) {
-      STEPIT_LOGNT("- {}:", output_names_[i]);
-      for (auto field : output_fields_[i]) STEPIT_LOGNT("  - {} ({})", getFieldName(field), getFieldSize(field));
-    }
+    printNodeFields(output_names_, output_field_ids_);
   }
   nn_->warmup();
 }
@@ -57,9 +48,10 @@ bool NeuroModule::reset() {
 
 bool NeuroModule::update(const LowState &, ControlRequests &, FieldMap &context) {
   for (std::size_t i{}; i < input_names_.size(); ++i) {
-    concatFields(context, input_fields_[i], input_arr_[i]);
+    concatFields(context, input_field_ids_[i], input_arr_[i]);
     if (assert_all_finite_ and not input_arr_[i].allFinite()) {
-      STEPIT_CRIT("Indices '{}' of input '{}' are not all-finite.", getNonFiniteIndices(input_arr_[i]), input_names_[i]);
+      STEPIT_CRIT("Indices '{}' of input '{}' are not all-finite.", getNonFiniteIndices(input_arr_[i]),
+                  input_names_[i]);
       return false;
     }
     nn_->setInput(input_names_[i], input_arr_[i].data());
@@ -71,14 +63,14 @@ bool NeuroModule::update(const LowState &, ControlRequests &, FieldMap &context)
       STEPIT_CRIT("Indices '{}' of output '{}' are not all-finite.", getNonFiniteIndices(output), output_names_[i]);
       return false;
     }
-    splitFields(output, output_fields_[i], context);
+    splitFields(output, output_field_ids_[i], context);
   }
   return true;
 }
 
-void NeuroModule::parseFields(bool is_input, const FieldNameVec &node_names, std::vector<FieldNameVec> &field_names,
-                              std::vector<FieldSizeVec> &field_sizes, FieldSizeVec &total_dims,
-                              std::vector<FieldIdVec> &fields) {
+void NeuroModule::parseFields(bool is_input, const FieldNameVec &node_names, const FieldSizeVec &node_sizes,
+                              std::vector<FieldNameVec> &field_names, std::vector<FieldSizeVec> &field_sizes,
+                              std::vector<FieldIdVec> &field_ids) {
   std::string key = is_input ? yml::getDefinedKey(config_, "input_field", "inputs")
                              : yml::getDefinedKey(config_, "output_field", "outputs");
   yml::assertHasValue(config_, key);
@@ -98,8 +90,7 @@ void NeuroModule::parseFields(bool is_input, const FieldNameVec &node_names, std
 
   field_names.resize(num_nodes);
   field_sizes.resize(num_nodes);
-  total_dims.resize(num_nodes);
-  fields.resize(num_nodes);
+  field_ids.resize(num_nodes);
 
   auto buildNodeFieldProperties = [&](const YAML::Node &field_entries, std::size_t node_index) {
     for (const auto &entry : field_entries) {
@@ -110,7 +101,7 @@ void NeuroModule::parseFields(bool is_input, const FieldNameVec &node_names, std
 
       field_names[node_index].push_back(field_name);
       field_sizes[node_index].push_back(field_size);
-      fields[node_index].push_back(registerField(field_name, field_size));
+      field_ids[node_index].push_back(registerField(field_name, field_size));
     }
   };
   if (fields_config.IsSequence()) {
@@ -118,14 +109,49 @@ void NeuroModule::parseFields(bool is_input, const FieldNameVec &node_names, std
   } else {
     for (std::size_t i{}; i < num_nodes; ++i) {
       const std::string &node_name = node_names[i];
-      STEPIT_ASSERT(yml::hasValue(fields_config, node_name) and fields_config[node_name].IsSequence(),
-                    "Expected '{}' for node '{}' to be a sequence.", key, node_name);
-      buildNodeFieldProperties(fields_config[node_name], i);
+      STEPIT_ASSERT(yml::hasValue(fields_config, node_name), "Missing entry '{}' for node '{}'.", key, node_name);
+
+      const auto &node_field_entries = fields_config[node_name];
+      STEPIT_ASSERT(
+          node_field_entries.IsSequence() or node_field_entries.IsMap(),
+          "Entry '{}' for node '{}' must be a map containing field properties or a sequence of field entries.", key,
+          node_name);
+      if (node_field_entries.IsSequence()) {
+        buildNodeFieldProperties(fields_config[node_name], i);
+      } else {
+        std::string field_name = node_name;
+        FieldSize field_size   = node_sizes[i];
+        yml::setIf(node_field_entries, "name", field_name);
+        yml::setIf(node_field_entries, "size", field_size);
+        field_names[i].push_back(field_name);
+        field_sizes[i].push_back(field_size);
+        field_ids[i].push_back(registerField(field_name, field_size));
+      }
     }
   }
 
   for (std::size_t i{}; i < num_nodes; ++i) {
-    total_dims[i] = std::accumulate(field_sizes[i].begin(), field_sizes[i].end(), static_cast<FieldSize>(0));
+    std::size_t total_size = std::accumulate(field_sizes[i].begin(), field_sizes[i].end(), static_cast<FieldSize>(0));
+    STEPIT_ASSERT(total_size == node_sizes[i],
+                  "Total size of fields for node '{}' must equal the neural network's {} size {}, but got {}.",
+                  node_names[i], identifier, node_sizes[i], total_size);
+    (is_input ? requirements_ : provisions_).insert(field_ids[i].begin(), field_ids[i].end());
+  }
+}
+
+void NeuroModule::printNodeFields(const std::vector<std::string> &node_names,
+                                  const std::vector<FieldIdVec> &field_ids) {
+  for (std::size_t i{}; i < node_names.size(); ++i) {
+    if (field_ids[i].size() == 1) {
+      if (getFieldName(field_ids[i][0]) == node_names[i]) {
+        STEPIT_LOGNT("- {} ({})", node_names[i], getFieldSize(field_ids[i][0]));
+      } else {
+        STEPIT_LOGNT("- {}: {} ({})", node_names[i], getFieldName(field_ids[i][0]), getFieldSize(field_ids[i][0]));
+      }
+      continue;
+    }
+    STEPIT_LOGNT("- {}:", node_names[i]);
+    for (auto field : field_ids[i]) STEPIT_LOGNT("  - {} ({})", getFieldName(field), getFieldSize(field));
   }
 }
 

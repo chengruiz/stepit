@@ -1,16 +1,21 @@
-inputs:                             # Dict[List[Dict]], mapping from the input name of the neural network to it component fields
-  observation:                      # Assuming the input name of the neural network is "observation"
+inputs:                             # Dict, mapping from the input name of the neural network to it component fields
+                                    # A List is also allowed for single-input models
+  observation:                      # Assuming the input node name of the neural network is "observation"
   - { name: cmd_vel,    size: 3  }  # For each field, specify the name and size (dimension)
-  - { name: cmd_stall,  size: 1  }  # The input fields will be concatenated in the given order
-  - { name: cmd_height, size: 1  }  # If the neural network expects a single input, a List[Dict] is also allowed
+  - { name: cmd_stall,  size: 1  }  # Fields will be concatenated in the given order
+  - { name: cmd_height, size: 1  }
   - { name: cmd_pitch,  size: 1  }
   - { name: action_p1,  size: 12 }
   - { name: gravity,    size: 3  }
   - { name: joint_pos,  size: 12 }
   - { name: joint_vel,  size: 12 }
   - { name: ang_vel,    size: 3  }
+  input2:                           # The second input node of the neural network, if exists
+                                    # A single Dict is also allowed if the input node is not splitted into multiple fields
+    name: input_field2              #   [Optional] String, the field name, defaults to the input node name
+    size: 42                        #   [Optional] Int, the field size, defaults to the input node size
 
-outputs:                            # Dict[List[Dict]], mapping from the output name of the neural network to it component fields
+outputs:                            # Dict, mapping from the output name of the neural network to it component fields
 - { name: action, size: 12 }        # The format is similar to "inputs"
 
 assert_all_finite: true             # [Optional] Bool, whether to assert all finite values in inputs

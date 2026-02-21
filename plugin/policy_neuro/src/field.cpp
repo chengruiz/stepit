@@ -78,10 +78,9 @@ void FieldManager::setFieldSize(FieldId id, FieldSize size) {
     id_to_size_[id] = size;
     return;
   }
-  if (registered_size != size) {  // raise error
-    STEPIT_ERROR("Attempting to register field '{}' with size {}, which is already registered with size {}.",
-                 getFieldName(id), size, registered_size);
-  }
+  STEPIT_ASSERT(registered_size == size,
+                "Attempting to register field '{}' with size {}, which is already registered with size {}.",
+                getFieldName(id), size, registered_size);
 }
 
 void parseFieldIds(const YAML::Node &node, FieldIdVec &context) {
