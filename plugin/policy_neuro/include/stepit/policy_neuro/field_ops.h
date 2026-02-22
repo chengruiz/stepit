@@ -9,7 +9,7 @@ class FieldOps : public Module {
  public:
   FieldOps(const NeuroPolicySpec &policy_spec, const std::string &name);
   void initFieldProperties() override;
-  bool update(const LowState &low_state, ControlRequests &requests, FieldMap &context) override;
+  bool update(const LowState &, ControlRequests &, FieldMap &context) override;
 
  private:
   enum class OpType {

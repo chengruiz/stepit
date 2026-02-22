@@ -11,7 +11,7 @@ Proprioceptor::Proprioceptor(const NeuroPolicySpec &policy_spec, const std::stri
   lin_acc_id_   = registerProvision("lin_acc", 3);
 }
 
-bool Proprioceptor::update(const LowState &low_state, ControlRequests &requests, FieldMap &context) {
+bool Proprioceptor::update(const LowState &low_state, ControlRequests &, FieldMap &context) {
   std::uint32_t num_joints = getFieldSize(joint_pos_id_);
   ArrXf joint_pos{num_joints}, joint_vel{num_joints};
   for (std::uint32_t i{}; i < num_joints; ++i) {
@@ -32,7 +32,7 @@ RollPitchSource::RollPitchSource(const NeuroPolicySpec &, const std::string &nam
   roll_pitch_id_ = registerProvision("roll_pitch", 2);
 }
 
-bool RollPitchSource::update(const LowState &low_state, ControlRequests &requests, FieldMap &context) {
+bool RollPitchSource::update(const LowState &low_state, ControlRequests &, FieldMap &context) {
   context[roll_pitch_id_] = Arr2f{low_state.imu.rpy[0], low_state.imu.rpy[1]};
   return true;
 }

@@ -13,7 +13,7 @@ class ForwardKinematics : public Module {
   ForwardKinematics(const NeuroPolicySpec &policy_spec, const std::string &name);
 
   bool reset() override;
-  bool update(const LowState &low_state, ControlRequests &requests, FieldMap &context) override;
+  bool update(const LowState &low_state, ControlRequests &, FieldMap &context) override;
 
  private:
   YAML::Node config_;

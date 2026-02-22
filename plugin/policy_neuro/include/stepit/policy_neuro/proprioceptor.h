@@ -9,7 +9,7 @@ class Proprioceptor : public Module {
  public:
   Proprioceptor(const NeuroPolicySpec &policy_spec, const std::string &name);
   bool reset() override { return true; }
-  bool update(const LowState &low_state, ControlRequests &requests, FieldMap &context) override;
+  bool update(const LowState &low_state, ControlRequests &, FieldMap &context) override;
 
  private:
   FieldId ang_vel_id_{};
@@ -21,9 +21,9 @@ class Proprioceptor : public Module {
 
 class RollPitchSource : public Module {
  public:
-  RollPitchSource(const NeuroPolicySpec &policy_spec, const std::string &name);
+  RollPitchSource(const NeuroPolicySpec &, const std::string &name);
   bool reset() override { return true; }
-  bool update(const LowState &low_state, ControlRequests &requests, FieldMap &context) override;
+  bool update(const LowState &, ControlRequests &, FieldMap &context) override;
 
  private:
   FieldId roll_pitch_id_{};
