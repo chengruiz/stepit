@@ -3,7 +3,7 @@
 namespace stepit {
 namespace neuro_policy {
 RelativeOriSource::RelativeOriSource(const NeuroPolicySpec &policy_spec, const std::string &name)
-    : Module(nonEmptyOr(name, "relative_ori")), config_(loadConfigIf(policy_spec, "relative_pose")) {
+    : Module(nonEmptyOr(name, "relative_pose/ori")), config_(loadConfigIf(policy_spec)) {
   current_ori_name_ = yml::readIf<std::string>(config_, "current_ori_name", "base_global_ori");
   target_ori_name_  = yml::readIf<std::string>(config_, "target_ori_name", "base_target_ori");
   auto rot6d_order  = yml::readIf<std::string>(config_, "rotation_6d_order", "row_major");
@@ -49,7 +49,7 @@ bool RelativeOriSource::update(const LowState &, ControlRequests &, FieldMap &co
 }
 
 RelativePosSource::RelativePosSource(const NeuroPolicySpec &policy_spec, const std::string &name)
-    : Module(nonEmptyOr(name, "relative_pos")), config_(loadConfigIf(policy_spec, "relative_pose")) {
+    : Module(nonEmptyOr(name, "relative_pose/pos")), config_(loadConfigIf(policy_spec)) {
   current_pos_name_ = yml::readIf<std::string>(config_, "current_pos_name", "base_global_pos");
   current_ori_name_ = yml::readIf<std::string>(config_, "current_ori_name", "base_global_ori");
   target_pos_name_  = yml::readIf<std::string>(config_, "target_pos_name", "base_target_pos");

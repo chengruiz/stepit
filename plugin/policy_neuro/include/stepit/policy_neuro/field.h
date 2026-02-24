@@ -41,6 +41,12 @@ class Module : public Interface<Module, const NeuroPolicySpec & /* policy_spec *
  protected:
   explicit Module(std::string name) : name_(std::move(name)) {
     STEPIT_ASSERT(not name_.empty(), "Module name should not be empty.");
+    const auto separator_pos = name_.find('/');
+    if (separator_pos != std::string::npos and separator_pos > 0) {
+      config_filename_ = name_.substr(0, separator_pos);
+    } else {
+      config_filename_ = name_;
+    }
   }
 
   FieldId registerRequirement(const std::string &field_name, FieldSize field_size = 0);
@@ -48,13 +54,14 @@ class Module : public Interface<Module, const NeuroPolicySpec & /* policy_spec *
   FieldId registerProvision(const std::string &field_name, FieldSize field_size);
 
   YAML::Node loadConfig(const NeuroPolicySpec &policy_spec, const std::string &name = "") const {
-    return yml::loadFile(joinPaths(policy_spec.home_dir, nonEmptyOr(name, name_) + ".yml"));
+    return yml::loadFile(joinPaths(policy_spec.home_dir, nonEmptyOr(name, config_filename_) + ".yml"));
   }
   YAML::Node loadConfigIf(const NeuroPolicySpec &policy_spec, const std::string &name = "") const {
-    return yml::loadFileIf(joinPaths(policy_spec.home_dir, nonEmptyOr(name, name_) + ".yml"));
+    return yml::loadFileIf(joinPaths(policy_spec.home_dir, nonEmptyOr(name, config_filename_) + ".yml"));
   }
 
   const std::string name_;
+  std::string config_filename_;
   std::set<FieldId> requirements_, provisions_;
 };
 
