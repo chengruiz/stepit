@@ -12,7 +12,7 @@ grid_map::InterpolationMethods parseInterpolationMethod(const std::string &metho
   if (method == "linear") return grid_map::InterpolationMethods::INTER_LINEAR;
   if (method == "cubic_convolution") return grid_map::InterpolationMethods::INTER_CUBIC_CONVOLUTION;
   if (method == "cubic") return grid_map::InterpolationMethods::INTER_CUBIC;
-  STEPIT_ERROR("Unsupported interpolation method '{}'. ", method);
+  STEPIT_THROW("Unsupported interpolation method '{}'. ", method);
 }
 
 HeightmapSubscriber::HeightmapSubscriber(const NeuroPolicySpec &policy_spec, const std::string &name)

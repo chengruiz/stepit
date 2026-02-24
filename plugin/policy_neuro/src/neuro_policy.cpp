@@ -49,7 +49,7 @@ NeuroPolicy::NeuroPolicy(const RobotSpec &robot_spec, const std::string &home_di
     for (auto field : unresolved_modules_.front()->requirements()) {
       if (available_fields_.find(field) != available_fields_.end()) continue;
       if (unresolved_fields_.find(field) != unresolved_fields_.end()) {
-        STEPIT_ERROR("Find circular dependency '{}' in module '{}'.", getFieldName(field),
+        STEPIT_THROW("Find circular dependency '{}' in module '{}'.", getFieldName(field),
                      getTypeName(*unresolved_modules_.front()));
       }
       requirement = field;
@@ -88,7 +88,7 @@ void NeuroPolicy::addModule(Module::Ptr module, bool first) {
   // Add the provisions to unresolved_fields_
   for (auto field : module->provisions()) {
     if (available_fields_.find(field) != available_fields_.end()) {
-      STEPIT_ERROR("Multiple sources for field '{}'.", getFieldName(field));
+      STEPIT_THROW("Multiple sources for field '{}'.", getFieldName(field));
     }
     unresolved_fields_.insert(field);
     unavailable_fields_.erase(field);

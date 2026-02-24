@@ -258,7 +258,7 @@ void Agent::stepStateMachine() {
       next_state = eventReturningToStanding();
       break;
     default:
-      STEPIT_ERROR("Unintended condition!");
+      STEPIT_UNREACHABLE();
       break;
   }
 

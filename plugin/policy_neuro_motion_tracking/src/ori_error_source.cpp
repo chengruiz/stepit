@@ -12,7 +12,7 @@ OriErrorSource::OriErrorSource(const NeuroPolicySpec &policy_spec, const std::st
   } else if (rot6d_order == "column_major") {
     rot6d_order_ = Rotation6dOrder::kColumnMajor;
   } else {
-    STEPIT_ERROR("Unsupported 'rotation_6d_order': '{}'. Expected 'column_major' or 'row_major'.", rot6d_order);
+    STEPIT_THROW("Unsupported 'rotation_6d_order': '{}'. Expected 'column_major' or 'row_major'.", rot6d_order);
   }
 
   current_ori_id_  = registerRequirement(current_ori_name_, 4);
@@ -29,7 +29,11 @@ bool OriErrorSource::update(const LowState &, ControlRequests &, FieldMap &conte
   Mat3f rotation_matrix  = ori_error.matrix();
   Vec6f ori_error_6d;
   if (rot6d_order_ == Rotation6dOrder::kColumnMajor) {
-    ori_error_6d << rotation_matrix.col(0), rotation_matrix.col(1);
+    // clang-format off
+    ori_error_6d <<
+        rotation_matrix(0, 0), rotation_matrix(1, 0), rotation_matrix(2, 0),
+        rotation_matrix(0, 1), rotation_matrix(1, 1), rotation_matrix(2, 1);
+    // clang-format on
   } else {
     // clang-format off
     ori_error_6d <<

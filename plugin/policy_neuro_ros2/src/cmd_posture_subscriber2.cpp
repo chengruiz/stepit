@@ -20,7 +20,7 @@ CmdRollSubscriber2::CmdRollSubscriber2(const NeuroPolicySpec &policy_spec, const
     cmd_roll_sub_ = getNode()->create_subscription<geometry_msgs::msg::TwistStamped>(
         topic, qos, std::bind(&CmdRollSubscriber2::twistStampedCallback, this, std::placeholders::_1));
   } else {
-    STEPIT_ERROR(
+    STEPIT_THROW(
         "Invalid topic_type: '{}'. Expected 'std_msgs/msg/Float32', 'geometry_msgs/msg/Twist' or  "
         "'geometry_msgs/msg/TwistStamped'.",
         topic_type);
@@ -124,7 +124,7 @@ CmdPitchSubscriber2::CmdPitchSubscriber2(const NeuroPolicySpec &policy_spec, con
     cmd_pitch_sub_ = getNode()->create_subscription<geometry_msgs::msg::TwistStamped>(
         topic, qos, std::bind(&CmdPitchSubscriber2::twistStampedCallback, this, std::placeholders::_1));
   } else {
-    STEPIT_ERROR(
+    STEPIT_THROW(
         "Invalid topic_type: '{}'. Expected 'std_msgs/msg/Float32', 'geometry_msgs/msg/Twist' or "
         "'geometry_msgs/msg/TwistStamped'.",
         topic_type);
@@ -229,7 +229,7 @@ CmdHeightSubscriber2::CmdHeightSubscriber2(const NeuroPolicySpec &policy_spec, c
     cmd_height_sub_ = getNode()->create_subscription<geometry_msgs::msg::TwistStamped>(
         topic, qos, std::bind(&CmdHeightSubscriber2::twistStampedCallback, this, std::placeholders::_1));
   } else {
-    STEPIT_ERROR(
+    STEPIT_THROW(
         "Invalid topic_type: '{}'. Expected 'std_msgs/msg/Float32', 'geometry_msgs/msg/Twist' or "
         "'geometry_msgs/msg/TwistStamped'.",
         topic_type);

@@ -22,7 +22,7 @@ ros::TransportHints parseTransportHints(const yml::Node &node) {
   } else if (type == "tcpnodelay") {
     value.tcpNoDelay();
   } else {
-    STEPIT_ERROR("Unknown transport hint type '{}'.", type);
+    STEPIT_THROW("Unknown transport hint type '{}'.", type);
   }
   if (node["max_datagram_size"]) {
     auto size = yml::readAs<int>(node, "max_datagram_size");

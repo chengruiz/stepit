@@ -109,7 +109,7 @@ std::unique_ptr<T> Registry<T, Args...>::make(std::string name, Args... args) {
       int highest_priority = entries_.front().priority;
       if (entries_.size() > 1 and highest_priority == (++entries_.begin())->priority) {
         std::string lowercase_type_name = toLowercase(type_name);
-        STEPIT_ERROR(
+        STEPIT_THROW(
             "\n  Multiple factories for type '{}' share the highest priority. Registered factories are: {}\n"
             "  Please disambiguate the factory name by one of the following ways:\n"
             "  1. Setting the {} environment variable to the desired factory name.\n"
@@ -133,7 +133,7 @@ std::unique_ptr<T> Registry<T, Args...>::make(std::string name, Args... args) {
                   getTypeName(*instance), full_type_name, it->name, it->priority);
     return instance;
   }
-  STEPIT_ERROR("\n  Factory '{}' not found for type '{}'. Registered factories are: {}", name, full_type_name,
+  STEPIT_THROW("\n  Factory '{}' not found for type '{}'. Registered factories are: {}", name, full_type_name,
                entryListString());
 }
 
@@ -151,7 +151,7 @@ void Registry<T, Args...>::insertEntry(std::string name, int priority, Factory f
     return entry1.priority == entry2.priority ? entry1.name < entry2.name : entry1.priority > entry2.priority;
   });
   if (it != entries_.end() and it->name == entry.name and it->priority == entry.priority) {
-    STEPIT_ERROR("Factory '{}' for type '{}' with priority {} is already registered.", entry.name,
+    STEPIT_THROW("Factory '{}' for type '{}' with priority {} is already registered.", entry.name,
                  llu::getTypeName<T>(), entry.priority);
   }
 

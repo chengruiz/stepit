@@ -85,7 +85,7 @@ bool CmdVelSource::update(const LowState &low_state, ControlRequests &requests, 
       cmd_stall_ = false;
       break;
     default:
-      STEPIT_ERROR("Unintended condition!");
+      STEPIT_UNREACHABLE();
       break;
   }
 

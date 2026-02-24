@@ -83,9 +83,10 @@ class LoggingModule {
 #define STEPIT_INFONT(...) STEPIT_LOG_IMPL(STEPIT_LOG_FORMAT_INFO STEPIT_LOG_FORMAT_NT, __VA_ARGS__)
 #define STEPIT_DBUGNT(...) STEPIT_LOG_IMPL(STEPIT_LOG_FORMAT_DBUG STEPIT_LOG_FORMAT_NT, __VA_ARGS__)
 
-#define STEPIT_ERROR     LLU_ERROR
-#define STEPIT_ASSERT    LLU_ASSERT
-#define STEPIT_ASSERT_EQ LLU_ASSERT_EQ
+#define STEPIT_THROW         LLU_THROW
+#define STEPIT_ASSERT        LLU_ASSERT
+#define STEPIT_ASSERT_EQ     LLU_ASSERT_EQ
+#define STEPIT_UNREACHABLE() STEPIT_THROW("Unreachable code reached.")
 
 namespace stepit {
 std::string getCurrentTimeStamp(const char *format = "%F %T", bool milliseconds = true);

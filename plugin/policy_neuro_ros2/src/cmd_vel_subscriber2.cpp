@@ -17,7 +17,7 @@ CmdVelSubscriber2::CmdVelSubscriber2(const NeuroPolicySpec &policy_spec, const s
     cmd_vel_sub_ = getNode()->create_subscription<geometry_msgs::msg::TwistStamped>(
         topic, qos, std::bind(&CmdVelSubscriber2::twistStampedCallback, this, std::placeholders::_1));
   } else {
-    STEPIT_ERROR("Invalid topic_type: '{}'. Expected 'geometry_msgs/msg/Twist' or 'geometry_msgs/msg/TwistStamped'.",
+    STEPIT_THROW("Invalid topic_type: '{}'. Expected 'geometry_msgs/msg/Twist' or 'geometry_msgs/msg/TwistStamped'.",
                  topic_type);
   }
 }

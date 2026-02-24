@@ -84,7 +84,7 @@ FieldOps::FieldOps(const NeuroPolicySpec &policy_spec, const std::string &name)
         for (FieldSize i{start}; i < end; ++i) operation.indices.push_back(i);
       }
     } else {
-      STEPIT_ERROR("Unsupported field op type '{}'.", op_type);
+      STEPIT_THROW("Unsupported field op type '{}'.", op_type);
     }
 
     operations_.push_back(std::move(operation));
@@ -156,7 +156,7 @@ void FieldOps::initFieldProperties() {
         break;
       }
       default:
-        STEPIT_ERROR("Unknown field op type.");
+        STEPIT_THROW("Unknown field op type.");
     }
   }
 }
@@ -191,7 +191,7 @@ bool FieldOps::update(const LowState &, ControlRequests &, FieldMap &context) {
         break;
       }
       default:
-        STEPIT_ERROR("Unknown field op type.");
+        STEPIT_THROW("Unknown field op type.");
     }
   }
   return true;

@@ -10,7 +10,7 @@ grid_map::InterpolationMethods parseInterpolationMethod(const std::string &metho
   if (method == "linear") return grid_map::InterpolationMethods::INTER_LINEAR;
   if (method == "cubic_convolution") return grid_map::InterpolationMethods::INTER_CUBIC_CONVOLUTION;
   if (method == "cubic") return grid_map::InterpolationMethods::INTER_CUBIC;
-  STEPIT_ERROR("Unsupported interpolation method '{}'. ", method);
+  STEPIT_THROW("Unsupported interpolation method '{}'. ", method);
 }
 
 HeightmapSubscriber2::HeightmapSubscriber2(const NeuroPolicySpec &policy_spec, const std::string &name)
@@ -65,9 +65,8 @@ HeightmapSubscriber2::HeightmapSubscriber2(const NeuroPolicySpec &policy_spec, c
       loc_sub_ = getNode()->create_subscription<nav_msgs::msg::Odometry>(
           loc_topic, loc_qos, std::bind(&HeightmapSubscriber2::odometryCallback, this, std::placeholders::_1));
     } else {
-      STEPIT_ERROR(
-          "Unsupported localization message type '{}'. Expected 'geometry_msgs/msg/Pose', "
-          "'geometry_msgs/msg/PoseStamped', 'geometry_msgs/msg/PoseWithCovariance', "
+      STEPIT_THROW(
+          "Unsupported localization message type '{}'. Expected 'geometry_msgs/msg/PoseStamped', "
           "'geometry_msgs/msg/PoseWithCovarianceStamped', or 'nav_msgs/msg/Odometry'.",
           loc_topic_type);
     }

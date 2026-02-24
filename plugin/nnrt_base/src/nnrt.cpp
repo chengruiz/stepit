@@ -33,7 +33,7 @@ std::size_t NnrtApi::getInputIdx(const std::string &name, bool assert) const {
   auto it = std::find(in_names_.begin(), in_names_.end(), name);
   if (it == in_names_.end()) {
     if (not assert) return -1;
-    STEPIT_ERROR("No input named '{}'.", name);
+    STEPIT_THROW("No input named '{}'.", name);
   }
   return it - in_names_.begin();
 }
@@ -42,7 +42,7 @@ std::size_t NnrtApi::getOutputIdx(const std::string &name, bool assert) const {
   auto it = std::find(out_names_.begin(), out_names_.end(), name);
   if (it == out_names_.end()) {
     if (not assert) return -1;
-    STEPIT_ERROR("No output named '{}'.", name);
+    STEPIT_THROW("No output named '{}'.", name);
   }
   return it - out_names_.begin();
 }

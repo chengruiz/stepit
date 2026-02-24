@@ -27,7 +27,7 @@ MotionTrajectory::MotionTrajectory(const NeuroPolicySpec &policy_spec, const std
     } else if (fps.dtype == "int64") {
       fps_value = static_cast<std::size_t>(*fps.data<int64_t>());
     } else {
-      STEPIT_ERROR("Expected 'fps' in '{}' to have dtype 'float32', 'float64', 'int32', or 'int64', but got '{}'.",
+      STEPIT_THROW("Expected 'fps' in '{}' to have dtype 'float32', 'float64', 'int32', or 'int64', but got '{}'.",
                    npz_filename_, fps.dtype);
     }
     STEPIT_ASSERT(fps_value == policy_spec.control_freq,
@@ -50,8 +50,8 @@ MotionTrajectory::MotionTrajectory(const NeuroPolicySpec &policy_spec, const std
                   "Expected array '{}' to have dtype 'float32' or 'float64', but got '{}'.", key_name, array.dtype);
     if (num_frames_ == 0) {
       num_frames_ = shape[0];
-    } else if (num_frames_ != shape[0]) {  // raise error
-      STEPIT_ERROR("Arrays in '{}' have different frame counts.", npz_filename_);
+    } else if (num_frames_ != shape[0]) {
+      STEPIT_THROW("Arrays in '{}' have different frame counts.", npz_filename_);
     }
 
     std::size_t field_size = std::accumulate(shape.begin() + 1, shape.end(), 1UL, std::multiplies<std::size_t>());

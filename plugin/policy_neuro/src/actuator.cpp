@@ -173,7 +173,7 @@ void HybridActuator::setLowCmd(LowCmd &cmd, cArrXf action) {
         cmd[i].tor = joint_command_[i];
         break;
       default:
-        STEPIT_ERROR("Unintended condition!");
+        STEPIT_UNREACHABLE();
         break;
     }
     cmd[i].Kp = kp_[i];
