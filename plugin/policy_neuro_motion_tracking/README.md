@@ -8,4 +8,6 @@ StepIt plugin for motion-tracking related modules in the neuro policy pipeline.
 
 - `motion_trajectory`: loads frame-wise trajectory arrays from an `.npz` file and provides configured fields each control step.
 - `forward_kinematics`: computes whole-body local/global link poses from URDF and joint states.
-- `ori_error`: computes quaternion orientation error (and 6D orientation representation) between two orientation fields.
+- `relative_ori`: computes relative orientation between two coordinate frames.
+- `relative_pos`: computes relative position between two coordinate frames.
+- `motion_align`: aligns target motion to robot pose using first-frame position and yaw offset.

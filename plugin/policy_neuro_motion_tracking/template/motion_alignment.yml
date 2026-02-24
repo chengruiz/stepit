@@ -1,0 +1,6 @@
+current_pos_name: base_global_pos  # [Optional] String, the name of the current position
+current_ori_name: base_global_ori  # [Optional] String, the name of the current orientation
+
+target_pos_name: base_target_pos   # [Optional] String, the name of the target position.
+                                   #   Leave empty to disable target position alignment.
+target_ori_name: base_target_ori   # [Optional] String, the name of the target orientation

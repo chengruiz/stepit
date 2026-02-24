@@ -9,14 +9,14 @@ namespace stepit {
 namespace neuro_policy {
 MotionTrajectory::MotionTrajectory(const NeuroPolicySpec &policy_spec, const std::string &name)
     : Module(nonEmptyOr(name, "motion_trajectory")), config_(loadConfig(policy_spec)) {
-  npz_filename_ = yml::readIf<std::string>(config_, "npz_filename", "motion_trajectory.npz");
+  npz_filename_ = yml::readIf<std::string>(config_, "npz_filename", name_ + ".npz");
   STEPIT_ASSERT(not npz_filename_.empty(), "'npz_filename' cannot be empty.");
   npz_.readFile((npz_filename_[0] == '/') ? npz_filename_ : joinPaths(policy_spec.home_dir, npz_filename_));
 
   if (npz_.hasKey("fps")) {
     const auto &fps = npz_["fps"];
     STEPIT_ASSERT(fps.shape.size() == 1 and fps.shape[0] == 1,
-                  "Expected 'fps' in 'motion_trajectory.npz' to be a scalar.");
+                  "Expected 'fps' in '{}' to be a scalar.", npz_filename_);
     std::size_t fps_value = 0;
     if (fps.dtype == "float64") {
       fps_value = static_cast<std::size_t>(std::round(*fps.data<double>()));

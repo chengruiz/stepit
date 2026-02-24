@@ -11,7 +11,7 @@ stepit_add_plugin(${PROJECT_NAME}
     SOURCES
       src/motion_trajectory.cpp
       src/forward_kinematics.cpp
-      src/ori_error_source.cpp
+      src/relative_pose_source.cpp
     INCLUDES
       include
     LINK_LIBS
