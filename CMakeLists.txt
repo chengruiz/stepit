@@ -18,7 +18,11 @@ set(CMAKE_CXX_FLAGS_RELEASE "-O3")
 if (CMAKE_BUILD_TYPE STREQUAL "Release")
   set(CMAKE_INTERPROCEDURAL_OPTIMIZATION ON)
 else ()
-  message(WARNING "Building in '${CMAKE_BUILD_TYPE}' mode, which may affect real-time performance.")
+  message(
+      WARNING
+      "Building in '${CMAKE_BUILD_TYPE}' mode. "
+      "Add '-DCMAKE_BUILD_TYPE=Release' for better performance."
+  )
 endif ()
 if (NOT DEFINED STEPIT_LIB_DESTINATION)
   set(STEPIT_LIB_DESTINATION "lib")
