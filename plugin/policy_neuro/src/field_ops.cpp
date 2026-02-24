@@ -29,7 +29,7 @@ FieldOps::FieldOps(const NeuroPolicySpec &policy_spec, const std::string &name)
         auto source_name    = yml::readAs<std::string>(node["source"]);
         auto target_name    = yml::readAs<std::string>(node["target"]);
         operation.source_id = registerRequirement(source_name);
-        operation.target_id = source_name == target_name ? operation.source_id : registerProvision(target_name, 0);
+        operation.target_id = registerProvision(target_name, 0);
       }
       STEPIT_ASSERT(not(node["scale"] and node["std"]), "Cannot specify both 'scale' and 'std' in an affine op.");
       STEPIT_ASSERT(not(node["bias"] and node["mean"]), "Cannot specify both 'bias' and 'mean' in an affine op.");

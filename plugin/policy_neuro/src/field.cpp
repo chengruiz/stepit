@@ -7,6 +7,7 @@ FieldId Module::registerRequirement(const std::string &field_name, FieldSize fie
 }
 
 FieldId Module::registerRequirement(FieldId field_id) {
+  // If the field is not already registered as a provision, register it as a requirement.
   if (provisions_.find(field_id) == provisions_.end()) {
     requirements_.insert(field_id);
   }
@@ -14,9 +15,12 @@ FieldId Module::registerRequirement(FieldId field_id) {
 }
 
 FieldId Module::registerProvision(const std::string &field_name, FieldSize field_size) {
-  FieldId id = registerField(field_name, field_size);
-  provisions_.insert(id);
-  return id;
+  FieldId field_id = registerField(field_name, field_size);
+  // If the field is not already registered as a requirement, register it as a provision.
+  if (requirements_.find(field_id) == requirements_.end()) {
+    provisions_.insert(field_id);
+  }
+  return field_id;
 }
 
 FieldManager &FieldManager::instance() {
@@ -37,6 +41,7 @@ auto FieldManager::makeSource(const std::string &field_name, const NeuroPolicySp
 }
 
 FieldId FieldManager::registerField(const std::string &name, FieldSize size) {
+  STEPIT_ASSERT(not name.empty(), "Field name should not be empty.");
   std::lock_guard<std::recursive_mutex> lock(mutex_);
   auto it = name_to_id_.find(name);
   if (it == name_to_id_.end()) {  // If not registered
