@@ -68,10 +68,10 @@ function(get_library_directory library_name output_var)
 
   # First find the library in the LD_LIBRARY_PATH
   string(REPLACE ":" ";" LD_LIBRARY_PATH "$ENV{LD_LIBRARY_PATH}")
-  find_library(${library_name}_PATH ${library_name} PATHS "${LD_LIBRARY_PATH}" NO_DEFAULT_PATH)
+  find_library(${library_name}_PATH NAMES ${library_name} PATHS ${LD_LIBRARY_PATH} NO_DEFAULT_PATH)
   # If not found, try to find it in the system library paths
   if (NOT ${library_name}_PATH)
-    find_library(${library_name}_PATH ${library_name})
+    find_library(${library_name}_PATH NAMES ${library_name})
   endif ()
 
   # If the library is found, set the output variable to the directory
