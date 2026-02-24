@@ -93,9 +93,8 @@ bool ForwardKinematics::update(const LowState &low_state, ControlRequests &, Fie
     const auto body_pose_local             = anchor_pose.actInv(data_.oMf[body_indices_[i]]);
     whole_body_local_pos.segment(3 * i, 3) = body_pose_local.translation().cast<float>();
 
-    Eigen::Quaterniond quat(body_pose_local.rotation());
-    whole_body_local_ori.segment(4 * i, 4) << static_cast<float>(quat.w()), static_cast<float>(quat.x()),
-        static_cast<float>(quat.y()), static_cast<float>(quat.z());
+    Quatf quat = Quatf::fromMatrix(body_pose_local.rotation().cast<float>());
+    whole_body_local_ori.segment(4 * i, 4) = quat.coeffs();
   }
 
   ArrXf whole_body_global_pos = whole_body_local_pos;
