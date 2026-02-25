@@ -48,31 +48,34 @@ std::size_t NnrtApi::getOutputIdx(const std::string &name, bool assert) const {
 }
 
 void NnrtApi::postInit() {
-  if (config_["input_name"]) {
+  std::string input_names_key = yml::getDefinedKey(config_, "input_name", "input_names");
+  if (yml::hasValue(config_, input_names_key)) {
     std::vector<std::string> in_names;
-    yml::setTo(config_, "input_name", in_names);
+    yml::setTo(config_, input_names_key, in_names);
     for (int i{}; i < num_in_; ++i) {
       if (in_names_[i] != in_names[i]) {
-        STEPIT_WARNNT("Name of input {} mismatch ('{}' != '{}').", i, in_names[i], in_names_[i]);
+        STEPIT_DBUGNT("Input {} renamed from '{}' to '{}'.", i, in_names_[i], in_names[i]);
         in_names_[i] = in_names[i];
       }
     }
   }
 
-  if (config_["output_name"]) {
+  std::string output_names_key = yml::getDefinedKey(config_, "output_name", "output_names");
+  if (yml::hasValue(config_, output_names_key)) {
     std::vector<std::string> out_names;
-    yml::setTo(config_, "output_name", out_names);
+    yml::setTo(config_, output_names_key, out_names);
     for (int i{}; i < num_out_; ++i) {
       if (out_names_[i] != out_names[i]) {
-        STEPIT_WARNNT("Name of output {} mismatch ('{}' != '{}').", i, out_names[i], out_names_[i]);
+        STEPIT_DBUGNT("Output {} renamed from '{}' to '{}'.", i, out_names_[i], out_names[i]);
         out_names_[i] = out_names[i];
       }
     }
   }
 
-  if (config_["recurrent_param"]) {
+  std::string recur_params_key = yml::getDefinedKey(config_, "recurrent_param", "recurrent_params");
+  if (yml::hasValue(config_, recur_params_key)) {
     recur_params_.clear();
-    yml::setTo(config_, "recurrent_param", recur_params_);
+    yml::setTo(config_, recur_params_key, recur_params_);
   } else {
     for (const auto &in_name : in_names_) {
       if (in_name == "h0") {

@@ -28,11 +28,14 @@ class OnnxrtApi : public NnrtApi {
   Ort::Value createTensor(T *data, size_t size, const std::vector<int64_t> &shape) const;
   static std::vector<int64_t> getShapeFromTypeInfo(const Ort::TypeInfo &type_info);
 
-  std::vector<Ort::Value> inputs_, outputs_;
-  std::vector<std::vector<float>> in_data_, out_data_;
+  Ort::Env env_;
+  Ort::AllocatorWithDefaultOptions allocator_;
   Ort::MemoryInfo memory_info_{nullptr};
   Ort::RunOptions run_options_{nullptr};
   std::unique_ptr<Ort::Session> core_{nullptr};
+  std::vector<std::vector<float>> in_data_, out_data_;
+  std::vector<Ort::Value> in_tensors_, out_tensors_;
+  std::unique_ptr<Ort::IoBinding> io_binding_{nullptr};
 };
 
 template <typename T>

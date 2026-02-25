@@ -1,18 +1,18 @@
 # Neural network configuration
 
-input_name:                  # [Optional] List[String], rename model inputs by index
+input_names:                 # [Optional] List[String], rename model inputs by index
                              #   Required to have the same length as model inputs
   - observation              # Input 0 name
   - memory_in.0              # Input 1 name (example recurrent input)
   - memory_in.1              # Input 2 name (example recurrent input)
 
-output_name:                 # [Optional] List[String], rename model outputs by index
+output_names:                # [Optional] List[String], rename model outputs by index
                              #   Required to have the same length as model outputs
   - action                   # Output 0 name
   - memory_out.0             # Output 1 name (example recurrent output)
   - memory_out.1             # Output 2 name (example recurrent output)
 
-recurrent_param:             # [Optional] List[Tuple[String, String]], override recurrent (input -> output) mapping
+recurrent_params:            # [Optional] List[Tuple[String, String]], override recurrent (input -> output) mapping
                              #   If this key is missing, StepIt will try to infer recurrent pairs using (memory_in* -> memory_out*)
-  - [memory_in.0, memory_out.0]    
-  - [memory_in.1, memory_out.1]
+  - [ memory_in.0, memory_out.0 ]    
+  - [ memory_in.1, memory_out.1 ]
