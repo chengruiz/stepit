@@ -42,6 +42,7 @@ Options:
 	CONFIG                  Path to config file (repeatable, default: none)
 	--workspace DIR         Workspace root (default: $PWD or STEPIT_WS)
 	--build-tool TYPE       cmake | catkin | catkin_make | colcon | auto (default: auto)
+	--gdb                   Run stepit under gdb
 	-c, --control VALUE     Control input type (repeatable)
 	-f, --factory VALUE     Default factory (repeatable, format: <class>@<factory_name>)
 	-P, --publisher VALUE   Publisher type
@@ -55,6 +56,7 @@ EOF
 
 workspace_dir="${STEPIT_WS:-$PWD}"
 build_tool="auto"
+use_gdb=false
 config_files=()
 stepit_args=()
 plugin_args=()
@@ -76,6 +78,10 @@ while [[ $# -gt 0 ]]; do
 			[[ $# -ge 2 ]] || die "--build-tool requires a value"
 			build_tool="$2"
 			shift 2
+			;;
+		--gdb)
+			use_gdb=true
+			shift
 			;;
 		--control|-c|--factory|-f|--publisher|-P|--policy|-p|--robot|-r|--verbosity|-v)
 			[[ $# -ge 2 ]] || die "$1 requires a value"
@@ -126,6 +132,10 @@ esac
 log "${GREEN}=============================== Running =============================${CLEAR}"
 log "${GREEN}Workspace:${CLEAR}   ${workspace_dir}"
 log "${GREEN}Build tool:${CLEAR}  ${build_tool}"
+if [[ "${use_gdb}" == true ]]; then
+	require_cmd gdb
+	log "${GREEN}Debugger:${CLEAR}    gdb"
+fi
 if [[ ${#config_files[@]} -gt 0 ]]; then
 	log "${GREEN}Config:${CLEAR}      ${config_files[*]}"
 else
@@ -133,12 +143,18 @@ else
 fi
 
 stepit_cmd=()
+debug_prefix=()
+ros_debug_prefix=()
+if [[ "${use_gdb}" == true ]]; then
+	debug_prefix=(gdb -ex run --args)
+	ros_debug_prefix=(--prefix "${debug_prefix[*]}")
+fi
 case "${build_tool}" in
 	cmake)
 		stepit_bin="${workspace_dir}/install/bin/stepit"
 		[[ -x "${stepit_bin}" ]] || die "Missing ${stepit_bin}. Build and install first."
         export LD_LIBRARY_PATH="${workspace_dir}/install/lib:${LD_LIBRARY_PATH:-}"
-		stepit_cmd=("${stepit_bin}")
+		stepit_cmd=("${debug_prefix[@]}" "${stepit_bin}")
 		;;
 	catkin|catkin_make)
 		require_cmd rosrun
@@ -146,7 +162,7 @@ case "${build_tool}" in
 		[[ -f "${setup_script}" ]] || die "Missing ${setup_script}. Build with catkin/catkin_make first."
 		# shellcheck disable=SC1090
 		source "${setup_script}"
-		stepit_cmd=(rosrun stepit_ros stepit)
+		stepit_cmd=(rosrun "${ros_debug_prefix[@]}" stepit_ros stepit)
 		;;
 	colcon)
 		require_cmd ros2
@@ -156,7 +172,10 @@ case "${build_tool}" in
 		# shellcheck disable=SC1090
 		source "${setup_script}"
 		set -u
-		stepit_cmd=(ros2 run stepit_ros2 stepit)
+		stepit_cmd=(ros2 run "${ros_debug_prefix[@]}" stepit_ros2 stepit)
+		;;
+	*)
+		die "Unsupported build tool: ${build_tool}"
 		;;
 esac
 
