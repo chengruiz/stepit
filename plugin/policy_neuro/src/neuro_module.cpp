@@ -6,11 +6,16 @@ namespace stepit {
 namespace neuro_policy {
 NeuroModule::NeuroModule(const NeuroPolicySpec &policy_spec, const std::string &name)
     : Module(policy_spec, nonEmptyOr(name, "neuro_module"), true) {
-  run_name_ = yml::readIf<std::string>(config_["run"], "name", "unknown");
+  yml::setIf(config_, "nnrt_factory", nnrt_factory_);
+  model_path_ = yml::readIf<std::string>(config_, "model_path", name_);
+  STEPIT_ASSERT(not model_path_.empty(), "'model_path' cannot be empty.");
+  model_path_ = model_path_[0] == '/' ? model_path_ : joinPaths(policy_spec.home_dir, model_path_);
+  yml::setIf(config_["run"], "name", run_name_);
   yml::setIf(config_, "assert_all_finite", assert_all_finite_);
 
-  displayFormattedBanner(60, kGreen, "NeuroModule {} ({})", name_, run_name_);
-  nn_ = NnrtApi::make("", joinPaths(policy_spec.home_dir, name_ + ".onnx"), config_);
+  std::string displayed_name = run_name_.empty() ? name_ : fmt::format("{} ({})", name_, run_name_);
+  displayFormattedBanner(60, kGreen, "NeuroModule {}", displayed_name);
+  nn_ = NnrtApi::make(nnrt_factory_, model_path_, config_);
 
   for (const auto &input_name : nn_->getInputNames()) {
     if (not nn_->isInputRecurrent(input_name)) {

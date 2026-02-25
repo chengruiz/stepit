@@ -27,7 +27,9 @@ class NeuroModule : public Module {
 
   NnrtApi::Ptr nn_;
 
-  std::string run_name_{};
+  std::string nnrt_factory_;
+  std::string model_path_;
+  std::string run_name_;
   bool assert_all_finite_{true};
   FieldSizeVec input_dims_{}, output_dims_{};
   FieldNameVec input_names_{}, output_names_{};

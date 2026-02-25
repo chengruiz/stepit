@@ -17,7 +17,7 @@ std::vector<int64_t> getShapeFromDimArray(uint32_t dims[RKNN_MAX_DIMS]) {
 }
 
 RknnrtApi::RknnrtApi(const std::string &path, const YAML::Node &config)
-    : NnrtApi(path.substr(0, path.rfind('.')) + ".rknn", config) {
+    : NnrtApi(addExtensionIfMissing(path, ".rknn"), config) {
   rknn_sdk_version version;
   rknn_input_output_num io_num;
   LQC_RKNN_CALL(rknn_init, &ctx_, (void *)path_.c_str(), 0, 0, nullptr);

@@ -20,7 +20,7 @@ void initializeACL() {
 }
 
 AscendCLApi::AscendCLApi(const std::string &path, const YAML::Node &config)
-    : NnrtApi(path.substr(0, path.rfind('.')) + ".om", config) {
+    : NnrtApi(addExtensionIfMissing(path, ".om"), config) {
   initializeACL();
 
   STEPIT_ACL_CALL(aclrtSetDevice, device_id_);

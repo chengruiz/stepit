@@ -75,6 +75,15 @@ std::string joinPaths(const std::string &path1, const std::string &path2, const 
   return result.string();
 }
 
+inline std::string addExtensionIfMissing(const std::string &path, const std::string &extension) {
+  if (fs::path(path).extension().empty()) return path + extension;
+  return path;
+}
+
+inline std::string replaceExtension(const std::string &path, const std::string &extension) {
+  return fs::path(path).replace_extension(extension).string();
+}
+
 template <typename T>
 T product(const std::vector<T> &vec) {
   return std::accumulate(vec.begin(), vec.end(), static_cast<T>(1), std::multiplies<>());

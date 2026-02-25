@@ -5,7 +5,8 @@
 #include <stepit/nnrt/torchjit.h>
 
 namespace stepit {
-TorchJitApi::TorchJitApi(const std::string &path, const YAML::Node &config) : NnrtApi(path, config) {
+TorchJitApi::TorchJitApi(const std::string &path, const YAML::Node &config)
+    : NnrtApi(addExtensionIfMissing(path, ".pt"), config) {
   module_ = torch::jit::load(path_, torch::kCPU);
   module_.eval();
 
@@ -27,10 +28,10 @@ void TorchJitApi::runInference() {
   STEPIT_ASSERT(out_tensors.size() == num_out_, "TorchJit output count mismatch: expected {}, got {}.", num_out_,
                 out_tensors.size());
   for (std::size_t i{}; i < num_out_; ++i) {
-    out_tensors[i] = normalizeTensor(out_tensors[i]);
-    int64_t out_size  = out_tensors[i].numel();
-    STEPIT_ASSERT(out_size == out_sizes_[i],
-                  "TorchJit output '{}' size mismatch: expected {}, got {}.", out_names_[i], out_sizes_[i], out_size);
+    out_tensors[i]   = normalizeTensor(out_tensors[i]);
+    int64_t out_size = out_tensors[i].numel();
+    STEPIT_ASSERT(out_size == out_sizes_[i], "TorchJit output '{}' size mismatch: expected {}, got {}.", out_names_[i],
+                  out_sizes_[i], out_size);
     std::memcpy(out_data_[i].data(), out_tensors[i].data_ptr<float>(), out_size * sizeof(float));
   }
 

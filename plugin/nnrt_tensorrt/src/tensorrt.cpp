@@ -47,9 +47,10 @@ CuLogger &CuLogger::instance() {
   return instance;
 }
 
-TensorRTApi::TensorRTApi(const std::string &path, const YAML::Node &config) : NnrtApi(path, config) {
+TensorRTApi::TensorRTApi(const std::string &path, const YAML::Node &config)
+    : NnrtApi(addExtensionIfMissing(path, ".onnx"), config) {
   STEPIT_CUDA_CALL(cudaStreamCreate, &cu_stream_);
-  std::string engine_path{path.substr(0, path.find_last_of('.')) + ".engine"};
+  std::string engine_path = replaceExtension(path_, ".engine");
   if (not std::ifstream(engine_path).good()) {
     STEPIT_ASSERT(build(path, engine_path), "Failed to build TensorRT engine!");
     STEPIT_LOGNT("Write engine to {}.", engine_path);

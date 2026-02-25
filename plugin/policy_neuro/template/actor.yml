@@ -16,6 +16,9 @@ recurrent_params:            # [Optional] List[Tuple[String, String]], override 
   - [ memory_in.0, memory_out.0 ]    
   - [ memory_in.1, memory_out.1 ]
 
+nnrt_factory: ""             # [Optional] String, the factory to create the NNRT model
+model_path: actor.onnx       # [Optional] String, path to the model file, defaults to the module name with implementation-specific extensions
+
 input_fields:                       # [Optional] Dict, mapping from the input name of the neural network to it component fields
                                     # A List is also allowed for single-input models
   observation:                      # Assuming the input node name of the neural network is "observation"

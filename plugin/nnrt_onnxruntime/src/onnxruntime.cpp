@@ -2,12 +2,13 @@
 
 namespace stepit {
 OnnxrtApi::OnnxrtApi(const std::string &path, const YAML::Node &config)
-    : NnrtApi(path, config), env_(ORT_LOGGING_LEVEL_WARNING, path.c_str()) {
+    : NnrtApi(addExtensionIfMissing(path, ".onnx"), config) {
+  env_         = Ort::Env(ORT_LOGGING_LEVEL_WARNING, path_.c_str());
   memory_info_ = Ort::MemoryInfo::CreateCpu(OrtArenaAllocator, OrtMemTypeDefault);
   Ort::SessionOptions opts;
   opts.SetInterOpNumThreads(1);
   opts.SetIntraOpNumThreads(1);
-  core_       = std::make_unique<Ort::Session>(env_, path.c_str(), opts);
+  core_       = std::make_unique<Ort::Session>(env_, path_.c_str(), opts);
   num_in_     = core_->GetInputCount();
   num_out_    = core_->GetOutputCount();
   io_binding_ = std::make_unique<Ort::IoBinding>(*core_);
