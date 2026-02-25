@@ -71,7 +71,7 @@ void UsbJoystick::connectHandler(std::shared_ptr<gamepad::device> dev) {
   } else {
     bool found = false;
     // Search for the keymap file in the config directory
-    for (const auto &entry : fs::directory_iterator(getConfigPath("joystick"))) {
+    for (const auto &entry : fs::directory_iterator(getGlobalConfigDir("joystick"))) {
       if (entry.path().extension() != ".yml") continue;
       std::string stem = toLowercase(entry.path().stem().string());
       if (name.find(stem) != std::string::npos) {

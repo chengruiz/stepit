@@ -120,7 +120,7 @@ class RobotApi : public Interface<RobotApi> {
  public:
   RobotApi() = default;
   explicit RobotApi(const std::string &name)
-      : config_(loadConfigFile(fmt::format("robot/{}.yml", name))), spec_(config_) {}
+      : config_(loadGlobalConfigYaml(fmt::format("robot/{}.yml", name))), spec_(config_) {}
 
   virtual void getControl(bool enable) = 0;
   virtual void setSend(const LowCmd &) = 0;

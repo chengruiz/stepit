@@ -1,7 +1,7 @@
 #include <stepit/utils.h>
 
 namespace stepit {
-std::string getConfigPath(const std::string &relative_path) {
+std::string getGlobalConfigDir(const std::string &relative_path) {
   static std::string config_dir;
   if (config_dir.empty()) {
     if (not getenv("STEPIT_CONFIG_DIR", config_dir)) {
@@ -17,5 +17,7 @@ std::string getConfigPath(const std::string &relative_path) {
   return relative_path.empty() ? config_dir : joinPaths(config_dir, relative_path);
 }
 
-YAML::Node loadConfigFile(const std::string &relative_path) { return YAML::LoadFile(getConfigPath(relative_path)); }
+YAML::Node loadGlobalConfigYaml(const std::string &relative_path) {
+  return YAML::LoadFile(getGlobalConfigDir(relative_path));
+}
 }  // namespace stepit

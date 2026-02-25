@@ -32,9 +32,9 @@ bool getenv(const std::string &name, T &result, bool verbose = true) {
   return getenv(name.c_str(), result, verbose);
 }
 
-std::string getConfigPath(const std::string &relative_path = "");
+std::string getGlobalConfigDir(const std::string &relative_path = "");
 
-YAML::Node loadConfigFile(const std::string &relative_path);
+YAML::Node loadGlobalConfigYaml(const std::string &relative_path);
 
 template <typename Key, typename Value>
 Value lookupMap(const Key &key, const std::map<Key, Value> &map) {

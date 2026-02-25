@@ -10,7 +10,7 @@ std::string getSubstrBeforeSlash(const std::string &input) {
   }
   return input;
 }
-} // namespace
+}  // namespace
 
 Module::Module(const NeuroPolicySpec &policy_spec, std::string name, bool allow_config_missing)
     : name_(std::move(name)), config_filename_(getSubstrBeforeSlash(name_) + ".yml") {

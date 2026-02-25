@@ -12,7 +12,7 @@ std::string getJoyName() {
   return joy_name;
 }
 
-RosJoystick::RosJoystick() : RosJoystick(loadConfigFile(fmt::format("joystick/{}.yml", getJoyName()))) {}
+RosJoystick::RosJoystick() : RosJoystick(loadGlobalConfigYaml(fmt::format("joystick/{}.yml", getJoyName()))) {}
 
 RosJoystick::RosJoystick(const Keymap &keymap) : keymap_(keymap) {
   std::string topic_name{"/joy"};
