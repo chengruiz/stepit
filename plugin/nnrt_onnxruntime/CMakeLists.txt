@@ -57,3 +57,6 @@ stepit_add_plugin(${PROJECT_NAME}
     DEPENDS
       nnrt_base
 )
+
+stepit_add_executable(onnx_metadata2yaml app/onnx_metadata2yaml.cpp)
+target_link_libraries(onnx_metadata2yaml PRIVATE ${PROJECT_NAME})
