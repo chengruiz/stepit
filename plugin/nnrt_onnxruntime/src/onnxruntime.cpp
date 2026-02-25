@@ -1,6 +1,3 @@
-#include <algorithm>
-#include <numeric>
-
 #include <stepit/nnrt/onnxruntime.h>
 
 namespace stepit {
@@ -17,7 +14,7 @@ OnnxrtApi::OnnxrtApi(const std::string &path, const YAML::Node &config)
 
   for (std::size_t i{}; i < num_in_; ++i) {
     auto shape   = getShapeFromTypeInfo(core_->GetInputTypeInfo(i));
-    int64_t size = std::accumulate(shape.begin(), shape.end(), static_cast<int64_t>(1), std::multiplies<>());
+    int64_t size = product(shape);
     auto name    = core_->GetInputNameAllocated(i, allocator_);
 
     in_shapes_.emplace_back(std::move(shape));
@@ -30,7 +27,7 @@ OnnxrtApi::OnnxrtApi(const std::string &path, const YAML::Node &config)
 
   for (std::size_t i{}; i < num_out_; ++i) {
     auto shape   = getShapeFromTypeInfo(core_->GetOutputTypeInfo(i));
-    int64_t size = std::accumulate(shape.begin(), shape.end(), static_cast<int64_t>(1), std::multiplies<>());
+    int64_t size = product(shape);
     auto name    = core_->GetOutputNameAllocated(i, allocator_);
 
     out_shapes_.emplace_back(std::move(shape));

@@ -1,6 +1,9 @@
 #ifndef STEPIT_UTILS_H_
 #define STEPIT_UTILS_H_
 
+#include <algorithm>
+#include <numeric>
+
 #include <boost/filesystem.hpp>
 
 #include <llu/chrono.h>
@@ -70,6 +73,11 @@ std::string joinPaths(const std::string &path1, const std::string &path2, const 
   result /= fs::path(path2);
   appendPaths(result, paths...);
   return result.string();
+}
+
+template <typename T>
+T product(const std::vector<T> &vec) {
+  return std::accumulate(vec.begin(), vec.end(), static_cast<T>(1), std::multiplies<>());
 }
 }  // namespace stepit
 
