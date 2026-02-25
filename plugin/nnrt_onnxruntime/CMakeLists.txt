@@ -10,7 +10,6 @@ get_library_directory(onnxruntime ONNXRUNTIME_LIB_DIR)
 if (ONNXRUNTIME_LIB_DIR)
   message(STATUS "Found onnxruntime at ${ONNXRUNTIME_LIB_DIR}")
   get_filename_component(ONNXRUNTIME_DIR "${ONNXRUNTIME_LIB_DIR}" DIRECTORY)
-  message(STATUS "ONNXRUNTIME_DIR = ${ONNXRUNTIME_DIR}")
 else ()
   set(ONNXRUNTIME_TAG 1.21.0)
   set(NN_RUNTIME_DIR "${STEPIT_HOME_DIRECTORY}/extern/nn_runtime")
@@ -40,13 +39,17 @@ else ()
   endif ()
 endif ()
 
+set(ONNXRUNTIME_INCLUDE_DIR ${ONNXRUNTIME_DIR}/include)
+if (EXISTS "${ONNXRUNTIME_INCLUDE_DIR}/onnxruntime")
+  set(ONNXRUNTIME_INCLUDE_DIR ${ONNXRUNTIME_INCLUDE_DIR}/onnxruntime)
+endif ()
+
 stepit_add_plugin(${PROJECT_NAME}
     SOURCES
       src/onnxruntime.cpp
     INCLUDES
       include
-      ${ONNXRUNTIME_DIR}/include
-      ${ONNXRUNTIME_DIR}/include/onnxruntime
+      ${ONNXRUNTIME_INCLUDE_DIR}
     LINK_DIRS
       ${ONNXRUNTIME_DIR}/lib
     LINK_LIBS

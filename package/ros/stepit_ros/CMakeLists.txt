@@ -107,6 +107,26 @@ foreach (library ${STEPIT_LIBRARIES} ${STEPIT_CORE_DEPENDENCIES})
   endif ()
 endforeach ()
 
+function(filter_interface_dirs variable_name)
+    set(input_list "${${variable_name}}")
+    set(PROCESSED_DIRS "")
+
+    foreach (dir IN LISTS input_list)
+        if (dir MATCHES "^\\$<INSTALL_INTERFACE:.*>$")
+            continue()
+        elseif (dir MATCHES "^\\$<BUILD_INTERFACE:(.*)>$")
+            string(REGEX REPLACE "^\\$<BUILD_INTERFACE:(.*)>$" "\\1" extracted_dir "${dir}")
+            list(APPEND PROCESSED_DIRS "${extracted_dir}")
+        else ()
+            list(APPEND PROCESSED_DIRS "${dir}")
+        endif ()
+    endforeach ()
+
+    set(${variable_name} "${PROCESSED_DIRS}" PARENT_SCOPE)
+endfunction()
+
+filter_interface_dirs(STEPIT_INCLUDE_DIRS)
+
 ## The catkin_package macro generates cmake config files for your package
 ## Declare things to be passed to dependent projects
 ## INCLUDE_DIRS: uncomment this if your package contains header files

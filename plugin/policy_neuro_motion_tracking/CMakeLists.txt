@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.16)
 project(stepit_plugin_policy_neuro_motion_tracking)
 
-find_package(pinocchio)
+find_package(pinocchio QUIET)
 if (NOT pinocchio_FOUND)
   message(STATUS "Skipped plugin '${PROJECT_NAME}': Missing pinocchio.")
   return()

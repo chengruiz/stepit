@@ -2,11 +2,8 @@ cmake_minimum_required(VERSION 3.16)
 project(stepit_plugin_pyutils)
 
 find_package(Python3 REQUIRED COMPONENTS Interpreter Development)
-find_package(pybind11 CONFIG)
-if (NOT pybind11_FOUND)
-  init_submodule(extern/pybind11 WORKING_DIRECTORY ${STEPIT_HOME_DIRECTORY})
-  add_subdirectory(${STEPIT_HOME_DIRECTORY}/extern/pybind11 pybind11)
-endif()
+init_submodule(extern/pybind11 WORKING_DIRECTORY ${STEPIT_HOME_DIRECTORY})
+add_subdirectory(${STEPIT_HOME_DIRECTORY}/extern/pybind11 pybind11)
 
 stepit_add_plugin(${PROJECT_NAME}
     SOURCES
