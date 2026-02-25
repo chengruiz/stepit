@@ -30,7 +30,6 @@ class FieldSubscriber2 : public Module {
     VecXf data;
   };
 
-  YAML::Node config_;
   std::vector<FieldData> fields_;
   std::mutex mutex_;
 };

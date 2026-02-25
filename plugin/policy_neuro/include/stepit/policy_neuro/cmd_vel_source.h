@@ -34,7 +34,6 @@ class CmdVelSource : public Module {
   static const std::map<std::string, Action> kActionMap;
   virtual void handleControlRequest(ControlRequest request);
 
-  YAML::Node config_;
   FieldId cmd_vel_id_{};
   FieldId cmd_stall_id_{};
   std::vector<JoystickRule> joystick_rules_;

@@ -2,8 +2,9 @@
 
 namespace stepit {
 namespace neuro_policy {
-Actuator::Actuator(const NeuroPolicySpec &policy_spec, const std::string &name) : Module(nonEmptyOr(name, "actuator")) {
-  YAML::Node policy_config = loadConfig(policy_spec, "policy");
+Actuator::Actuator(const NeuroPolicySpec &policy_spec, const std::string &name)
+    : Module(policy_spec, nonEmptyOr(name, "actuator"), true) {
+  YAML::Node policy_config = yml::loadFile(joinPaths(policy_spec.home_dir, "policy.yml"));
   yml::assertHasValue(policy_config, "actuator");
   config_ = policy_config["actuator"];
   STEPIT_ASSERT(config_.IsMap(), "'actuator' entry in policy.yml should be a map.");
@@ -33,7 +34,7 @@ Actuator::Actuator(const NeuroPolicySpec &policy_spec, const std::string &name) 
 }
 
 PositionActuator::PositionActuator(const NeuroPolicySpec &policy_spec, const std::string &name)
-    : Actuator(policy_spec, nonEmptyOr(name, "position_actuator")) {
+    : Actuator(policy_spec, name) {
   target_joint_pos_.setZero(policy_spec.dof);
   last_target_joint_pos_id_ = registerProvision("last_target_joint_pos", target_joint_pos_.size());
 }
@@ -67,7 +68,7 @@ void PositionActuator::setLowCmd(LowCmd &cmd, cArrXf action) {
 }
 
 VelocityActuator::VelocityActuator(const NeuroPolicySpec &policy_spec, const std::string &name)
-    : Actuator(policy_spec, nonEmptyOr(name, "velocity_actuator")) {
+    : Actuator(policy_spec, name) {
   target_joint_vel_         = bias_;
   last_target_joint_vel_id_ = registerProvision("last_target_joint_vel", target_joint_vel_.size());
 }
@@ -94,7 +95,7 @@ void VelocityActuator::setLowCmd(LowCmd &cmd, cArrXf action) {
 }
 
 TorqueActuator::TorqueActuator(const NeuroPolicySpec &policy_spec, const std::string &name)
-    : Actuator(policy_spec, nonEmptyOr(name, "torque_actuator")) {
+    : Actuator(policy_spec, name) {
   target_joint_tor_         = bias_;
   last_target_joint_tor_id_ = registerProvision("last_target_joint_tor", target_joint_tor_.size());
 }
@@ -129,7 +130,7 @@ const std::map<std::string, HybridActuator::Mode> HybridActuator::kModeMap = {
 // clang-format on
 
 HybridActuator::HybridActuator(const NeuroPolicySpec &policy_spec, const std::string &name)
-    : Actuator(policy_spec, nonEmptyOr(name, "hybrid_actuator")) {
+    : Actuator(policy_spec, name) {
   if (yml::hasValue(config_, "parameters")) {
     yml::Node parameters = config_["parameters"];
     for (const auto &node : config_["parameters"]) {

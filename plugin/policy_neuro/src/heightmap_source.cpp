@@ -3,7 +3,7 @@
 namespace stepit {
 namespace neuro_policy {
 DummyHeightmapSource::DummyHeightmapSource(const NeuroPolicySpec &policy_spec, const std::string &name)
-    : Module(nonEmptyOr(name, "heightmap")), config_(loadConfig(policy_spec)) {
+    : Module(policy_spec, nonEmptyOr(name, "heightmap")) {
   if (config_["dimension"] and config_["grid_size"]) {
     std::array<int, 2> dimension;
     std::array<float, 2> grid_size;

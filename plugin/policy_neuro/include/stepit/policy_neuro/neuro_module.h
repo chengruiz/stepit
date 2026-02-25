@@ -26,7 +26,6 @@ class NeuroModule : public Module {
   static void printNodeFields(const std::vector<std::string> &node_names, const std::vector<FieldIdVec> &field_ids);
 
   NnrtApi::Ptr nn_;
-  YAML::Node config_;
 
   std::string run_name_{};
   bool assert_all_finite_{true};

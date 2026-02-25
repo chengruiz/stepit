@@ -29,7 +29,6 @@ class FieldHistory : public Module {
     ArrXf output_buffer;
   };
 
-  YAML::Node config_;
   std::vector<BufferConfig> buffers_;
 };
 }  // namespace neuro_policy

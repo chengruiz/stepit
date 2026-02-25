@@ -15,7 +15,6 @@ class MotionTrajectory : public Module {
   bool update(const LowState &low_state, ControlRequests &requests, FieldMap &context) override;
 
  private:
-  YAML::Node config_;
   std::string npz_filename_;
   NpzReader npz_;
   std::size_t num_frames_{};

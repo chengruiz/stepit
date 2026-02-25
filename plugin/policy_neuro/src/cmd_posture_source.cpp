@@ -12,7 +12,7 @@ const std::map<std::string, CmdRollSource::Action> CmdRollSource::kActionMap = {
 // clang-format on
 
 CmdRollSource::CmdRollSource(const NeuroPolicySpec &policy_spec, const std::string &name)
-    : Module(nonEmptyOr(name, "cmd_posture/roll")), config_(loadConfigIf(policy_spec)) {
+    : Module(policy_spec, nonEmptyOr(name, "cmd_posture/roll"), true) {
   cmd_roll_id_ = registerProvision("cmd_roll", 1);
 
   if (config_) {
@@ -84,7 +84,7 @@ const std::map<std::string, CmdPitchSource::Action> CmdPitchSource::kActionMap =
 // clang-format on
 
 CmdPitchSource::CmdPitchSource(const NeuroPolicySpec &policy_spec, const std::string &name)
-    : Module(nonEmptyOr(name, "cmd_posture/pitch")), config_(loadConfigIf(policy_spec)) {
+    : Module(policy_spec, nonEmptyOr(name, "cmd_posture/pitch"), true) {
   cmd_pitch_id_ = registerProvision("cmd_pitch", 1);
 
   if (config_) {
@@ -156,7 +156,7 @@ const std::map<std::string, CmdHeightSource::Action> CmdHeightSource::kActionMap
 // clang-format on
 
 CmdHeightSource::CmdHeightSource(const NeuroPolicySpec &policy_spec, const std::string &name)
-    : Module(nonEmptyOr(name, "cmd_posture/height")), config_(loadConfigIf(policy_spec)) {
+    : Module(policy_spec, nonEmptyOr(name, "cmd_posture/height"), true) {
   cmd_height_id_ = registerProvision("cmd_height", 1);
 
   if (config_) {

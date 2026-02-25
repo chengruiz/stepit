@@ -15,7 +15,6 @@ class JointReordering : public Module {
  private:
   ArrXf reorder(const ArrXf &in);
 
-  YAML::Node config_;
   FieldId joint_pos_id_, joint_vel_id_;
   std::vector<std::size_t> joint_order_;
   std::vector<bool> joint_reversed_;
@@ -31,7 +30,6 @@ class ActionReordering : public Module {
  private:
   ArrXf reorder(const ArrXf &in);
 
-  YAML::Node config_;
   FieldId action_id_;
   std::vector<std::size_t> joint_order_;
   std::vector<bool> joint_reversed_;

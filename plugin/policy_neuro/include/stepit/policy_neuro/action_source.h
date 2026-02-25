@@ -33,7 +33,6 @@ class ActionFilter : public Module {
   bool update(const LowState &low_state, ControlRequests &requests, FieldMap &context) override;
 
  private:
-  YAML::Node config_;
   int window_size_{};
   FieldId action_id_{};
   ArrXf default_action_;

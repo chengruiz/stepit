@@ -42,8 +42,8 @@ actuator:            # [Optional] actuator configuration
     1.0, 2.0, 2.0,
     1.0, 2.0, 2.0,
   ]
-  mode:             #   List[Literal["position", "velocity", "torque"]]
-    - position      #   mode of each actuator, required for "hybrid" type
+  mode:              #   List[Literal["position", "velocity", "torque"]]
+    - position       #   mode of each actuator, required for "hybrid" type
     - velocity
     - torque
     - position
@@ -59,10 +59,10 @@ actuator:            # [Optional] actuator configuration
 action_mean: 0.0      # [Optional] Union[Float, List[Float]], the default action
 modules:              # [Optional] List[String], modules of the policy to run in order
                       #   If not specified, stepit will try to resolve the modules automatically
-  - actor            
-  - action_filter
-  - <module_name>@<factory_name>  #   Specify the module name to avoid ambiguity
-                                  #   This module will typically read <module_name>.yml for configuration
+  - <factory_name>
+  - <module_name>@<factory_name>              # Specify the module name to avoid ambiguity
+  - <module_name>/<part_name>@<factory_name>  # If module_name is specified, <module_name>.yml will be loaded for configuration
+
 
 publish_fields:       # [Optional] Union[bool, List[String]], whether to publish fields or list of field names to publish
   - joint_pos

@@ -5,7 +5,7 @@
 namespace stepit {
 namespace neuro_policy {
 FieldOps::FieldOps(const NeuroPolicySpec &policy_spec, const std::string &name)
-    : Module(nonEmptyOr(name, "field_ops")), config_(loadConfig(policy_spec)) {
+    : Module(policy_spec, nonEmptyOr(name, "field_ops")) {
   auto ops_node = config_["ops"] ? config_["ops"] : config_;
   STEPIT_ASSERT(ops_node.IsSequence(), "'field_ops.yml' must be a sequence or contain an 'ops' sequence.");
 

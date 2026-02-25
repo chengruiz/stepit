@@ -25,7 +25,6 @@ class CmdRollSource : public Module {
   static const std::map<std::string, Action> kActionMap;
   virtual void handleControlRequest(ControlRequest request);
 
-  YAML::Node config_;
   FieldId cmd_roll_id_{};
   std::vector<JoystickRule> joystick_rules_;
 
@@ -54,7 +53,6 @@ class CmdPitchSource : public Module {
   static const std::map<std::string, Action> kActionMap;
   virtual void handleControlRequest(ControlRequest request);
 
-  YAML::Node config_;
   FieldId cmd_pitch_id_{};
   std::vector<JoystickRule> joystick_rules_;
 
@@ -84,7 +82,6 @@ class CmdHeightSource : public Module {
   static const std::map<std::string, Action> kActionMap;
   virtual void handleControlRequest(ControlRequest request);
 
-  YAML::Node config_;
   FieldId cmd_height_id_{};
   std::vector<JoystickRule> joystick_rules_;
 

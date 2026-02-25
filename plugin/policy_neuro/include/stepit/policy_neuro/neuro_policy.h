@@ -5,8 +5,8 @@
 
 #include <stepit/policy.h>
 #include <stepit/utils.h>
-#include <stepit/policy_neuro/field.h>
 #include <stepit/policy_neuro/actuator.h>
+#include <stepit/policy_neuro/field.h>
 
 namespace stepit {
 namespace neuro_policy {

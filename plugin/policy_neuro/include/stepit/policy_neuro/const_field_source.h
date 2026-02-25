@@ -21,7 +21,6 @@ class ConstFieldSource : public Module {
     ArrXf value;
   };
 
-  YAML::Node config_;
   std::vector<ConstField> fields_;
 };
 }  // namespace neuro_policy

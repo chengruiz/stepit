@@ -13,7 +13,6 @@ class RelativeOriSource : public Module {
   bool update(const LowState &, ControlRequests &, FieldMap &context) override;
 
  protected:
-  YAML::Node config_;
   std::string current_ori_name_;
   std::string target_ori_name_;
   FieldId current_ori_id_{};
@@ -29,7 +28,6 @@ class RelativePosSource : public Module {
   bool update(const LowState &, ControlRequests &, FieldMap &context) override;
 
  protected:
-  YAML::Node config_;
   std::string current_pos_name_;
   std::string current_ori_name_;
   std::string target_pos_name_;
@@ -46,7 +44,6 @@ class MotionAlignment : public Module {
   bool update(const LowState &, ControlRequests &, FieldMap &context) override;
 
  protected:
-  YAML::Node config_;
   std::string current_pos_name_;
   std::string current_ori_name_;
   std::string target_pos_name_;

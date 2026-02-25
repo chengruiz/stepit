@@ -20,7 +20,6 @@ class Actuator : public Module,
   virtual void setLowCmd(LowCmd &cmd, cArrXf action) = 0;
 
  protected:
-  YAML::Node config_;
   ArrXf scale_, bias_;
   ArrXf kp_, kd_;
 };

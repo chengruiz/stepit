@@ -37,7 +37,6 @@ class FieldOps : public Module {
     ArrXf buffer;
   };
 
-  YAML::Node config_;
   std::vector<Operation> operations_;
 };
 }  // namespace neuro_policy

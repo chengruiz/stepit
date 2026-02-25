@@ -2,6 +2,25 @@
 
 namespace stepit {
 namespace neuro_policy {
+namespace {
+std::string getSubstrBeforeSlash(const std::string &input) {
+  const auto separator_pos = input.find('/');
+  if (separator_pos != std::string::npos and separator_pos > 0) {
+    return input.substr(0, separator_pos);
+  }
+  return input;
+}
+} // namespace
+
+Module::Module(const NeuroPolicySpec &policy_spec, std::string name, bool allow_config_missing)
+    : name_(std::move(name)), config_filename_(getSubstrBeforeSlash(name_) + ".yml") {
+  STEPIT_ASSERT(not name_.empty(), "Module name should not be empty.");
+  std::string config_path = joinPaths(policy_spec.home_dir, config_filename_);
+  if (not allow_config_missing or fs::exists(config_path)) {
+    config_ = yml::loadFile(config_path);
+  }
+}
+
 FieldId Module::registerRequirement(const std::string &field_name, FieldSize field_size) {
   return registerRequirement(registerField(field_name, field_size));
 }

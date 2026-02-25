@@ -7,7 +7,7 @@
 namespace stepit {
 namespace neuro_policy {
 ForwardKinematics::ForwardKinematics(const NeuroPolicySpec &policy_spec, const std::string &name)
-    : Module(nonEmptyOr(name, "forward_kinematics")), config_(loadConfig(policy_spec)) {
+    : Module(policy_spec, nonEmptyOr(name, "forward_kinematics")) {
   urdf_filename_ = yml::readIf<std::string>(config_, "urdf_filename", "robot.urdf");
   STEPIT_ASSERT(not urdf_filename_.empty(), "'urdf_filename' cannot be empty.");
   urdf_filename_ = urdf_filename_[0] == '/' ? urdf_filename_ : joinPaths(policy_spec.home_dir, urdf_filename_);
@@ -93,7 +93,7 @@ bool ForwardKinematics::update(const LowState &low_state, ControlRequests &, Fie
     const auto body_pose_local             = anchor_pose.actInv(data_.oMf[body_indices_[i]]);
     whole_body_local_pos.segment(3 * i, 3) = body_pose_local.translation().cast<float>();
 
-    Quatf quat = Quatf::fromMatrix(body_pose_local.rotation().cast<float>());
+    Quatf quat                             = Quatf::fromMatrix(body_pose_local.rotation().cast<float>());
     whole_body_local_ori.segment(4 * i, 4) = quat.coeffs();
   }
 

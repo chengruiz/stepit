@@ -12,7 +12,6 @@ class DummyHeightmapSource : public Module {
   bool update(const LowState &low_state, ControlRequests &requests, FieldMap &context) override;
 
  protected:
-  YAML::Node config_;
   FieldId heightmap_id_;
   FieldId uncertainty_id_;
 

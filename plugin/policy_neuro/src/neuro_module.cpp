@@ -5,7 +5,7 @@
 namespace stepit {
 namespace neuro_policy {
 NeuroModule::NeuroModule(const NeuroPolicySpec &policy_spec, const std::string &name)
-    : Module(nonEmptyOr(name, "neuro_module")), config_(loadConfig(policy_spec)) {
+    : Module(policy_spec, nonEmptyOr(name, "neuro_module")) {
   run_name_ = yml::readIf<std::string>(config_["run"], "name", "unknown");
   yml::setIf(config_, "assert_all_finite", assert_all_finite_);
 
