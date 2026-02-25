@@ -4,7 +4,7 @@ namespace stepit {
 namespace neuro_policy {
 FieldSubscriber::FieldSubscriber(const NeuroPolicySpec &policy_spec, const std::string &name)
     : Module(policy_spec, nonEmptyOr(name, "field_subscriber")) {
-  STEPIT_ASSERT(config_.IsMap(), "'field_subscriber.yml' must contain a map of field configurations.");
+  STEPIT_ASSERT(config_.IsMap(), "'{}' must contain a map of field configurations.", config_filename_);
   for (auto it = config_.begin(); it != config_.end(); ++it) {
     FieldData field;
     yml::setTo(it->first, field.name);

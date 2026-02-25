@@ -6,7 +6,7 @@ namespace stepit {
 namespace neuro_policy {
 ConstFieldSource::ConstFieldSource(const NeuroPolicySpec &policy_spec, const std::string &name)
     : Module(policy_spec, nonEmptyOr(name, "const_field")) {
-  STEPIT_ASSERT(config_.IsMap(), "'const_field.yml' must contain a map of constant fields.");
+  STEPIT_ASSERT(config_.IsMap(), "'{}' must contain a map of constant fields.", config_filename_);
 
   for (const auto &node : config_) {
     ConstField field;

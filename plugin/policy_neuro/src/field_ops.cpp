@@ -6,8 +6,8 @@ namespace stepit {
 namespace neuro_policy {
 FieldOps::FieldOps(const NeuroPolicySpec &policy_spec, const std::string &name)
     : Module(policy_spec, nonEmptyOr(name, "field_ops")) {
-  auto ops_node = config_["ops"] ? config_["ops"] : config_;
-  STEPIT_ASSERT(ops_node.IsSequence(), "'field_ops.yml' must be a sequence or contain an 'ops' sequence.");
+  auto ops_node = config_["ops"];
+  STEPIT_ASSERT(ops_node.IsSequence(), "'{}' must contain an 'ops' sequence.", config_filename_);
 
   for (const auto &node : ops_node) {
     STEPIT_ASSERT(node.IsMap(), "Each field op must be a map.");

@@ -4,7 +4,7 @@ namespace stepit {
 namespace neuro_policy {
 FieldHistory::FieldHistory(const NeuroPolicySpec &policy_spec, const std::string &name)
     : Module(policy_spec, nonEmptyOr(name, "field_history")) {
-  STEPIT_ASSERT(config_.IsMap(), "'field_history.yml' must contain a map of field history configurations.");
+  STEPIT_ASSERT(config_.IsMap(), "'{}' must contain a map of field history configurations.", config_filename_);
 
   for (const auto &node : config_) {
     BufferConfig buffer;

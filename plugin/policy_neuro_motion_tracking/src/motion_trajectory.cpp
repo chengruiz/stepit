@@ -34,7 +34,7 @@ MotionTrajectory::MotionTrajectory(const NeuroPolicySpec &policy_spec, const std
                   policy_spec.control_freq);
   }
 
-  STEPIT_ASSERT(config_["field"].IsDefined(), "Missing 'field' in motion_trajectory.yml.");
+  STEPIT_ASSERT(config_["field"].IsDefined(), "Missing 'field' in '{}'.", config_filename_);
   STEPIT_ASSERT(config_["field"].IsSequence(), "Expected 'field' to be a sequence.");
   for (const auto &node : config_["field"]) {
     STEPIT_ASSERT(node.IsMap(), "Expected each field to be a map.");
