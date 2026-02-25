@@ -70,6 +70,7 @@ Read the corresponding `README.md` first if you use any of the plugins.
 - [`policy_neuro_ros`](plugin/policy_neuro_ros): ROS extensions for plugin `policy_neuro`.
 - [`policy_neuro_ros2`](plugin/policy_neuro_ros2): ROS2 extensions for plugin `policy_neuro`.
 - [`publisher_csv`](plugin/publisher_csv): Publisher for writing robot data to csv file.
+- [`pyutils`](plugin/pyutils): Python utilities for C++ modules.
 - [`robot_deeprobotics_lite3`](plugin/robot_deeprobotics_lite3): Controlling the DeepRobotics Lite3 robot.
 - [`robot_deeprobotics_x30`](plugin/robot_deeprobotics_x30): Controlling the DeepRobotics X30 robot (Deprecated).
 - [`robot_unitree_aliengo`](plugin/robot_unitree): Controlling the Unitree Aliengo robot.

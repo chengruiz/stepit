@@ -2,6 +2,14 @@
 
 StepIt plugin for controlling the Unitree robot with legacy Unitree SDK.
 
+### Prerequisites
+
+Install the [LCM](https://lcm-proj.github.io/lcm) library:
+
+```shell
+sudo apt install liblcm-dev
+```
+
 ### Provided Factories
 
 - `stepit::RobotApi`: `aliengo` / `go1` / `b1`
