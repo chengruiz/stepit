@@ -21,7 +21,7 @@ class NeuroModule : public Module {
       const FieldSizeVec &node_sizes,          // Sizes of the neural network's ordinary inputs/outputs
       std::vector<FieldNameVec> &field_names,  // Output vector of field names for each ordinary input/output
       std::vector<FieldSizeVec> &field_sizes,  // Output vector of field sizes for each ordinary input/output
-      std::vector<FieldIdVec> &fields_ids      // Output vector of field IDs for each ordinary input/output
+      std::vector<FieldIdVec> &field_ids       // Output vector of field IDs for each ordinary input/output
   );
   static void printNodeFields(const std::vector<std::string> &node_names, const std::vector<FieldIdVec> &field_ids);
 

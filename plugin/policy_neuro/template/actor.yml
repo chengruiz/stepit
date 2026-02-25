@@ -1,4 +1,22 @@
-inputs:                             # Dict, mapping from the input name of the neural network to it component fields
+# Based on network.yml
+input_names:                 # [Optional] List[String], rename model inputs by index
+                             #   Required to have the same length as model inputs
+  - observation              # Input 0 name
+  - memory_in.0              # Input 1 name (example recurrent input)
+  - memory_in.1              # Input 2 name (example recurrent input)
+
+output_names:                # [Optional] List[String], rename model outputs by index
+                             #   Required to have the same length as model outputs
+  - action                   # Output 0 name
+  - memory_out.0             # Output 1 name (example recurrent output)
+  - memory_out.1             # Output 2 name (example recurrent output)
+
+recurrent_params:            # [Optional] List[Tuple[String, String]], override recurrent (input -> output) mapping
+                             #   If this key is missing, StepIt will try to infer recurrent pairs using (memory_in* -> memory_out*)
+  - [ memory_in.0, memory_out.0 ]    
+  - [ memory_in.1, memory_out.1 ]
+
+input_fields:                       # [Optional] Dict, mapping from the input name of the neural network to it component fields
                                     # A List is also allowed for single-input models
   observation:                      # Assuming the input node name of the neural network is "observation"
   - { name: cmd_vel,    size: 3  }  # For each field, specify the name and size (dimension)
@@ -15,7 +33,7 @@ inputs:                             # Dict, mapping from the input name of the n
     name: input_field2              #   [Optional] String, the field name, defaults to the input node name
     size: 42                        #   [Optional] Int, the field size, defaults to the input node size
 
-outputs:                            # Dict, mapping from the output name of the neural network to it component fields
+output_fields:                      # [Optional] Dict, mapping from the output name of the neural network to it component fields
 - { name: action, size: 12 }        # The format is similar to "inputs"
 
 assert_all_finite: true             # [Optional] Bool, whether to assert all finite values in inputs
