@@ -65,6 +65,7 @@ Read the corresponding `README.md` first if you use any of the plugins.
 - [`nnrt_onnxruntime`](plugin/nnrt_onnxruntime): Neural network inference on general x86_64 processors.
 - [`nnrt_rknnrt`](plugin/nnrt_rknnrt): Neural network inference on Rockchip platforms, e.g. RK3588.
 - [`nnrt_tensorrt`](plugin/nnrt_tensorrt): Neural network inference on NVIDIA GPUs and Jetson platforms, e.g. Jetson Orin NX.
+- [`nnrt_torchjit`](plugin/nnrt_torchjit): Neural network inference with TorchScript (PyTorch JIT) models.
 - [`policy_neuro`](plugin/policy_neuro): Neural network-based control policy.
 - [`policy_neuro_motion_tracking`](plugin/policy_neuro_motion_tracking): Motion tracking related modules for plugin `policy_neuro`.
 - [`policy_neuro_ros`](plugin/policy_neuro_ros): ROS extensions for plugin `policy_neuro`.

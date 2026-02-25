@@ -95,6 +95,9 @@ void NnrtApi::postInit() {
   for (int i{}; i < recur_params_.size(); ++i) {
     std::size_t in_idx  = getInputIdx(recur_params_[i].first, true);
     std::size_t out_idx = getOutputIdx(recur_params_[i].second, true);
+    STEPIT_ASSERT(in_shapes_[in_idx] == out_shapes_[out_idx],
+                  "Recurrent parameter shape mismatch: '{}' ({}) vs '{}' ({}).", recur_params_[i].first,
+                  shape2str(in_shapes_[in_idx]), recur_params_[i].second, shape2str(out_shapes_[out_idx]));
     in_recur_[in_idx]   = true;
     out_recur_[out_idx] = true;
     recur_param_indices_.emplace_back(in_idx, out_idx);
