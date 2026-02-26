@@ -43,6 +43,7 @@ class Module : public Interface<Module, const NeuroPolicySpec & /* policy_spec *
   FieldId registerRequirement(const std::string &field_name, FieldSize field_size = 0);
   FieldId registerRequirement(FieldId field_id);
   FieldId registerProvision(const std::string &field_name, FieldSize field_size);
+  FieldId registerProvision(FieldId field_id);
 
   const std::string name_, config_filename_;
   YAML::Node config_;

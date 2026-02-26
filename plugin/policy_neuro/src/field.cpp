@@ -34,7 +34,10 @@ FieldId Module::registerRequirement(FieldId field_id) {
 }
 
 FieldId Module::registerProvision(const std::string &field_name, FieldSize field_size) {
-  FieldId field_id = registerField(field_name, field_size);
+  return registerProvision(registerField(field_name, field_size));
+}
+
+FieldId Module::registerProvision(FieldId field_id) {
   // If the field is not already registered as a requirement, register it as a provision.
   if (requirements_.find(field_id) == requirements_.end()) {
     provisions_.insert(field_id);

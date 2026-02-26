@@ -2,73 +2,101 @@
 
 namespace stepit {
 namespace neuro_policy {
+FieldHistoryBuffer::FieldHistoryBuffer(const std::pair<YAML::Node, YAML::Node> &node) {
+  yml::setTo(node.first, target_name_);
+  const auto &config = node.second;
+  STEPIT_ASSERT(config.IsMap(), "Definition for '{}' must be a map.", target_name_);
+
+  yml::setTo(config["source"], source_name_);
+  yml::setTo(config["history_len"], history_len_);
+  STEPIT_ASSERT(history_len_ > 0, "History length for '{}' must be greater than 0.", target_name_);
+  yml::setIf(config["newest_first"], newest_first_);
+  yml::setIf(config["include_current_frame"], include_current_frame_);
+  if (yml::hasValue(config, "default_value")) {
+    yml::setTo(config, "default_value", default_value_);
+  }
+  source_id_ = registerField(source_name_, 0);
+  target_id_ = registerField(target_name_, 0);
+}
+
+void FieldHistoryBuffer::initFieldProperties() {
+  source_size_                = getFieldSize(source_id_);
+  const FieldSize target_size = source_size_ * history_len_;
+  setFieldSize(target_id_, target_size);
+
+  if (default_value_.size() == 1) {
+    default_value_ = VecXf::Constant(source_size_, default_value_[0]);
+  } else if (default_value_.size() != 0) {
+    STEPIT_ASSERT(default_value_.size() == source_size_,
+                  "Default value size for '{}' does not match source field size.", target_name_);
+  }
+  history_.allocate(history_len_);
+  output_.resize(target_size);
+}
+
+void FieldHistoryBuffer::push(const ArrXf &frame) {
+  if (newest_first_) {
+    // newest -> oldest: frame_0 (newest), frame_1, ..., frame_(N-1) (oldest)
+    history_.push_front(frame);
+  } else {
+    // oldest -> newest: frame_0 (oldest), frame_1, ..., frame_(N-1) (newest)
+    history_.push_back(frame);
+  }
+}
+
+void FieldHistoryBuffer::updateOutput() {
+  FieldSize offset = 0;
+  for (const auto &frame : history_) {
+    stackField(frame, offset, output_);
+  }
+  STEPIT_ASSERT(offset == output_.size(),
+                "Output buffer size does not match total history size after stacking for '{}'.", target_name_);
+}
+
+const ArrXf &FieldHistoryBuffer::update(const ArrXf &frame) {
+  if (history_.empty()) {
+    history_.fill(default_value_.size() > 0 ? default_value_ : frame);
+  }
+
+  if (include_current_frame_) {
+    push(frame);
+    updateOutput();
+  } else {
+    updateOutput();
+    push(frame);
+  }
+  return output_;
+}
+
 FieldHistory::FieldHistory(const NeuroPolicySpec &policy_spec, const std::string &name)
     : Module(policy_spec, nonEmptyOr(name, "field_history")) {
   STEPIT_ASSERT(config_.IsMap(), "'{}' must contain a map of field history configurations.", config_filename_);
 
   for (const auto &node : config_) {
-    BufferConfig buffer;
-    yml::setTo(node.first, buffer.target_name);
-    STEPIT_ASSERT(node.second.IsMap(), "Definition for '{}' must be a map.", buffer.target_name);
-
-    yml::setTo(node.second["source"], buffer.source_name);
-    yml::setTo(node.second["history_len"], buffer.history_len);
-    STEPIT_ASSERT(buffer.history_len > 0, "History length for '{}' must be greater than 0.", buffer.target_name);
-    yml::setIf(node.second["newest_first"], buffer.newest_first);
-    if (yml::hasValue(node.second, "default_value")) {
-      yml::setTo(node.second, "default_value", buffer.default_value);
-    }
-
-    buffer.source_id = registerRequirement(buffer.source_name);
-    buffer.target_id = registerProvision(buffer.target_name, 0);
+    FieldHistoryBuffer buffer(node);
+    registerRequirement(buffer.getSourceId());
+    registerProvision(buffer.getTargetId());
     buffers_.push_back(std::move(buffer));
   }
 }
 
 void FieldHistory::initFieldProperties() {
   for (auto &buffer : buffers_) {
-    buffer.source_size    = getFieldSize(buffer.source_id);
-    FieldSize target_size = buffer.source_size * buffer.history_len;
-    setFieldSize(buffer.target_id, target_size);
-
-    if (buffer.default_value.size() == 1) {
-      buffer.default_value = VecXf::Constant(buffer.source_size, buffer.default_value[0]);
-    } else if (buffer.default_value.size() != 0) {
-      STEPIT_ASSERT(buffer.default_value.size() == buffer.source_size,
-                    "Default value size for '{}' does not match source field size.", buffer.target_name);
-    }
-    buffer.history.allocate(buffer.history_len);
-    buffer.output_buffer.resize(target_size);
+    buffer.initFieldProperties();
   }
 }
 
 bool FieldHistory::reset() {
   for (auto &buffer : buffers_) {
-    buffer.history.clear();
+    buffer.clear();
   }
   return true;
 }
 
 bool FieldHistory::update(const LowState &, ControlRequests &, FieldMap &context) {
   for (auto &buffer : buffers_) {
-    const auto &frame = context.at(buffer.source_id);
-    if (buffer.history.empty()) {
-      buffer.history.fill(buffer.default_value.size() > 0 ? buffer.default_value : frame);
-    }
-
-    if (buffer.newest_first) {
-      // newest -> oldest: frame_0 (newest), frame_1, ..., frame_(N-1) (oldest)
-      buffer.history.push_front(frame);
-    } else {
-      // oldest -> newest: frame_0 (oldest), frame_1, ..., frame_(N-1) (newest)
-      buffer.history.push_back(frame);
-    }
-
-    FieldSize offset = 0;
-    for (const auto &frame : buffer.history) {
-      stackField(frame, offset, buffer.output_buffer);
-    }
-    context[buffer.target_id] = buffer.output_buffer;
+    const auto &frame             = context.at(buffer.getSourceId());
+    context[buffer.getTargetId()] = buffer.update(frame);
   }
   return true;
 }

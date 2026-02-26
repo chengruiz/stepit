@@ -5,6 +5,37 @@
 
 namespace stepit {
 namespace neuro_policy {
+class FieldHistoryBuffer {
+ public:
+  FieldHistoryBuffer() = default;
+  explicit FieldHistoryBuffer(const std::pair<YAML::Node, YAML::Node> &node);
+
+  void initFieldProperties();
+  FieldId getSourceId() const { return source_id_; }
+  FieldId getTargetId() const { return target_id_; }
+  void clear() { history_.clear(); }
+  const ArrXf &update(const ArrXf &frame);
+
+ private:
+  void push(const ArrXf &frame);
+  void updateOutput();
+
+  std::string source_name_;
+  std::string target_name_;
+  FieldId source_id_{};
+  FieldId target_id_{};
+  std::uint32_t history_len_{};
+  FieldSize source_size_{};
+  /* If true, the most recent entry will be placed at the beginning of the output vector.
+   * Otherwise, it will be placed at the end. */
+  bool newest_first_{true};
+  bool include_current_frame_{true};
+  ArrXf default_value_;
+
+  RingBuffer<ArrXf> history_;
+  ArrXf output_;
+};
+
 class FieldHistory : public Module {
  public:
   FieldHistory(const NeuroPolicySpec &policy_spec, const std::string &name);
@@ -13,23 +44,7 @@ class FieldHistory : public Module {
   bool update(const LowState &low_state, ControlRequests &requests, FieldMap &context) override;
 
  private:
-  struct BufferConfig {
-    std::string source_name;
-    std::string target_name;
-    FieldId source_id{};
-    FieldId target_id{};
-    std::uint32_t history_len{};
-    FieldSize source_size{};
-    /* If true, the most recent entry will be placed at the beginning of the output vector.
-     * Otherwise, it will be placed at the end. */
-    bool newest_first{true};
-    ArrXf default_value;
-
-    RingBuffer<ArrXf> history;
-    ArrXf output_buffer;
-  };
-
-  std::vector<BufferConfig> buffers_;
+  std::vector<FieldHistoryBuffer> buffers_;
 };
 }  // namespace neuro_policy
 }  // namespace stepit
