@@ -52,7 +52,7 @@ TensorRTApi::TensorRTApi(const std::string &path, const YAML::Node &config)
   STEPIT_CUDA_CALL(cudaStreamCreate, &cu_stream_);
   std::string engine_path = replaceExtension(path_, ".engine");
   if (not std::ifstream(engine_path).good()) {
-    STEPIT_ASSERT(build(path, engine_path), "Failed to build TensorRT engine!");
+    STEPIT_ASSERT(build(path_, engine_path), "Failed to build TensorRT engine!");
     STEPIT_LOGNT("Write engine to {}.", engine_path);
   }
 
