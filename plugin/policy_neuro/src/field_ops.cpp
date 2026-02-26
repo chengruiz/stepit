@@ -19,15 +19,15 @@ FieldOps::FieldOps(const NeuroPolicySpec &policy_spec, const std::string &name)
     if (op_type == "affine") {
       operation.type = OpType::kAffine;
 
-      if (node["field"]) {
-        auto field_name     = yml::readAs<std::string>(node["field"]);
+      if (yml::hasValue(node, "field")) {
+        auto field_name     = yml::readAs<std::string>(node, "field");
         operation.source_id = registerRequirement(field_name);
         operation.target_id = operation.source_id;
       } else {
         STEPIT_ASSERT(node["source"] and node["target"],
                       "Affine op must contain 'field' or both 'source' and 'target'.");
-        auto source_name    = yml::readAs<std::string>(node["source"]);
-        auto target_name    = yml::readAs<std::string>(node["target"]);
+        auto source_name    = yml::readAs<std::string>(node, "source");
+        auto target_name    = yml::readAs<std::string>(node, "target");
         operation.source_id = registerRequirement(source_name);
         operation.target_id = registerProvision(target_name, 0);
       }
@@ -49,21 +49,37 @@ FieldOps::FieldOps(const NeuroPolicySpec &policy_spec, const std::string &name)
       STEPIT_ASSERT(source_name != target_name, "Source and target cannot be the same in a copy op.");
       operation.source_id = registerRequirement(source_name);
       operation.target_id = registerProvision(target_name, 0);
-    } else if (op_type == "split") {
-      operation.type = OpType::kSplit;
-      STEPIT_ASSERT(node["source"] and node["targets"], "Split op must contain 'source' and 'targets'.");
-      operation.source_id = registerRequirement(yml::readAs<std::string>(node, "source"));
+    } else if (op_type == "masked_fill") {
+      operation.type = OpType::kMaskedFill;
 
-      const auto targets_node = node["targets"];
-      STEPIT_ASSERT(targets_node.IsSequence(), "'targets' in split op must be a sequence.");
-      for (const auto &target_node : targets_node) {
-        STEPIT_ASSERT(target_node.IsMap() and target_node["name"] and target_node["size"],
-                      "Each split target must be a map containing keys 'name' and 'size'.");
-        auto name = yml::readAs<std::string>(target_node, "name");
-        auto size = yml::readAs<FieldSize>(target_node, "size");
-        operation.target_ids.push_back(registerProvision(name, size));
-        operation.segment_sizes.push_back(size);
+      if (yml::hasValue(node, "field")) {
+        auto field_name     = yml::readAs<std::string>(node, "field");
+        operation.source_id = registerRequirement(field_name);
+        operation.target_id = operation.source_id;
+      } else {
+        STEPIT_ASSERT(node["source"] and node["target"],
+                      "masked_fill op must contain 'field' or both 'source' and 'target'.");
+        auto source_name    = yml::readAs<std::string>(node, "source");
+        auto target_name    = yml::readAs<std::string>(node, "target");
+        operation.source_id = registerRequirement(source_name);
+        operation.target_id = registerProvision(target_name, 0);
       }
+
+      if (yml::hasValue(node, "indices")) {
+        const auto indices_node = node["indices"];
+        STEPIT_ASSERT(indices_node.IsSequence() and indices_node.size() > 0,
+                      "'indices' in masked_fill op must be a non-empty sequence.");
+        for (const auto &index_node : indices_node) {
+          operation.indices.push_back(yml::readAs<FieldSize>(index_node));
+        }
+      } else {
+        auto start = yml::readAs<FieldSize>(node, "start");
+        auto end   = yml::readAs<FieldSize>(node, "end");
+        STEPIT_ASSERT(end > start, "Slice range [start={}, end={}) is invalid.", start, end);
+        for (FieldSize i{start}; i < end; ++i) operation.indices.push_back(i);
+      }
+
+      yml::setIf(node, "value", operation.value);
     } else if (op_type == "slice") {
       operation.type = OpType::kSlice;
       STEPIT_ASSERT(node["source"] and node["target"], "Slice op must contain 'source' and 'target'.");
@@ -82,6 +98,21 @@ FieldOps::FieldOps(const NeuroPolicySpec &policy_spec, const std::string &name)
         auto end   = yml::readAs<FieldSize>(node, "end");
         STEPIT_ASSERT(end > start, "Slice range [start={}, end={}) is invalid.", start, end);
         for (FieldSize i{start}; i < end; ++i) operation.indices.push_back(i);
+      }
+    } else if (op_type == "split") {
+      operation.type = OpType::kSplit;
+      STEPIT_ASSERT(node["source"] and node["targets"], "Split op must contain 'source' and 'targets'.");
+      operation.source_id = registerRequirement(yml::readAs<std::string>(node, "source"));
+
+      const auto targets_node = node["targets"];
+      STEPIT_ASSERT(targets_node.IsSequence(), "'targets' in split op must be a sequence.");
+      for (const auto &target_node : targets_node) {
+        STEPIT_ASSERT(target_node.IsMap() and target_node["name"] and target_node["size"],
+                      "Each split target must be a map containing keys 'name' and 'size'.");
+        auto name = yml::readAs<std::string>(target_node, "name");
+        auto size = yml::readAs<FieldSize>(target_node, "size");
+        operation.target_ids.push_back(registerProvision(name, size));
+        operation.segment_sizes.push_back(size);
       }
     } else {
       STEPIT_THROW("Unsupported field op type '{}'.", op_type);
@@ -131,12 +162,19 @@ void FieldOps::initFieldProperties() {
         operation.buffer.resize(total_size);
         break;
       }
-      case OpType::kSplit: {
-        auto source_size     = getFieldSize(operation.source_id);
-        FieldSize total_size = std::accumulate(operation.segment_sizes.begin(), operation.segment_sizes.end(),
-                                               static_cast<FieldSize>(0));
-        STEPIT_ASSERT(total_size == source_size, "Split sizes ({}) do not match source size ({}) for '{}'.", total_size,
-                      source_size, getFieldName(operation.source_id));
+      case OpType::kCopy: {
+        auto source_size = getFieldSize(operation.source_id);
+        setFieldSize(operation.target_id, source_size);
+        break;
+      }
+      case OpType::kMaskedFill: {
+        auto source_size = getFieldSize(operation.source_id);
+        for (auto index : operation.indices) {
+          STEPIT_ASSERT(index < source_size, "masked_fill index {} is out of range [0, {}) for '{}'.", index,
+                        source_size, getFieldName(operation.source_id));
+        }
+        setFieldSize(operation.target_id, source_size);
+        operation.buffer.resize(source_size);
         break;
       }
       case OpType::kSlice: {
@@ -150,9 +188,12 @@ void FieldOps::initFieldProperties() {
         operation.buffer.resize(target_size);
         break;
       }
-      case OpType::kCopy: {
-        auto source_size = getFieldSize(operation.source_id);
-        setFieldSize(operation.target_id, source_size);
+      case OpType::kSplit: {
+        auto source_size     = getFieldSize(operation.source_id);
+        FieldSize total_size = std::accumulate(operation.segment_sizes.begin(), operation.segment_sizes.end(),
+                                               static_cast<FieldSize>(0));
+        STEPIT_ASSERT(total_size == source_size, "Split sizes ({}) do not match source size ({}) for '{}'.", total_size,
+                      source_size, getFieldName(operation.source_id));
         break;
       }
       default:
@@ -188,6 +229,14 @@ bool FieldOps::update(const LowState &, ControlRequests &, FieldMap &context) {
       }
       case OpType::kCopy: {
         context[operation.target_id] = context.at(operation.source_id);
+        break;
+      }
+      case OpType::kMaskedFill: {
+        operation.buffer = context.at(operation.source_id);
+        for (auto index : operation.indices) {
+          operation.buffer[index] = operation.value;
+        }
+        context[operation.target_id] = operation.buffer;
         break;
       }
       default:

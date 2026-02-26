@@ -15,9 +15,10 @@ class FieldOps : public Module {
   enum class OpType {
     kAffine,
     kConcat,
-    kSplit,
-    kSlice,
     kCopy,
+    kMaskedFill,
+    kSlice,
+    kSplit,
   };
 
   struct Operation {
@@ -34,6 +35,7 @@ class FieldOps : public Module {
 
     ArrXf scale;
     ArrXf bias;
+    float value{};
     ArrXf buffer;
   };
 
