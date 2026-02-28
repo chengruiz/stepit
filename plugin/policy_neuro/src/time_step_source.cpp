@@ -18,7 +18,7 @@ bool TimeStepSource::update(const LowState &, ControlRequests &, FieldMap &conte
   return true;
 }
 
-STEPIT_REGISTER_MODULE(time_step, kDefPriority, Module::make<TimeStepSource>);
+STEPIT_REGISTER_MODULE(time_step_source, kDefPriority, Module::make<TimeStepSource>);
 STEPIT_REGISTER_FIELD_SOURCE(time_step, kDefPriority, Module::make<TimeStepSource>);
 }  // namespace neuro_policy
 }  // namespace stepit

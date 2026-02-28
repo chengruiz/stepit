@@ -190,7 +190,7 @@ void CmdVelSource::handleControlRequest(ControlRequest request) {
   }
 }
 
-STEPIT_REGISTER_MODULE(cmd_vel, kDefPriority - 1, Module::make<CmdVelSource>);
+STEPIT_REGISTER_MODULE(cmd_vel_source, kDefPriority - 1, Module::make<CmdVelSource>);
 STEPIT_REGISTER_FIELD_SOURCE(cmd_vel, kDefPriority - 1, Module::make<CmdVelSource>);
 STEPIT_REGISTER_FIELD_SOURCE(cmd_stall, kDefPriority - 1, Module::make<CmdVelSource>);
 }  // namespace neuro_policy

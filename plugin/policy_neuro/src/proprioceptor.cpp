@@ -38,7 +38,7 @@ bool RollPitchSource::update(const LowState &low_state, ControlRequests &, Field
 }
 
 STEPIT_REGISTER_MODULE(proprioceptor, kDefPriority, Module::make<Proprioceptor>);
-STEPIT_REGISTER_MODULE(roll_pitch, kDefPriority, Module::make<RollPitchSource>);
+STEPIT_REGISTER_MODULE(roll_pitch_source, kDefPriority, Module::make<RollPitchSource>);
 STEPIT_REGISTER_FIELD_SOURCE(ang_vel, kDefPriority, Module::make<Proprioceptor>);
 STEPIT_REGISTER_FIELD_SOURCE(gravity, kDefPriority, Module::make<Proprioceptor>);
 STEPIT_REGISTER_FIELD_SOURCE(joint_pos, kDefPriority, Module::make<Proprioceptor>);

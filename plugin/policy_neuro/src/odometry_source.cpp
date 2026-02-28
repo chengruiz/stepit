@@ -27,7 +27,7 @@ bool DummyOdometrySource::update(const LowState &low_state, ControlRequests &, F
   return true;
 }
 
-STEPIT_REGISTER_MODULE(odometry, kMinPriority, Module::make<DummyOdometrySource>);
+STEPIT_REGISTER_MODULE(dummy_odometry_source, kMinPriority, Module::make<DummyOdometrySource>);
 STEPIT_REGISTER_FIELD_SOURCE(base_global_pos, kMinPriority, Module::make<DummyOdometrySource>);
 STEPIT_REGISTER_FIELD_SOURCE(base_global_ori, kMinPriority, Module::make<DummyOdometrySource>);
 }  // namespace neuro_policy
