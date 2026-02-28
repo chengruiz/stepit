@@ -42,27 +42,27 @@ void PluginManager::loadPlugins(const std::string &plugin_dir, int &argc, char *
   if (not fs::exists(plugin_dir)) return;
   fs::path absolute_dir = fs::canonical(plugin_dir);
   if (not fs::is_directory(absolute_dir)) {
-    STEPIT_WARNNT("Path {} is not a directory.", absolute_dir.string());
+    STEPIT_WARNNT("Path '{}' is not a directory.", absolute_dir.string());
     return;
   }
 
-  STEPIT_DBUGNT("Loading plugins from directory: {}.", absolute_dir.string());
+  STEPIT_DBUGNT("Loading plugins from directory '{}'.", absolute_dir.string());
   for (const auto &entry : fs::directory_iterator(absolute_dir)) {
     if (not fs::is_regular_file(entry)) continue;
 
     std::string filename = entry.path().filename().string();
     if (isValidPlugin(filename)) {
       if (isBlacklistedPlugin(filename)) {
-        STEPIT_DBUGNT("-- Skipping blacklisted plugin: {}.", filename);
+        STEPIT_DBUGNT("-- Skipping blacklisted plugin '{}'.", filename);
         continue;
       }
 
-      STEPIT_DBUGNT("-- Loading plugin: {}.", filename);
+      STEPIT_DBUGNT("-- Loading plugin '{}'.", filename);
       std::string full_path = entry.path().string();
 
       void *handle = dlopen(full_path.c_str(), RTLD_NOW | RTLD_GLOBAL);
       if (handle == nullptr) {
-        STEPIT_WARNNT("During loading plugin {}:\n  {}.", filename, dlerror());
+        STEPIT_WARNNT("During loading plugin '{}':\n  {}.", filename, dlerror());
         continue;
       }
 
@@ -70,7 +70,7 @@ void PluginManager::loadPlugins(const std::string &plugin_dir, int &argc, char *
       if (init_fn != nullptr) {
         int ret = init_fn(argc, argv);
         if (ret != 0) {
-          STEPIT_WARNNT("Failed to initialize {} (error code: {}).", filename, ret);
+          STEPIT_WARNNT("Failed to initialize '{}' (error code: {}).", filename, ret);
           dlclose(handle);
           continue;
         }
