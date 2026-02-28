@@ -8,6 +8,7 @@ export STEPIT_DEFAULT_SPIN=""          # string, the default spin
 
 export STEPIT_PLUGIN_DIRS="build/lib"  # string, the directory of the plugins
 export STEPIT_EXTRA_PLUGIN_DIRS=""     # string, the extra directories of the plugins beyond the default ones
+export STEPIT_BLACKLIST_PLUGINS=""     # string, the plugins to blacklist, separated by colon (:)
 export STEPIT_COMM_CPUID=0             # int, the CPU ID of the communication thread to bind to
 export STEPIT_AGENT_CPUID=1            # int, the CPU ID of the agent thread to bind to
 export STEPIT_VERBOSITY=2              # int [0, 3], the verbosity level

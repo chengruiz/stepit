@@ -7,6 +7,7 @@
 namespace stepit {
 PluginManager::PluginManager(std::vector<std::string> &args) {
   STEPIT_ASSERT(args.size() > 0, "At least one argument is required.");
+  getenv("STEPIT_BLACKLIST_PLUGINS", blacklist_plugins_);
 
   // Make C-style argc and argv from args
   int argc    = static_cast<int>(args.size());
@@ -51,6 +52,11 @@ void PluginManager::loadPlugins(const std::string &plugin_dir, int &argc, char *
 
     std::string filename = entry.path().filename().string();
     if (isValidPlugin(filename)) {
+      if (isBlacklistedPlugin(filename)) {
+        STEPIT_DBUGNT("-- Skipping blacklisted plugin: {}.", filename);
+        continue;
+      }
+
       STEPIT_DBUGNT("-- Loading plugin: {}.", filename);
       std::string full_path = entry.path().string();
 
@@ -111,5 +117,32 @@ bool PluginManager::isValidPlugin(const std::string &filename) {
   if (filename.compare(0, prefix_len, kPluginPrefix) != 0) return false;
   if (filename.compare(filename.length() - suffix_len, suffix_len, kPluginSuffix) != 0) return false;
   return true;
+}
+
+std::string PluginManager::getPluginName(const std::string &path) {
+  std::string name = fs::path(path).filename().string();
+  if (name.empty()) return name;
+
+  const std::size_t prefix_len = std::strlen(kPluginPrefix);
+  const std::size_t suffix_len = std::strlen(kPluginSuffix);
+
+  if (name.size() > prefix_len && name.compare(0, prefix_len, kPluginPrefix) == 0) {
+    name = name.substr(prefix_len);
+  }
+  if (name.size() > suffix_len && name.compare(name.size() - suffix_len, suffix_len, kPluginSuffix) == 0) {
+    name = name.substr(0, name.size() - suffix_len);
+  }
+  return name;
+}
+
+bool PluginManager::isBlacklistedPlugin(const std::string &filename) {
+  if (blacklist_plugins_.empty()) return false;
+
+  std::string plugin_name = getPluginName(filename);
+  for (const auto &blacklisted : blacklist_plugins_) {
+    if (blacklisted == filename) return true;
+    if (getPluginName(blacklisted) == plugin_name) return true;
+  }
+  return false;
 }
 }  // namespace stepit

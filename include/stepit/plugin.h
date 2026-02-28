@@ -27,8 +27,11 @@ class PluginManager {
    * @return True if the filename is a valid plugin name, false otherwise.
    */
   static bool isValidPlugin(const std::string &filename);
+  static std::string getPluginName(const std::string &plugin);
+  bool isBlacklistedPlugin(const std::string &filename);
 
   std::vector<void *> handles_;
+  std::vector<std::string> blacklist_plugins_;
 };
 }  // namespace stepit
 
