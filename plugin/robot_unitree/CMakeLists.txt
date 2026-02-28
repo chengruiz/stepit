@@ -5,7 +5,7 @@ if (NOT STEPIT_UNITREE_ROBOT IN_LIST VALID_ROBOTS)
   message(FATAL_ERROR "Unsupported robot '${STEPIT_UNITREE_ROBOT}'")
 endif ()
 
-project(stepit_plugin_robot_${STEPIT_UNITREE_ROBOT})
+project(stepit_plugin_robot_unitree_${STEPIT_UNITREE_ROBOT})
 
 get_library_directory(lcm LCM_DIR)
 if (NOT LCM_DIR)
