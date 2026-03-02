@@ -59,6 +59,7 @@ NeuroPolicy::NeuroPolicy(const RobotSpec &robot_spec, const std::string &home_di
   }
   STEPIT_ASSERT(unavailable_fields_.empty() and unresolved_modules_.empty(), "Policy is not fully resolved.");
 
+  for (const auto &module : resolved_modules_) module->init();
   auto action_dim = getFieldSize(action_id_);
   action_.setZero(action_dim);
 
@@ -78,7 +79,6 @@ NeuroPolicy::NeuroPolicy(const RobotSpec &robot_spec, const std::string &home_di
 
   STEPIT_DBUGNT("Modules:");
   for (const auto &module : resolved_modules_) {
-    module->init();
     STEPIT_DBUGNT("- {} ({})", module->name(), getTypeName(*module));
   }
   displayFormattedBanner(60);

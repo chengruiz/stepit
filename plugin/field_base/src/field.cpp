@@ -26,6 +26,18 @@ FieldId Node::registerProvision(FieldId field_id) {
   return field_id;
 }
 
+ConflictingFieldSizeError::ConflictingFieldSizeError(FieldId field_id, FieldSize new_size)
+    : std::runtime_error(fmt::format(
+          "Attempting to register size of field '{}' to {}, which conflicts with the previously registered size ({}).",
+          getFieldName(field_id), new_size, getFieldSize(field_id))) {}
+
+InvalidFieldIdError::InvalidFieldIdError(FieldId field_id)
+    : std::runtime_error(fmt::format("Invalid field ID {}, which exceeds the number of registered fields ({}).",
+                                     field_id, getNumFields())) {}
+
+UndefinedFieldSizeError::UndefinedFieldSizeError(FieldId field_id)
+    : std::runtime_error(fmt::format("Size of field '{}' is undefined.", getFieldName(field_id))) {}
+
 FieldId FieldManager::registerField(const std::string &name, FieldSize size) {
   STEPIT_ASSERT(not name.empty(), "Field name should not be empty.");
   std::lock_guard<std::recursive_mutex> lock(mutex_);
@@ -46,32 +58,39 @@ FieldId FieldManager::registerField(const std::string &name, FieldSize size) {
 FieldId FieldManager::getFieldId(const std::string &name) {
   std::lock_guard<std::recursive_mutex> lock(mutex_);
   auto it = name_to_id_.find(name);
-  STEPIT_ASSERT(it != name_to_id_.end(), "Unregistered observation: '{}'.", name);
+  if (it == name_to_id_.end()) throw UnregisteredFieldError(name);
   return it->second;
 }
 
 const std::string &FieldManager::getFieldName(FieldId id) const {
   std::lock_guard<std::recursive_mutex> lock(mutex_);
+  if (id >= next_id_) throw InvalidFieldIdError(id);
   return id_to_name_[id];
 }
 
 FieldSize FieldManager::getFieldSize(FieldId id) const {
   std::lock_guard<std::recursive_mutex> lock(mutex_);
+  if (id >= next_id_) throw InvalidFieldIdError(id);
   FieldSize size = id_to_size_[id];
-  STEPIT_ASSERT(size > 0, "Size of field '{}' is undefined.", getFieldName(id));
+  if (size == 0) throw UndefinedFieldSizeError(id);
   return size;
 }
 
 void FieldManager::setFieldSize(FieldId id, FieldSize size) {
   std::lock_guard<std::recursive_mutex> lock(mutex_);
+  if (id >= next_id_) throw InvalidFieldIdError(id);
   auto registered_size = id_to_size_.at(id);
   if (registered_size == 0) {  // If not registered
+    STEPIT_DBUGNT("Size of field '{}' set to {}.", getFieldName(id), size);
     id_to_size_[id] = size;
     return;
   }
-  STEPIT_ASSERT(registered_size == size,
-                "Attempting to register field '{}' with size {}, which is already registered with size {}.",
-                getFieldName(id), size, registered_size);
+  if (registered_size != size) throw ConflictingFieldSizeError(id, size);
+}
+
+FieldManager &FieldManager::instance() {
+  static FieldManager instance;
+  return instance;
 }
 
 void parseFieldIds(const YAML::Node &node, FieldIdVec &context) {

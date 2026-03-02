@@ -32,6 +32,23 @@ class Node {
   std::set<FieldId> requirements_, provisions_;
 };
 
+struct ConflictingFieldSizeError : std::runtime_error {
+  explicit ConflictingFieldSizeError(FieldId field_id, FieldSize new_size);
+};
+
+struct InvalidFieldIdError : std::runtime_error {
+  explicit InvalidFieldIdError(FieldId field_id);
+};
+
+struct UndefinedFieldSizeError : std::runtime_error {
+  explicit UndefinedFieldSizeError(FieldId field_id);
+};
+
+struct UnregisteredFieldError : std::runtime_error {
+  explicit UnregisteredFieldError(const std::string &field_name)
+      : std::runtime_error(fmt::format("Field '{}' is not registered.", field_name)) {}
+};
+
 // Singleton registry to manage fields
 class FieldManager {
  public:
@@ -42,6 +59,7 @@ class FieldManager {
   FieldId registerField(const std::string &name, FieldSize size);
   FieldId getFieldId(const std::string &name);
   const std::string &getFieldName(FieldId id) const;
+  FieldId getNumFields() const { return next_id_; }
   FieldSize getFieldSize(FieldId id) const;
   void setFieldSize(FieldId id, FieldSize size);
 
@@ -62,6 +80,7 @@ inline FieldId registerField(const std::string &name, FieldSize size) {
 }
 inline FieldId getFieldId(const std::string &name) { return fieldManager().getFieldId(name); }
 inline const std::string &getFieldName(FieldId id) { return fieldManager().getFieldName(id); }
+inline FieldId getNumFields() { return fieldManager().getNumFields(); }
 inline FieldSize getFieldSize(FieldId id) { return fieldManager().getFieldSize(id); }
 inline void setFieldSize(FieldId id, FieldSize size) { fieldManager().setFieldSize(id, size); }
 
