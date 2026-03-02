@@ -1,8 +1,11 @@
 #ifndef STEPIT_FIELD_H_
 #define STEPIT_FIELD_H_
 
+#include <cstdint>
 #include <map>
 #include <mutex>
+#include <set>
+#include <stdexcept>
 #include <utility>
 #include <vector>
 
@@ -58,8 +61,8 @@ class FieldManager {
 
   FieldId registerField(const std::string &name, FieldSize size);
   FieldId getFieldId(const std::string &name);
-  const std::string &getFieldName(FieldId id) const;
-  FieldId getNumFields() const { return next_id_; }
+  std::string getFieldName(FieldId id) const;
+  FieldId getNumFields() const;
   FieldSize getFieldSize(FieldId id) const;
   void setFieldSize(FieldId id, FieldSize size);
 
@@ -79,7 +82,7 @@ inline FieldId registerField(const std::string &name, FieldSize size) {
   return fieldManager().registerField(name, size);
 }
 inline FieldId getFieldId(const std::string &name) { return fieldManager().getFieldId(name); }
-inline const std::string &getFieldName(FieldId id) { return fieldManager().getFieldName(id); }
+inline std::string getFieldName(FieldId id) { return fieldManager().getFieldName(id); }
 inline FieldId getNumFields() { return fieldManager().getNumFields(); }
 inline FieldSize getFieldSize(FieldId id) { return fieldManager().getFieldSize(id); }
 inline void setFieldSize(FieldId id, FieldSize size) { fieldManager().setFieldSize(id, size); }

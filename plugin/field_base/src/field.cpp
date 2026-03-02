@@ -62,10 +62,15 @@ FieldId FieldManager::getFieldId(const std::string &name) {
   return it->second;
 }
 
-const std::string &FieldManager::getFieldName(FieldId id) const {
+std::string FieldManager::getFieldName(FieldId id) const {
   std::lock_guard<std::recursive_mutex> lock(mutex_);
   if (id >= next_id_) throw InvalidFieldIdError(id);
   return id_to_name_[id];
+}
+
+FieldId FieldManager::getNumFields() const {
+  std::lock_guard<std::recursive_mutex> lock(mutex_);
+  return next_id_;
 }
 
 FieldSize FieldManager::getFieldSize(FieldId id) const {
