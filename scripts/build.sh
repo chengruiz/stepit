@@ -36,32 +36,42 @@ require_cmd() {
 usage() {
 	cat <<'EOF'
 Usage:
-	build.sh [BUILD_TOOL] [options] [-- extra-args]
+	build.sh [BUILD_TOOL] [options] [-- EXTRA_ARGS...]
 
-Build tool:
-	(cmake)         Configure + build + install via CMake (default)
-	catkin          Build ROS1 packages with catkin_tools (catkin build)
-	catkin_make     Build ROS1 packages with catkin_make
-	colcon          Build ROS2 packages with colcon
-	ROS1            Alias for: catkin_make
-	ROS2            Alias for: colcon
+Build tools:
+	cmake           Configure, build, and install with CMake (default)
+	catkin          Build ROS 1 packages with catkin_tools (catkin build)
+	catkin_make     Build ROS 1 packages with catkin_make
+	colcon          Build ROS 2 packages with colcon
+	ROS1            Alias for catkin_make
+	ROS2            Alias for colcon
 
 Options:
-	--debug | --release     CMake build type (default: --release)
-	-j, --jobs N            Parallelism (default: nproc)
-	--workspace DIR         Workspace root (default: $PWD or STEPIT_WS)
-	--clean                 Remove prior build outputs for this build tool
-	--configure             Force CMake configuration
-	--cmake-arg ARG         Extra CMake arg (repeatable), e.g. --cmake-arg -DSTEPIT_BLACKLIST_PLUGINS=...
-	-D...                   Convenience: any -D... is treated as --cmake-arg
+	--debug | --release     Set the CMake build type (default: --release)
+	-j, --jobs N            Number of parallel jobs (default: nproc)
+	--workspace DIR         Workspace root (default: STEPIT_WS or current directory)
+	--clean                 Remove existing outputs for the selected build tool first
+	--configure             Force a fresh CMake configure step
+	--cmake-arg ARG         Append a CMake argument (repeatable)
+	-D...                   Treat any -D... flag as --cmake-arg
 	-h, --help              Show this help message
 
-Note:
-	- If BUILD_TOOL is not specified, it will be read from '.stepit/build_tool' if it exists, or default to 'cmake'.
-	- You can always use cmake as the build tool, even if you want to build with ROS / ROS2.
+Environment:
+	STEPIT_BUILD_CMAKE_ARGS  Space-separated CMake args appended before CLI args
+	STEPIT_BUILD_EXTRA_ARGS  Space-separated trailing args appended before args after '--'
+
+Notes:
+	If BUILD_TOOL is omitted, the script reads .stepit/build_tool when available; otherwise it defaults to cmake.
+	You can always use cmake, even in workspaces that also build ROS 1 or ROS 2 packages.
 EOF
 }
 
+script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
+buildrc_file="${script_dir}/buildrc.sh"
+if [[ -f "${buildrc_file}" ]]; then
+	# shellcheck disable=SC1090
+	source "${buildrc_file}"
+fi
 
 workspace_dir="${STEPIT_WS:-$PWD}"
 build_tool=""
@@ -69,8 +79,8 @@ build_type="Release"
 jobs="$(nproc 2>/dev/null || echo 4)"
 clean=false
 force_configure=false
-cmake_args=()
-extra_args=()
+cmake_args=(${STEPIT_BUILD_CMAKE_ARGS-})
+extra_args=(${STEPIT_BUILD_EXTRA_ARGS-})
 
 while [[ $# -gt 0 ]]; do
 	case "$1" in
@@ -115,7 +125,7 @@ while [[ $# -gt 0 ]]; do
 			;;
 		--)
 			shift
-			extra_args=("$@")
+			extra_args+=("$@")
 			break
 			;;
 		*)
@@ -165,10 +175,10 @@ case "$build_tool" in
 		fi
 
 		cmake_args+=(
-			"-B${build_dir}" 
-			"-S${workspace_dir}/src/stepit" 
-			"-DCMAKE_BUILD_TYPE=${build_type}" 
-			"-DCMAKE_INSTALL_PREFIX=${install_prefix}" 
+			"-B${build_dir}"
+			"-S${workspace_dir}/src/stepit"
+			"-DCMAKE_BUILD_TYPE=${build_type}"
+			"-DCMAKE_INSTALL_PREFIX=${install_prefix}"
 			"-DCMAKE_EXPORT_COMPILE_COMMANDS=ON"
 			"${extra_args[@]}"
 		)
@@ -202,6 +212,7 @@ case "$build_tool" in
 
 		if [[ "$build_tool" == "catkin" ]]; then
 			require_cmd catkin
+			cd "${workspace_dir}"
 			run catkin config \
 				--cmake-args \
 					-DCMAKE_BUILD_TYPE="${build_type}" \
@@ -230,7 +241,9 @@ case "$build_tool" in
 				"${workspace_dir}/log"
 		fi
 
+		run rm -f "${workspace_dir}/src/stepit/package/ros2/CATKIN_IGNORE"
 		require_cmd colcon
+		cd "${workspace_dir}"
 		run colcon build \
 			--base-paths src src/stepit/package/ros2 \
 			--packages-skip stepit \

@@ -64,21 +64,20 @@ Usage:
 	setup.sh [options]
 
 Options:
-	-w, --workspace DIR    Workspace root (default: inferred from script location)
+	-w, --workspace DIR    Workspace root (default: current directory or ./stepit_ws)
 	-r, --repo URL         StepIt repository URL (default: https://github.com/chengruiz/stepit.git)
-	--zoo                  Also clone/update the zoo repo (dir: $STEPIT_WS/zoo)
+	--zoo                  Clone or update the zoo repo at $STEPIT_WS/zoo
 	--zoo-repo URL         Zoo repository URL (default: https://github.com/chengruiz/stepit_zoo.git)
 	-h, --help             Show this help message
 
 Description:
-	Initializes a StepIt workspace by cloning the repository (or updating if it already exists)
-	and creating config files and script symlinks.
+	Create or update a StepIt workspace, then add config symlinks and helper script symlinks.
 
-Environment overrides:
+Environment:
 	STEPIT_WS, STEPIT_REPO, STEPIT_ZOO, STEPIT_ZOO_REPO
 
-Notes:
-	- You will be prompted for sudo password if needed.
+Note:
+	The script may prompt for sudo if it needs to install system packages.
 EOF
 }
 
@@ -200,8 +199,13 @@ if [[ "${enable_zoo}" == true ]]; then
 		git -C "${zoo_dir}" rev-parse --is-inside-work-tree >/dev/null 2>&1 \
 			|| die "${zoo_dir} exists but is not a git repo."
 
-		run git -C "${zoo_dir}" fetch --all --prune
-		run git -C "${zoo_dir}" pull --ff-only
+		git_dirty="$(git -C "${zoo_dir}" status --porcelain)"
+		if [[ -n "${git_dirty}" ]]; then
+			log "${YELLOW}Warning:${CLEAR} StepIt Zoo has uncommitted changes; skipping git fetch/pull."
+		else
+			run git -C "${zoo_dir}" fetch --all --prune
+			run git -C "${zoo_dir}" pull --ff-only
+		fi
 	else
 		run mkdir -p "$(dirname "${zoo_dir}")"
 		log "${GREEN}Fetching StepIt Zoo...${CLEAR}"
@@ -215,7 +219,9 @@ ensure_symlink "${stepit_dir}/scripts/build.sh" "${workspace_dir}/scripts/build.
 ensure_symlink "${stepit_dir}/scripts/run.sh"   "${workspace_dir}/scripts/run.sh"
 ensure_symlink "${stepit_dir}/scripts/clean.sh" "${workspace_dir}/scripts/clean.sh"
 run mkdir -p "${workspace_dir}/configs"
-run cp -a "${stepit_dir}/config/run/." "${workspace_dir}/configs/"
+for file in "${stepit_dir}"/config/run/*; do
+	ensure_symlink "${file}" "${workspace_dir}/configs/$(basename "${file}")"
+done
 
 log "${GREEN}============================= Finished =============================${CLEAR}"
 

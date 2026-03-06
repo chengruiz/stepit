@@ -38,19 +38,21 @@ usage() {
 Usage:
 	run.sh [options] [CONFIG...]
 
+Arguments:
+	CONFIG                  Config file to source before launch (repeatable)
+
 Options:
-	CONFIG                  Path to config file (repeatable, default: none)
-	--workspace DIR         Workspace root (default: $PWD or STEPIT_WS)
-	--build-tool TYPE       cmake | catkin | catkin_make | colcon | auto (default: auto)
-	--gdb                   Run stepit under gdb
-	-c, --control VALUE     Control input type (repeatable)
-	-f, --factory VALUE     Default factory (repeatable, format: <class>@<factory_name>)
-	-P, --publisher VALUE   Publisher type
-	-p, --policy VALUE      Policies (format: [<type>@]<directory>)
-	-r, --robot VALUE       Robot type
-	-v, --verbosity VALUE   Verbosity level (0-3)
+	--workspace DIR         Workspace root (default: STEPIT_WS or current directory)
+	--build-tool TYPE       Build tool to use: cmake, catkin, catkin_make, colcon, or auto (default: auto)
+	--gdb                   Launch stepit under gdb
+	-c, --control VALUE     Add a control input type (repeatable)
+	-f, --factory VALUE     Add a default factory (repeatable, format: <class>@<factory_name>)
+	-P, --publisher VALUE   Set the publisher type
+	-p, --policy VALUE      Add a policy (format: [<type>@]<directory>)
+	-r, --robot VALUE       Set the robot type
+	-v, --verbosity VALUE   Set the verbosity level (0-3)
 	-h, --help              Show this help message
-	--                      Pass remaining arguments to plugins
+	--                      Pass remaining arguments through to plugins
 EOF
 }
 
@@ -181,6 +183,14 @@ esac
 
 export STEPIT_WS="${workspace_dir}"
 export CONFIG_HOME="${workspace_dir}/configs"
+
+script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
+runrc_file="${script_dir}/runrc.sh"
+if [[ -f "${runrc_file}" ]]; then
+	# shellcheck disable=SC1090
+	source "${runrc_file}"
+fi
+
 if [[ ${#config_files[@]} -gt 0 ]]; then
 	# Allows chaining configs to pass arguments via STEPIT_ARGS and STEPIT_PLUGIN_ARGS
 	for config_file in "${config_files[@]}"; do
