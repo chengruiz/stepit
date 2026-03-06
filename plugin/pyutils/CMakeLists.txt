@@ -1,7 +1,11 @@
 cmake_minimum_required(VERSION 3.16)
 project(stepit_plugin_pyutils)
 
-find_package(Python3 REQUIRED COMPONENTS Interpreter Development)
+find_package(Python3 QUIET COMPONENTS Interpreter Development)
+if (NOT Python3_FOUND)
+  message(STATUS "Skipped plugin '${PROJECT_NAME}': Missing Python3 interpreter or development files.")
+  return()
+endif()
 init_submodule(extern/pybind11 WORKING_DIRECTORY ${STEPIT_HOME_DIRECTORY})
 add_subdirectory(${STEPIT_HOME_DIRECTORY}/extern/pybind11 pybind11)
 
