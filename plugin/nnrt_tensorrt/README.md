@@ -2,6 +2,11 @@
 
 StepIt plugin for neural network inference on NVIDIA GPUs and Jetson platforms, e.g. Jetson Orin NX.
 
+### Prerequisites
+
+NVIDIA GPU or Jetson platform with CUDA and TensorRT support. The TensorRT library path should be included
+in the system's library search path (e.g. via `LD_LIBRARY_PATH`).
+
 ### Provided Factories
 
 - `stepit::NnrtApi`: `tensorrt`

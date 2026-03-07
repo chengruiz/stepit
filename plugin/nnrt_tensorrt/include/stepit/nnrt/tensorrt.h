@@ -73,6 +73,11 @@ class TensorRTApi : public NnrtApi {
   bool build(const std::string &onnx_path, const std::string &engine_path);
   bool createCudaGraph();
 
+  int device_id_{};
+  bool use_fp16_{true};
+  bool force_rebuild_{};
+  std::string engine_path_;
+
   std::vector<CuMemory> inputs_, outputs_;
   std::vector<float *> out_data_;
 

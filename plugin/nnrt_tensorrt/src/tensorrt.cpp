@@ -1,7 +1,6 @@
-#include <algorithm>
+#include <cctype>
 #include <fstream>
 #include <iostream>
-#include <numeric>
 
 #include <stepit/nnrt/tensorrt.h>
 
@@ -12,6 +11,20 @@
   } while (0)
 
 namespace stepit {
+namespace {
+std::string dimsToString(const nvinfer1::Dims &dims) {
+  std::vector<int32_t> values(dims.d, dims.d + dims.nbDims);
+  return fmt::format("{}", values);
+}
+
+bool hasDynamicDim(const nvinfer1::Dims &dims) {
+  for (int i{}; i < dims.nbDims; ++i) {
+    if (dims.d[i] < 0) return true;
+  }
+  return false;
+}
+}  // namespace
+
 class CuStream {
  public:
   explicit CuStream() { STEPIT_CUDA_CALL(cudaStreamCreate, &stream_); }
@@ -29,9 +42,12 @@ CuMemory::CuMemory(cudaStream_t stream, std::size_t size) : stream_(stream), siz
 }
 
 CuMemory::CuMemory(CuMemory &&other) noexcept {
-  ptr_       = other.ptr_;
-  size_      = other.size_;
-  other.ptr_ = nullptr;
+  ptr_          = other.ptr_;
+  stream_       = other.stream_;
+  size_         = other.size_;
+  other.ptr_    = nullptr;
+  other.stream_ = nullptr;
+  other.size_   = 0;
 }
 
 CuMemory::~CuMemory() {
@@ -49,14 +65,33 @@ CuLogger &CuLogger::instance() {
 
 TensorRTApi::TensorRTApi(const std::string &path, const YAML::Node &config)
     : NnrtApi(addExtensionIfMissing(path, ".onnx"), config) {
-  STEPIT_CUDA_CALL(cudaStreamCreate, &cu_stream_);
-  std::string engine_path = replaceExtension(path_, ".engine");
-  if (not std::ifstream(engine_path).good()) {
-    STEPIT_ASSERT(build(path_, engine_path), "Failed to build TensorRT engine!");
-    STEPIT_LOGNT("Write engine to {}.", engine_path);
+  auto tensorrt_options = config["tensorrt_options"];
+
+  device_id_     = yml::readIf<int>(tensorrt_options, "device_id", 0);
+  force_rebuild_ = yml::readIf<bool>(tensorrt_options, "force_rebuild", false);
+  auto precision = toLowercase(yml::readIf<std::string>(tensorrt_options, "precision", "fp32"));
+  if (precision == "fp16") {
+    use_fp16_ = true;
+  } else if (precision == "fp32") {
+    use_fp16_ = false;
+  } else {
+    STEPIT_THROW("Unsupported TensorRT precision '{}'. Expected 'fp16' or 'fp32'.", precision);
   }
 
-  std::ifstream file(engine_path, std::ios::binary | std::ios::ate);
+  engine_path_ = yml::readIf<std::string>(tensorrt_options, "engine_path", replaceExtension(path_, ".engine"));
+  if (not engine_path_.empty() and engine_path_[0] != '/') {
+    engine_path_ = joinPaths(fs::path(path_).parent_path().string(), engine_path_);
+  }
+
+  STEPIT_CUDA_CALL(cudaSetDevice, device_id_);
+  STEPIT_CUDA_CALL(cudaStreamCreate, &cu_stream_);
+
+  if (force_rebuild_ or not std::ifstream(engine_path_).good()) {
+    STEPIT_ASSERT(build(path_, engine_path_), "Failed to build TensorRT engine!");
+    STEPIT_LOGNT("Write engine to {}.", engine_path_);
+  }
+
+  std::ifstream file(engine_path_, std::ios::binary | std::ios::ate);
   std::streamsize filesize = file.tellg();
   file.seekg(0, std::ios::beg);
 
@@ -75,7 +110,10 @@ TensorRTApi::TensorRTApi(const std::string &path, const YAML::Node &config)
   for (int i{}; i < engine_->getNbIOTensors(); ++i) {
     const char *name = engine_->getIOTensorName(i);
     auto dims        = engine_->getTensorShape(name);
-    auto size        = std::accumulate(dims.d, dims.d + dims.nbDims, 1, std::multiplies<>());
+    STEPIT_ASSERT(not hasDynamicDim(dims),
+                  "TensorRT tensor '{}' has dynamic shape {}. Use 'trtexec' for advanced dynamic-shape builds.", name,
+                  dimsToString(dims));
+    auto size = std::accumulate(dims.d, dims.d + dims.nbDims, 1, std::multiplies<>());
 
     if (engine_->getTensorIOMode(name) == nvinfer1::TensorIOMode::kINPUT) {
       in_shapes_.emplace_back(dims.d, dims.d + dims.nbDims);
@@ -128,9 +166,18 @@ bool TensorRTApi::build(const std::string &onnx_path, const std::string &engine_
   auto constructed = parser->parseFromFile(onnx_path.c_str(), 0);
   if (not constructed) return false;
 
+  for (int i{}; i < network->getNbInputs(); ++i) {
+    auto *input = network->getInput(i);
+    STEPIT_ASSERT(input != nullptr, "TensorRT network input {} is null.", i);
+    auto dims = input->getDimensions();
+    STEPIT_ASSERT(not hasDynamicDim(dims),
+                  "TensorRT input '{}' has dynamic shape {}. Use 'trtexec' for advanced dynamic-shape builds.",
+                  input->getName(), dimsToString(dims));
+  }
+
   auto config = std::unique_ptr<nvinfer1::IBuilderConfig>(builder->createBuilderConfig());
   if (config == nullptr) return false;
-  config->setFlag(nvinfer1::BuilderFlag::kFP16);
+  if (use_fp16_) config->setFlag(nvinfer1::BuilderFlag::kFP16);
 
   auto plan = std::unique_ptr<nvinfer1::IHostMemory>{builder->buildSerializedNetwork(*network, *config)};
   if (plan == nullptr) return false;
