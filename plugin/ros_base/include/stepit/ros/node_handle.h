@@ -11,20 +11,20 @@ ros::NodeHandle &getNodeHandle();
 ros::TransportHints parseTransportHints(const yml::Node &node);
 
 template <class M, class T>
-ros::Subscriber makeSubscriber(const YAML::Node &cfg, void (T::*fp)(M), T *obj, const std::string &default_topic = "") {
-  if (default_topic.empty()) yml::assertHasValue(cfg, "topic");
-  std::string topic    = yml::readIf(cfg, "topic", default_topic);
-  uint32_t queue_size  = yml::readIf(cfg, "queue_size", 1UL);
+ros::Subscriber makeSubscriber(const yml::Node &cfg, void (T::*fp)(M), T *obj, const std::string &default_topic = "") {
+  if (default_topic.empty()) cfg["topic"].assertHasValue();
+  std::string topic    = cfg["topic"].as<std::string>(default_topic);
+  uint32_t queue_size  = cfg["queue_size"].as<uint32_t>(1UL);
   auto transport_hints = parseTransportHints(cfg["transport_hints"]);
   return getNodeHandle().subscribe(topic, queue_size, fp, obj, transport_hints);
 }
 
 template <class T>
-ros::Publisher makePublisher(const YAML::Node &cfg, const std::string &default_topic = "") {
-  if (default_topic.empty()) yml::assertHasValue(cfg, "topic");
-  std::string topic   = yml::readIf(cfg, "topic", default_topic);
-  uint32_t queue_size = yml::readIf(cfg, "queue_size", 1UL);
-  bool latch          = yml::readIf(cfg, "latch", false);
+ros::Publisher makePublisher(const yml::Node &cfg, const std::string &default_topic = "") {
+  if (default_topic.empty()) cfg["topic"].assertHasValue();
+  std::string topic   = cfg["topic"].as<std::string>(default_topic);
+  uint32_t queue_size = cfg["queue_size"].as<uint32_t>(1UL);
+  bool latch          = cfg["latch"].as<bool>(false);
   return getNodeHandle().advertise<T>(topic, queue_size, latch);
 }
 

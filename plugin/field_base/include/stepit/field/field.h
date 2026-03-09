@@ -121,7 +121,7 @@ inline FieldSize getFieldSize(FieldId id) { return fieldManager().getFieldSize(i
 inline void setFieldSize(FieldId id, FieldSize size) { fieldManager().setFieldSize(id, size); }
 
 /** Parses a YAML sequence of field names into a list of field IDs. */
-void parseFieldIds(const YAML::Node &node, FieldIdVec &result);
+void parseFieldIds(const yml::Node &node, FieldIdVec &result);
 /** Copies a vector into a result buffer at offset, then advances the offset. */
 void stackField(cArrXf vec, uint32_t &index, rArrXf result);
 /** Concatenates selected fields from context into a pre-sized destination vector. */

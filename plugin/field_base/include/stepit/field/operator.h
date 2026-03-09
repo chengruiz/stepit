@@ -5,7 +5,7 @@
 
 namespace stepit {
 namespace field {
-class Operator : public Node, public Interface<Operator, const YAML::Node & /* config */> {
+class Operator : public Node, public Interface<Operator, const yml::Node & /* config */> {
  public:
   virtual void init() {}
   virtual bool reset() { return true; }
@@ -15,13 +15,13 @@ class Operator : public Node, public Interface<Operator, const YAML::Node & /* c
 
 class AffineOperator : public Operator {
  public:
-  explicit AffineOperator(const YAML::Node &config);
+  explicit AffineOperator(const yml::Node &config);
 
   void init() override;
   bool update(FieldMap &context) override;
 
  private:
-  YAML::Node node_;
+  yml::Node node_;
   FieldId source_id_{};
   FieldId target_id_{};
   FieldSize field_size_{};
@@ -31,7 +31,7 @@ class AffineOperator : public Operator {
 
 class ConcatOperator : public Operator {
  public:
-  explicit ConcatOperator(const YAML::Node &config);
+  explicit ConcatOperator(const yml::Node &config);
 
   void init() override;
   bool update(FieldMap &context) override;
@@ -45,7 +45,7 @@ class ConcatOperator : public Operator {
 
 class ConstOperator : public Operator {
  public:
-  explicit ConstOperator(const YAML::Node &config);
+  explicit ConstOperator(const yml::Node &config);
 
   bool update(FieldMap &context) override;
 
@@ -56,7 +56,7 @@ class ConstOperator : public Operator {
 
 class CopyOperator : public Operator {
  public:
-  explicit CopyOperator(const YAML::Node &config);
+  explicit CopyOperator(const yml::Node &config);
 
   void init() override;
   bool update(FieldMap &context) override;
@@ -69,7 +69,7 @@ class CopyOperator : public Operator {
 
 class HistoryOperator : public Operator {
  public:
-  explicit HistoryOperator(const YAML::Node &config);
+  explicit HistoryOperator(const yml::Node &config);
 
   void init() override;
   bool reset() override;
@@ -94,7 +94,7 @@ class HistoryOperator : public Operator {
 
 class MaskedFillOperator : public Operator {
  public:
-  explicit MaskedFillOperator(const YAML::Node &config);
+  explicit MaskedFillOperator(const yml::Node &config);
 
   void init() override;
   bool update(FieldMap &context) override;
@@ -110,7 +110,7 @@ class MaskedFillOperator : public Operator {
 
 class SliceOperator : public Operator {
  public:
-  explicit SliceOperator(const YAML::Node &config);
+  explicit SliceOperator(const yml::Node &config);
 
   void init() override;
   bool update(FieldMap &context) override;
@@ -124,7 +124,7 @@ class SliceOperator : public Operator {
 
 class SplitOperator : public Operator {
  public:
-  explicit SplitOperator(const YAML::Node &config);
+  explicit SplitOperator(const yml::Node &config);
 
   void init() override;
   bool update(FieldMap &context) override;

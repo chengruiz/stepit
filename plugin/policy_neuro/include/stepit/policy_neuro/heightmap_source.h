@@ -17,7 +17,7 @@ class DummyHeightmapSource : public Module {
 
   std::size_t numHeightSamples() const { return sample_coords_.size(); }
   std::vector<Vec2f> sample_coords_;
-  float default_uncertainty_{0.05F}, max_uncertainty_{0.5F};
+  float default_uncertainty_{}, max_uncertainty_{};
 
   ArrXf elevation_, uncertainty_;
 };

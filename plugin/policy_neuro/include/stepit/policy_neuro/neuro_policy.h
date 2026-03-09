@@ -25,7 +25,7 @@ class NeuroPolicy : public Policy {
   bool isSatisfied(const std::set<FieldId> &requirements) const;
 
   NeuroPolicySpec spec_;
-  YAML::Node config_;
+  yml::Node config_;
   std::string tailored_;
   Actuator *actuator_{nullptr};
   bool publish_fields_{false};

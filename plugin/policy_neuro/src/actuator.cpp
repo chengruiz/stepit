@@ -4,36 +4,31 @@ namespace stepit {
 namespace neuro_policy {
 Actuator::Actuator(const NeuroPolicySpec &policy_spec, const ModuleSpec &module_spec)
     : Module(policy_spec, ModuleSpec(module_spec, "actuator")) {
-  YAML::Node policy_config = yml::loadFile(joinPaths(policy_spec.home_dir, "policy.yml"));
-  yml::assertHasValue(policy_config, "actuator");
-  config_ = policy_config["actuator"];
-  STEPIT_ASSERT(config_.IsMap(), "'actuator' entry in policy.yml should be a map.");
+  auto policy_config = yml::loadFile(joinPaths(policy_spec.home_dir, "policy.yml"));
+  config_            = policy_config["actuator"];
+  config_.assertMap();
 
   scale_.setOnes(policy_spec.dof);
   bias_.setZero(policy_spec.dof);
   kp_.setZero(policy_spec.dof);
   kd_.setZero(policy_spec.dof);
 
-  if (yml::hasValue(config_, "parameters")) {
-    yml::assertSequenceOfSize(config_, "parameters", policy_spec.dof);
+  if (config_["parameters"].hasValue()) {
+    config_["parameters"].assertSequence(policy_spec.dof);
     yml::Node parameters = config_["parameters"];
     for (std::size_t i{}; i < policy_spec.dof; ++i) {
-      STEPIT_ASSERT(parameters[i].IsMap(), "Each element in 'parameters' should be a map.");
+      STEPIT_ASSERT(parameters[i].isMap(), "Each element in 'parameters' should be a map.");
       auto param = parameters[i];
-      yml::setIf(param, "scale", scale_[i]);
-      yml::setIf(param, "bias", bias_[i]);
-      std::string kp_key = yml::getDefinedKey(param, "stiffness", "kp", "Kp");
-      std::string kd_key = yml::getDefinedKey(param, "damping", "kd", "Kd");
-      yml::setIf(param, kp_key, kp_[i]);
-      yml::setIf(param, kd_key, kd_[i]);
+      param["scale"].to(scale_[i], true);
+      param["bias"].to(bias_[i], true);
+      param[param.getDefinedKey({"stiffness", "kp", "Kp"})].to(kp_[i], true);
+      param[param.getDefinedKey({"damping", "kd", "Kd"})].to(kd_[i], true);
     }
   } else {
-    yml::setIf(config_, "scale", scale_);
-    yml::setIf(config_, "bias", bias_);
-    std::string kp_key = yml::getDefinedKey(config_, "stiffness", "kp", "Kp");
-    std::string kd_key = yml::getDefinedKey(config_, "damping", "kd", "Kd");
-    yml::setIf(config_, kp_key, kp_);
-    yml::setIf(config_, kd_key, kd_);
+    config_["scale"].to(scale_, true);
+    config_["bias"].to(bias_, true);
+    config_[config_.getDefinedKey({"stiffness", "kp", "Kp"})].to(kp_, true);
+    config_[config_.getDefinedKey({"damping", "kd", "Kd"})].to(kd_, true);
   }
 }
 
@@ -135,15 +130,16 @@ const std::map<std::string, HybridActuator::Mode> HybridActuator::kModeMap = {
 
 HybridActuator::HybridActuator(const NeuroPolicySpec &policy_spec, const ModuleSpec &module_spec)
     : Actuator(policy_spec, module_spec) {
-  if (yml::hasValue(config_, "parameters")) {
-    yml::Node parameters = config_["parameters"];
-    for (const auto &node : config_["parameters"]) {
-      modes_.push_back(lookupMap(yml::readAs<std::string>(node, "mode"), kModeMap));
+  if (config_["parameters"].hasValue()) {
+    const auto parameters = config_["parameters"];
+    for (const auto &node : parameters) {
+      modes_.push_back(lookupMap(node["mode"].as<std::string>(), kModeMap));
     }
   } else {
-    yml::assertSequenceOfSize(config_, "mode", policy_spec.dof);
-    for (const auto &node : config_["mode"]) {
-      modes_.push_back(lookupMap(yml::readAs<std::string>(node), kModeMap));
+    const auto modes_node = config_["mode"];
+    config_["mode"].assertSequence(policy_spec.dof);
+    for (const auto &node : modes_node) {
+      modes_.push_back(lookupMap(node.as<std::string>(), kModeMap));
     }
   }
 

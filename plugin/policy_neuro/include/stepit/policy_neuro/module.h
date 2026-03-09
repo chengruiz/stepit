@@ -19,12 +19,12 @@ struct NeuroPolicySpec : PolicySpec {
 
 struct ModuleSpec {
   ModuleSpec() = default;
-  ModuleSpec(const std::string &name, const YAML::Node &config = YAML::Node()) : name(name), config(config) {}
+  ModuleSpec(const std::string &name, const yml::Node &config = yml::Node()) : name(name), config(config) {}
   ModuleSpec(const ModuleSpec &other, const std::string &default_name)
       : name(nonEmptyOr(other.name, default_name)), config(other.config) {}
 
   std::string name;
-  YAML::Node config;
+  yml::Node config;
 };
 
 class Module : public Node,
@@ -42,7 +42,7 @@ class Module : public Node,
   Module(const NeuroPolicySpec &policy_spec, const ModuleSpec &module_spec);
 
   const std::string name_, config_filename_;
-  YAML::Node config_;
+  yml::Node config_;
 };
 
 class FieldSourceRegistry : public Registry<Module, const NeuroPolicySpec &, const std::string &> {

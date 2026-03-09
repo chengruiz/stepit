@@ -4,24 +4,25 @@ namespace stepit {
 namespace neuro_policy {
 NeuroPolicy::NeuroPolicy(const RobotSpec &robot_spec, const std::string &home_dir)
     : spec_(robot_spec, home_dir), config_(yml::loadFile(joinPaths(home_dir, "policy.yml"))) {
-  yml::setTo(config_, "control_freq", spec_.control_freq);
-  yml::setIf(config_, "name", spec_.policy_name);
-  yml::setIf(config_, "trusted", spec_.trusted);
-  yml::setIf(config_, "tailored", tailored_);
-  std::string default_action_key = yml::getDefinedKey(config_, "default_action", "action_mean");
-  yml::setIf(config_, default_action_key, spec_.default_action);
+  config_["control_freq"].to(spec_.control_freq);
+  spec_.policy_name = config_["name"].as<std::string>("");
+  spec_.trusted     = config_["trusted"].as<bool>(false);
+  tailored_         = config_["tailored"].as<std::string>("");
+
+  std::string default_action_key = config_.getDefinedKey({"default_action", "action_mean"});
+  config_[default_action_key].to(spec_.default_action, true);
   STEPIT_ASSERT(tailored_.empty() or tailored_ == robot_spec.robot_name,
                 "Policy tailored for '{}' cannot be used with robot '{}'.", tailored_, robot_spec.robot_name);
   action_id_ = registerField("action", 0);
   displayFormattedBanner(60, kGreen, "NeuroPolicy {} ({}Hz)", spec_.policy_name, getControlFreq());
 
   // Add modules read from the YAML file
-  std::string module_key = yml::getDefinedKey(config_, "field_source", "module", "modules");
+  std::string module_key = config_.getDefinedKey({"field_source", "module", "modules"});
   auto modules_config    = config_[module_key];
-  if (modules_config) {
-    STEPIT_ASSERT(modules_config.IsSequence(), "'{}' must be a sequence.", module_key);
+  if (modules_config.hasValue()) {
+    modules_config.assertSequence();
     for (const auto &module_node : modules_config) {
-      std::string factory_name = yml::readAs<std::string>(module_node);
+      std::string factory_name = module_node.as<std::string>();
       std::string module_name  = "";
 
       auto at_pos = factory_name.find("@");
@@ -32,9 +33,10 @@ NeuroPolicy::NeuroPolicy(const RobotSpec &robot_spec, const std::string &home_di
       addModule(Module::make(factory_name, spec_, module_name), false);
     }
   }
+
   // Add the actuator and the actor
   std::string actuator_type = "position";
-  if (config_["actuator"]) yml::setIf(config_["actuator"], "type", actuator_type);
+  if (config_["actuator"].hasValue()) config_["actuator"]["type"].to(actuator_type, true);
   auto actuator = Actuator::make(actuator_type, spec_, "");
   actuator_     = actuator.get();
   addModule(std::move(actuator), true);
@@ -43,6 +45,7 @@ NeuroPolicy::NeuroPolicy(const RobotSpec &robot_spec, const std::string &home_di
       unresolved_fields_.find(action_id_) == unresolved_fields_.end()) {
     addModule(makeFieldSource("action", spec_, ""), false);
   }
+
   // Automatically resolve field dependencies
   while (not unresolved_modules_.empty()) {
     FieldId requirement{};
@@ -63,16 +66,16 @@ NeuroPolicy::NeuroPolicy(const RobotSpec &robot_spec, const std::string &home_di
   auto action_dim = getFieldSize(action_id_);
   action_.setZero(action_dim);
 
-  publish_fields_                = STEPIT_VERBOSITY <= kDbug;  // default value
-  YAML::Node publish_fields_node = config_["publish_fields"];
-  if (publish_fields_node) {
-    if (yml::isBool(publish_fields_node)) {
+  publish_fields_               = STEPIT_VERBOSITY <= kDbug;  // default value
+  yml::Node publish_fields_node = config_["publish_fields"];
+  if (publish_fields_node.hasValue()) {
+    if (publish_fields_node.isBool()) {
       publish_fields_ = publish_fields_node.as<bool>();
     } else {
-      STEPIT_ASSERT(publish_fields_node.IsSequence(), "'publish_fields' must be a boolean or a sequence.");
+      STEPIT_ASSERT(publish_fields_node.isSequence(), "'publish_fields' must be a boolean or a sequence.");
       publish_fields_ = true;
       for (const auto &field_name : publish_fields_node) {
-        published_fields_.insert(getFieldId(yml::readAs<std::string>(field_name)));
+        published_fields_.insert(getFieldId(field_name.as<std::string>()));
       }
     }
   }

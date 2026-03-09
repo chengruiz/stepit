@@ -4,19 +4,19 @@
 namespace stepit::neuro_policy {
 FieldSubscriber2::FieldSubscriber2(const NeuroPolicySpec &policy_spec, const ModuleSpec &module_spec)
     : Module(policy_spec, ModuleSpec(module_spec, "field_subscriber")) {
-  STEPIT_ASSERT(config_.IsMap(), "'{}' must contain a map of field configurations.", config_filename_);
+  STEPIT_ASSERT(config_.isMap(), "'{}' must contain a map of field configurations.", config_filename_);
   using std_msgs::msg::Float32MultiArray;
-  for (auto it = config_.begin(); it != config_.end(); ++it) {
+  for (const auto &[key_node, value_node] : config_) {
     FieldData field;
-    yml::setTo(it->first, field.name);
-    yml::setTo(it->second, "topic", field.topic);
-    yml::setTo(it->second, "size", field.size);
-    yml::setIf(it->second, "timeout_threshold", field.timeout_threshold);
+    key_node.to(field.name);
+    value_node["topic"].to(field.topic);
+    value_node["size"].to(field.size);
+    value_node["timeout_threshold"].to(field.timeout_threshold, true);
     field.id   = registerProvision(field.name, field.size);
     field.data = VecXf::Zero(static_cast<Eigen::Index>(field.size));
 
     std::size_t index = fields_.size();
-    rclcpp::QoS qos   = parseQoS(it->second["qos"]);
+    rclcpp::QoS qos   = parseQoS(value_node["qos"]);
     field.subscriber  = getNode()->create_subscription<Float32MultiArray>(
         field.topic, qos, [this, index](const Float32MultiArray::SharedPtr msg) { callback(index, msg); });
     field.received = false;

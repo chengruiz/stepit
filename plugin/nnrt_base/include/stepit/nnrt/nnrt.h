@@ -7,9 +7,9 @@
 #include <stepit/registry.h>
 
 namespace stepit {
-class NnrtApi : public Interface<NnrtApi, const std::string & /* path */, const YAML::Node & /* config */> {
+class NnrtApi : public Interface<NnrtApi, const std::string & /* path */, const yml::Node & /* config */> {
  public:
-  NnrtApi(const std::string &path, const YAML::Node &config);
+  NnrtApi(const std::string &path, const yml::Node &config);
   NnrtApi(const NnrtApi &)            = delete;
   NnrtApi &operator=(const NnrtApi &) = delete;
 
@@ -50,7 +50,7 @@ class NnrtApi : public Interface<NnrtApi, const std::string & /* path */, const 
   void postInit();
 
   std::string path_;
-  YAML::Node config_;
+  yml::Node config_;
   std::size_t num_in_{}, num_out_{};
   std::vector<std::vector<int64_t>> in_shapes_, out_shapes_;
   std::vector<int64_t> in_sizes_, out_sizes_;

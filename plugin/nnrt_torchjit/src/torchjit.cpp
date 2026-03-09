@@ -5,7 +5,7 @@
 #include <stepit/nnrt/torchjit.h>
 
 namespace stepit {
-TorchJitApi::TorchJitApi(const std::string &path, const YAML::Node &config)
+TorchJitApi::TorchJitApi(const std::string &path, const yml::Node &config)
     : NnrtApi(addExtensionIfMissing(path, ".pt"), config) {
   module_ = torch::jit::load(path_, torch::kCPU);
   module_.eval();

@@ -6,12 +6,12 @@ namespace stepit {
 namespace neuro_policy {
 NeuroModule::NeuroModule(const NeuroPolicySpec &policy_spec, const ModuleSpec &module_spec)
     : Module(policy_spec, ModuleSpec(module_spec, "neuro_module")) {
-  yml::setIf(config_, "nnrt_factory", nnrt_factory_);
-  model_path_ = yml::readIf<std::string>(config_, "model_path", name_);
+  config_["nnrt_factory"].to(nnrt_factory_, true);
+  model_path_ = config_["model_path"].as<std::string>(name_);
   STEPIT_ASSERT(not model_path_.empty(), "'model_path' cannot be empty.");
   model_path_ = model_path_[0] == '/' ? model_path_ : joinPaths(policy_spec.home_dir, model_path_);
-  yml::setIf(config_["run"], "name", run_name_);
-  yml::setIf(config_, "assert_all_finite", assert_all_finite_);
+  config_["run"]["name"].to(run_name_, true);
+  config_["assert_all_finite"].to(assert_all_finite_, true);
 
   std::string displayed_name = run_name_.empty() ? name_ : fmt::format("{} ({})", name_, run_name_);
   displayFormattedBanner(60, kGreen, "NeuroModule {}", displayed_name);
@@ -77,14 +77,14 @@ void NeuroModule::parseFields(bool is_input, const FieldNameVec &node_names, con
                               std::vector<FieldNameVec> &field_names, std::vector<FieldSizeVec> &field_sizes,
                               std::vector<FieldIdVec> &field_ids) {
   const std::string identifier = is_input ? "input" : "output";
-  const std::string fields_key = is_input ? yml::getDefinedKey(config_, "input_field", "inputs", "input_fields")
-                                          : yml::getDefinedKey(config_, "output_field", "outputs", "output_fields");
+  const std::string fields_key = is_input ? config_.getDefinedKey({"input_field", "inputs", "input_fields"})
+                                          : config_.getDefinedKey({"output_field", "outputs", "output_fields"});
   const std::size_t num_nodes  = node_names.size();
   field_names.resize(num_nodes);
   field_sizes.resize(num_nodes);
   field_ids.resize(num_nodes);
 
-  if (not yml::hasValue(config_, fields_key)) {
+  if (fields_key.empty()) {
     for (std::size_t i{}; i < num_nodes; ++i) {
       const auto &field_name = node_names[i];
       FieldSize field_size   = node_sizes[i];
@@ -103,12 +103,12 @@ void NeuroModule::parseFields(bool is_input, const FieldNameVec &node_names, con
     return;
   }
 
-  auto buildNodeFieldProperties = [&](const YAML::Node &field_entries, std::size_t node_index) {
+  auto buildNodeFieldProperties = [&](const yml::Node &field_entries, std::size_t node_index) {
     for (const auto &entry : field_entries) {
       std::string field_name;
       FieldSize field_size{};
-      yml::setTo(entry, "name", field_name);
-      yml::setTo(entry, "size", field_size);
+      entry["name"].to(field_name);
+      entry["size"].to(field_size);
 
       field_names[node_index].push_back(field_name);
       field_sizes[node_index].push_back(field_size);
@@ -117,31 +117,25 @@ void NeuroModule::parseFields(bool is_input, const FieldNameVec &node_names, con
   };
 
   const auto &fields_config = config_[fields_key];
-  STEPIT_ASSERT(fields_config.IsSequence() or fields_config.IsMap(),
+  STEPIT_ASSERT(fields_config.isSequence() or fields_config.isMap(),
                 "If defined, '{}' must be a map, or a sequence only if the {} has only one ordinary {}.", fields_key,
                 name_, identifier);
-  if (fields_config.IsSequence()) {
+  if (fields_config.isSequence()) {
     STEPIT_ASSERT(num_nodes == 1, "'{}' should not be a sequence if the {} has multiple ordinary {}s.", fields_key,
                   name_, identifier);
     buildNodeFieldProperties(fields_config, 0);
   } else {
     for (std::size_t i{}; i < num_nodes; ++i) {
-      const std::string &node_name = node_names[i];
-      STEPIT_ASSERT(yml::hasValue(fields_config, node_name), "Missing entry '{}' for node '{}'.", node_name,
-                    fields_key);
-
+      const std::string &node_name   = node_names[i];
       const auto &node_field_entries = fields_config[node_name];
-      STEPIT_ASSERT(
-          node_field_entries.IsSequence() or node_field_entries.IsMap(),
-          "Entry '{}' for node '{}' must be a map containing field properties or a sequence of field entries.",
-          fields_key, node_name);
-      if (node_field_entries.IsSequence()) {
+      node_field_entries.assertIterable();
+      if (node_field_entries.isSequence()) {
         buildNodeFieldProperties(fields_config[node_name], i);
       } else {
         std::string field_name = node_name;
         FieldSize field_size   = node_sizes[i];
-        yml::setIf(node_field_entries, "name", field_name);
-        yml::setIf(node_field_entries, "size", field_size);
+        node_field_entries["name"].to(field_name, true);
+        node_field_entries["size"].to(field_size, true);
         field_names[i].push_back(field_name);
         field_sizes[i].push_back(field_size);
         field_ids[i].push_back(registerField(field_name, field_size));

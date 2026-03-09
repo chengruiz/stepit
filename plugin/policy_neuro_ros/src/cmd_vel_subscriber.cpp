@@ -7,9 +7,9 @@ namespace stepit {
 namespace neuro_policy {
 CmdVelSubscriber::CmdVelSubscriber(const NeuroPolicySpec &policy_spec, const ModuleSpec &module_spec)
     : CmdVelSource(policy_spec, ModuleSpec(module_spec, "cmd_vel_subscriber")) {
-  YAML::Node subscriber_cfg = config_["cmd_vel_subscriber"];
-  yml::setIf(subscriber_cfg, "timeout_threshold", timeout_threshold_);
-  yml::setIf(subscriber_cfg, "default_enabled", default_subscriber_enabled_);
+  yml::Node subscriber_cfg = config_["cmd_vel_subscriber"];
+  subscriber_cfg["timeout_threshold"].to(timeout_threshold_, true);
+  subscriber_cfg["default_enabled"].to(default_subscriber_enabled_, true);
   cmd_vel_sub_ = makeSubscriber(subscriber_cfg, &CmdVelSubscriber::callback, this, "cmd_vel");
 }
 

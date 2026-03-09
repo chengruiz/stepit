@@ -17,15 +17,15 @@ grid_map::InterpolationMethods parseInterpolationMethod(const std::string &metho
 
 HeightmapSubscriber::HeightmapSubscriber(const NeuroPolicySpec &policy_spec, const ModuleSpec &module_spec)
     : DummyHeightmapSource(policy_spec, ModuleSpec(module_spec, "heightmap_subscriber")) {
-  YAML::Node map_sub_cfg = config_["grid_map_subscriber"];
-  yml::setIf(map_sub_cfg, "timeout_threshold", map_timeout_threshold_);
-  yml::setIf(map_sub_cfg, "default_enabled", default_subscriber_enabled_);
+  yml::Node map_sub_cfg = config_["grid_map_subscriber"];
+  map_sub_cfg["timeout_threshold"].to(map_timeout_threshold_, true);
+  map_sub_cfg["default_enabled"].to(default_subscriber_enabled_, true);
   map_sub_ = makeSubscriber(map_sub_cfg, &HeightmapSubscriber::gridMapCallback, this,
                             "/elevation_mapping/elevation_map");
 
-  YAML::Node loc_sub_cfg = config_["localization_subscriber"];
-  yml::setIf(loc_sub_cfg, "timeout_threshold", loc_timeout_threshold_);
-  yml::setIf(loc_sub_cfg, "robot_frame_id", robot_frame_id_);
+  yml::Node loc_sub_cfg = config_["localization_subscriber"];
+  loc_sub_cfg["timeout_threshold"].to(loc_timeout_threshold_, true);
+  loc_sub_cfg["robot_frame_id"].to(robot_frame_id_, true);
   use_tf_ = not robot_frame_id_.empty();
   if (use_tf_) {
     tf_buffer_   = std::make_unique<tf2_ros::Buffer>();
@@ -34,11 +34,11 @@ HeightmapSubscriber::HeightmapSubscriber(const NeuroPolicySpec &policy_spec, con
     loc_sub_ = makeSubscriber(loc_sub_cfg, &HeightmapSubscriber::localizationCallback, this, "/odometry");
   }
 
-  yml::setIf(config_, "elevation_layer", elevation_layer_);
-  yml::setIf(config_, "uncertainty_layer", uncertainty_layer_);
+  config_["elevation_layer"].to(elevation_layer_, true);
+  config_["uncertainty_layer"].to(uncertainty_layer_, true);
   std::string elevation_interp_method, uncertainty_interp_method;
-  yml::setIf(config_, "elevation_interpolation_method", elevation_interp_method);
-  yml::setIf(config_, "uncertainty_interpolation_method", uncertainty_interp_method);
+  config_["elevation_interpolation_method"].to(elevation_interp_method, true);
+  config_["uncertainty_interpolation_method"].to(uncertainty_interp_method, true);
   if (not elevation_interp_method.empty()) {
     elevation_interp_method_ = parseInterpolationMethod(elevation_interp_method);
   }
@@ -53,13 +53,13 @@ HeightmapSubscriber::HeightmapSubscriber(const NeuroPolicySpec &policy_spec, con
     uncertainty_squared_ = false;
     uncertainty_scaling_ = 0.25F;
   }
-  yml::setIf(config_, "elevation_zero_mean", elevation_zero_mean_);
-  yml::setIf(config_, "uncertainty_squared", uncertainty_squared_);
-  yml::setIf(config_, "uncertainty_scaling", uncertainty_scaling_);
+  config_["elevation_zero_mean"].to(elevation_zero_mean_, true);
+  config_["uncertainty_squared"].to(uncertainty_squared_, true);
+  config_["uncertainty_scaling"].to(uncertainty_scaling_, true);
 
-  YAML::Node sample_pub_cfg = config_["height_sample_publisher"];
-  publish_samples_          = STEPIT_VERBOSITY <= kDbug;
-  yml::setIf(sample_pub_cfg, "enabled", publish_samples_);
+  yml::Node sample_pub_cfg = config_["height_sample_publisher"];
+  publish_samples_         = STEPIT_VERBOSITY <= kDbug;
+  sample_pub_cfg["enabled"].to(publish_samples_, true);
   if (publish_samples_) {
     sample_pub_              = makePublisher<sensor_msgs::PointCloud2>(sample_pub_cfg, "heightmap_samples");
     sample_msg_.width        = sample_coords_.size();

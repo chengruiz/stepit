@@ -1,7 +1,7 @@
 #include <stepit/nnrt/onnxruntime.h>
 
 namespace stepit {
-OnnxrtApi::OnnxrtApi(const std::string &path, const YAML::Node &config)
+OnnxrtApi::OnnxrtApi(const std::string &path, const yml::Node &config)
     : NnrtApi(addExtensionIfMissing(path, ".onnx"), config) {
   env_         = Ort::Env(ORT_LOGGING_LEVEL_WARNING, path_.c_str());
   memory_info_ = Ort::MemoryInfo::CreateCpu(OrtArenaAllocator, OrtMemTypeDefault);

@@ -17,7 +17,7 @@ std::string getGlobalConfigDir(const std::string &relative_path) {
   return relative_path.empty() ? config_dir : joinPaths(config_dir, relative_path);
 }
 
-YAML::Node loadGlobalConfigYaml(const std::string &relative_path) {
-  return YAML::LoadFile(getGlobalConfigDir(relative_path));
+yml::Node loadGlobalConfigYaml(const std::string &relative_path) {
+  return yml::loadFile(getGlobalConfigDir(relative_path));
 }
 }  // namespace stepit

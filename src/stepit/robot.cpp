@@ -1,13 +1,13 @@
 #include <stepit/robot.h>
 
 namespace stepit {
-RobotSpec::RobotSpec(const YAML::Node &config) {
-  yml::setTo(config, "name", robot_name);
-  yml::setTo(config, "joint_names", joint_names);
-  yml::setTo(config, "foot_names", foot_names);
+RobotSpec::RobotSpec(const yml::Node &config) {
+  config["name"].to(robot_name);
+  config["joint_names"].to(joint_names);
+  config["foot_names"].to(foot_names);
   dof      = joint_names.size();
   num_legs = foot_names.size();
-  yml::setTo(config, "comm_freq", comm_freq);
+  config["comm_freq"].to(comm_freq);
 
   kp.resize(dof);
   kd.resize(dof);
@@ -15,27 +15,26 @@ RobotSpec::RobotSpec(const YAML::Node &config) {
   standing_cfg.resize(dof);
   lying_cfg.resize(dof);
 
-  std::string kp_key = yml::getDefinedKey(config, "stiffness", "kp", "Kp");
-  yml::setTo(config, kp_key, kp);
-  std::string kd_key = yml::getDefinedKey(config, "damping", "kd", "Kd");
-  yml::setTo(config, kd_key, kd);
-  yml::setIf(config, "stuck_threshold", stuck_threshold);
+  config[config.getDefinedKey({"stiffness", "kp", "Kp"})].to(kp);
+  config[config.getDefinedKey({"damping", "kd", "Kd"})].to(kd);
+  config["stuck_threshold"].to(stuck_threshold, true);
 
-  if (auto node = config["safety"]) {
-    yml::setIf(node, "enabled", safety.enabled);
-    yml::setIf(node, "roll", safety.roll);
-    yml::setIf(node, "pitch", safety.pitch);
+  const auto safety_node = config["safety"];
+  if (safety_node.hasValue()) {
+    safety_node["enabled"].to(safety.enabled, true);
+    safety_node["roll"].to(safety.roll, true);
+    safety_node["pitch"].to(safety.pitch, true);
   }
 
-  yml::setIf(config, "resetting_time", resetting_time);
-  yml::setIf(config, "standing_up_time", standing_up_time);
-  yml::setIf(config, "lying_down_time", lying_down_time);
-  yml::setIf(config, "returning_to_standing_time", returning_to_standing_time);
+  config["resetting_time"].to(resetting_time, true);
+  config["standing_up_time"].to(standing_up_time, true);
+  config["lying_down_time"].to(lying_down_time, true);
+  config["returning_to_standing_time"].to(returning_to_standing_time, true);
 
-  yml::setTo(config, "standing_cfg", standing_cfg);
-  yml::setTo(config, "lying_cfg", lying_cfg);
-  yml::setTo(config, "auto_damped_mode", auto_damped_mode);
-  yml::setIf(config, "kd_damped_mode", kd_damped_mode);
+  config["standing_cfg"].to(standing_cfg);
+  config["lying_cfg"].to(lying_cfg);
+  config["auto_damped_mode"].to(auto_damped_mode);
+  config["kd_damped_mode"].to(kd_damped_mode, true);
 }
 
 template <typename T>

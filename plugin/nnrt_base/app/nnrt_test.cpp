@@ -50,7 +50,7 @@ int main(int argc, char *argv[]) {
   const auto path    = arg_map["model_path"].as<std::string>();
   const auto config  = (arg_map.find("config_path") != arg_map.end())
                            ? yml::loadFile(arg_map["config_path"].as<std::string>())
-                           : YAML::Node();
+                           : yml::Node();
 
   auto model1 = NnrtApi::make(factory, path, config);
   auto model2 = NnrtApi::make(factory, path, config);

@@ -98,8 +98,8 @@ FieldManager &FieldManager::instance() {
   return instance;
 }
 
-void parseFieldIds(const YAML::Node &node, FieldIdVec &context) {
-  STEPIT_ASSERT(node.IsSequence(), "Expected sequence node for field IDs.");
+void parseFieldIds(const yml::Node &node, FieldIdVec &context) {
+  node.assertSequence();
   for (const auto &item : node) {
     auto name  = item.as<std::string>();
     FieldId id = getFieldId(name);

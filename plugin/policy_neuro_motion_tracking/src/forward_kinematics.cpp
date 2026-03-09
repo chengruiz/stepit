@@ -8,16 +8,16 @@ namespace stepit {
 namespace neuro_policy {
 ForwardKinematics::ForwardKinematics(const NeuroPolicySpec &policy_spec, const ModuleSpec &module_spec)
     : Module(policy_spec, ModuleSpec(module_spec, "forward_kinematics")) {
-  urdf_filename_ = yml::readIf<std::string>(config_, "urdf_filename", "robot.urdf");
+  urdf_filename_ = config_["urdf_filename"].as<std::string>("robot.urdf");
   STEPIT_ASSERT(not urdf_filename_.empty(), "'urdf_filename' cannot be empty.");
   urdf_filename_ = urdf_filename_[0] == '/' ? urdf_filename_ : joinPaths(policy_spec.home_dir, urdf_filename_);
 
   pinocchio::urdf::buildModel(urdf_filename_, pinocchio::JointModelFreeFlyer(), model_);
   data_ = pinocchio::Data(model_);
 
-  if (yml::hasValue(config_, "body_names")) {
-    STEPIT_ASSERT(config_["body_names"].IsSequence(), "Expected 'body_names' to be a sequence.");
-    body_names_ = yml::readAs<std::vector<std::string>>(config_, "body_names");
+  if (config_["body_names"].hasValue()) {
+    STEPIT_ASSERT(config_["body_names"].isSequence(), "Expected 'body_names' to be a sequence.");
+    body_names_ = config_["body_names"].as<std::vector<std::string>>();
     STEPIT_ASSERT(not body_names_.empty(), "'body_names' cannot be empty.");
   } else if (body_names_.empty()) {
     for (const auto &frame : model_.frames) {
@@ -28,7 +28,7 @@ ForwardKinematics::ForwardKinematics(const NeuroPolicySpec &policy_spec, const M
     STEPIT_ASSERT(not body_names_.empty(), "No body link found from URDF '{}'.", urdf_filename_);
   }
 
-  auto anchor_body = yml::readIf<std::string>(config_, "anchor_body", body_names_.front());
+  auto anchor_body = config_["anchor_body"].as<std::string>(body_names_.front());
   anchor_index_    = model_.getFrameId(anchor_body);
   STEPIT_ASSERT(anchor_index_ < static_cast<pinocchio::FrameIndex>(model_.nframes),
                 "Anchor frame '{}' is not found in urdf '{}'.", anchor_body, urdf_filename_);
@@ -58,9 +58,9 @@ ForwardKinematics::ForwardKinematics(const NeuroPolicySpec &policy_spec, const M
                 "Robot DoF ({}) does not match the number of joints {} specified in urdf '{}'.", policy_spec.dof,
                 joint_indices_.size(), urdf_filename_);
 
-  auto anchor_global_pos_field = yml::readIf<std::string>(config_, "anchor_global_pos_field", "base_global_pos");
+  auto anchor_global_pos_field = config_["anchor_global_pos_field"].as<std::string>("base_global_pos");
   anchor_global_pos_id_        = registerRequirement(anchor_global_pos_field, 3);
-  auto anchor_global_ori_field = yml::readIf<std::string>(config_, "anchor_global_ori_field", "base_global_ori");
+  auto anchor_global_ori_field = config_["anchor_global_ori_field"].as<std::string>("base_global_ori");
   anchor_global_ori_id_        = registerRequirement(anchor_global_ori_field, 4);
 
   auto num_bodies           = static_cast<FieldSize>(body_names_.size());

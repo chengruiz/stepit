@@ -4,18 +4,20 @@ namespace stepit {
 namespace neuro_policy {
 FieldSubscriber::FieldSubscriber(const NeuroPolicySpec &policy_spec, const ModuleSpec &module_spec)
     : Module(policy_spec, ModuleSpec(module_spec, "field_subscriber")) {
-  STEPIT_ASSERT(config_.IsMap(), "'{}' must contain a map of field configurations.", config_filename_);
+  config_.assertMap();
   for (auto it = config_.begin(); it != config_.end(); ++it) {
     FieldData field;
-    yml::setTo(it->first, field.name);
-    yml::setTo(it->second, "topic", field.topic);
-    yml::setTo(it->second, "size", field.size);
-    yml::setIf(it->second, "timeout_threshold", field.timeout_threshold);
+    const auto key_node   = it->first;
+    const auto value_node = it->second;
+    key_node.to(field.name);
+    value_node["topic"].to(field.topic);
+    value_node["size"].to(field.size);
+    value_node["timeout_threshold"].to(field.timeout_threshold, true);
     field.id   = registerProvision(field.name, field.size);
     field.data = VecXf::Zero(static_cast<Eigen::Index>(field.size));
 
-    int queue_size       = yml::readIf(it->second, "queue_size", 1);
-    auto transport_hints = parseTransportHints(it->second["transport_hints"]);
+    int queue_size       = value_node["queue_size"].as<int>(1);
+    auto transport_hints = parseTransportHints(value_node["transport_hints"]);
     std::size_t index    = fields_.size();
     field.subscriber     = getNodeHandle().subscribe<std_msgs::Float32MultiArray>(
         field.topic, queue_size, boost::bind(&FieldSubscriber::callback, this, index, boost::placeholders::_1),

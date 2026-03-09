@@ -5,9 +5,9 @@
 namespace stepit::neuro_policy {
 CmdRollSubscriber2::CmdRollSubscriber2(const NeuroPolicySpec &policy_spec, const ModuleSpec &module_spec)
     : CmdRollSource(policy_spec, ModuleSpec(module_spec, "cmd_roll_subscriber")) {
-  YAML::Node subscriber_cfg = config_["cmd_roll_subscriber"];
-  yml::setIf(subscriber_cfg, "timeout_threshold", timeout_threshold_);
-  yml::setIf(subscriber_cfg, "default_enabled", default_subscriber_enabled_);
+  yml::Node subscriber_cfg = config_["cmd_roll_subscriber"];
+  subscriber_cfg["timeout_threshold"].to(timeout_threshold_, true);
+  subscriber_cfg["default_enabled"].to(default_subscriber_enabled_, true);
   auto [topic, topic_type, qos] = parseTopicInfo(subscriber_cfg, "cmd_vel", "geometry_msgs/msg/Twist");
 
   if (topic_type == "std_msgs/msg/Float32") {
@@ -109,9 +109,9 @@ void CmdRollSubscriber2::handleControlRequest(ControlRequest request) {
 }
 CmdPitchSubscriber2::CmdPitchSubscriber2(const NeuroPolicySpec &policy_spec, const ModuleSpec &module_spec)
     : CmdPitchSource(policy_spec, ModuleSpec(module_spec, "cmd_pitch_subscriber")) {
-  YAML::Node subscriber_cfg = config_["cmd_pitch_subscriber"];
-  yml::setIf(subscriber_cfg, "timeout_threshold", timeout_threshold_);
-  yml::setIf(subscriber_cfg, "default_enabled", default_subscriber_enabled_);
+  yml::Node subscriber_cfg = config_["cmd_pitch_subscriber"];
+  subscriber_cfg["timeout_threshold"].to(timeout_threshold_, true);
+  subscriber_cfg["default_enabled"].to(default_subscriber_enabled_, true);
   auto [topic, topic_type, qos] = parseTopicInfo(subscriber_cfg, "cmd_vel", "geometry_msgs/msg/Twist");
 
   if (topic_type == "std_msgs/msg/Float32") {
@@ -214,9 +214,9 @@ void CmdPitchSubscriber2::handleControlRequest(ControlRequest request) {
 
 CmdHeightSubscriber2::CmdHeightSubscriber2(const NeuroPolicySpec &policy_spec, const ModuleSpec &module_spec)
     : CmdHeightSource(policy_spec, ModuleSpec(module_spec, "cmd_height_subscriber")) {
-  YAML::Node subscriber_cfg = config_["cmd_height_subscriber"];
-  yml::setIf(subscriber_cfg, "timeout_threshold", timeout_threshold_);
-  yml::setIf(subscriber_cfg, "default_enabled", default_subscriber_enabled_);
+  yml::Node subscriber_cfg = config_["cmd_height_subscriber"];
+  subscriber_cfg["timeout_threshold"].to(timeout_threshold_, true);
+  subscriber_cfg["default_enabled"].to(default_subscriber_enabled_, true);
   auto [topic, topic_type, qos] = parseTopicInfo(subscriber_cfg, "cmd_vel", "geometry_msgs/msg/Twist");
 
   if (topic_type == "std_msgs/msg/Float32") {

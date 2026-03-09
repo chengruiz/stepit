@@ -4,21 +4,22 @@
 
 namespace stepit {
 namespace field {
-AffineOperator::AffineOperator(const YAML::Node &config) : node_(config) {
-  if (yml::hasValue(config, "field")) {
-    auto field_name = yml::readAs<std::string>(config, "field");
+AffineOperator::AffineOperator(const yml::Node &config) : node_(config) {
+  if (config["field"].hasValue()) {
+    auto field_name = config["field"].as<std::string>();
     source_id_      = registerRequirement(field_name);
     target_id_      = source_id_;
   } else {
-    STEPIT_ASSERT(config["source"] and config["target"],
+    STEPIT_ASSERT(config["source"].hasValue() and config["target"].hasValue(),
                   "Affine op must contain 'field' or both 'source' and 'target'.");
-    auto source_name = yml::readAs<std::string>(config, "source");
-    auto target_name = yml::readAs<std::string>(config, "target");
+    auto source_name = config["source"].as<std::string>();
+    auto target_name = config["target"].as<std::string>();
     source_id_       = registerRequirement(source_name);
     target_id_       = registerProvision(target_name, 0);
   }
-  STEPIT_ASSERT(not(config["scale"] and config["std"]), "Cannot specify both 'scale' and 'std' in an affine op.");
-  STEPIT_ASSERT(not(config["bias"] and config["mean"]), "Cannot specify both 'bias' and 'mean' in an affine op.");
+
+  config.assertMutuallyExclusive({"scale", "std"});
+  config.assertMutuallyExclusive({"bias", "mean"});
 
   try {
     init();
@@ -32,20 +33,20 @@ void AffineOperator::init() {
   scale_ = ArrXf::Ones(field_size_);
   bias_  = ArrXf::Zero(field_size_);
 
-  if (yml::hasValue(node_, "scale")) {
-    yml::setTo(node_, "scale", scale_);
-  } else if (yml::hasValue(node_, "std")) {
+  if (node_["scale"].hasValue()) {
+    node_["scale"].to(scale_);
+  } else if (node_["std"].hasValue()) {
     ArrXf std{ArrXf::Ones(field_size_)};
-    yml::setTo(node_, "std", std);
+    node_["std"].to(std);
     STEPIT_ASSERT((std > kEPS).all(), "'std' values of affine op must be positive.");
     scale_ = std.cwiseInverse();
   }
 
-  if (yml::hasValue(node_, "bias")) {
-    yml::setTo(node_, "bias", bias_);
-  } else if (yml::hasValue(node_, "mean")) {
+  if (node_["bias"].hasValue()) {
+    node_["bias"].to(bias_);
+  } else if (node_["mean"].hasValue()) {
     ArrXf mean{ArrXf::Zero(field_size_)};
-    yml::setTo(node_, "mean", mean);
+    node_["mean"].to(mean);
     bias_ = -mean.cwiseProduct(scale_);
   }
 }
@@ -56,14 +57,14 @@ bool AffineOperator::update(FieldMap &context) {
   return true;
 }
 
-ConcatOperator::ConcatOperator(const YAML::Node &config) {
-  STEPIT_ASSERT(config["target"] and config["sources"], "Concat op must contain 'target' and 'sources'.");
-  STEPIT_ASSERT(config["sources"].IsSequence(), "'sources' in concat op must be a sequence.");
-
-  for (const auto &source_node : config["sources"]) {
-    source_ids_.push_back(registerRequirement(yml::readAs<std::string>(source_node)));
+ConcatOperator::ConcatOperator(const yml::Node &config) {
+  config.assertHasValue("sources", "target");
+  auto sources_node = config["sources"];
+  sources_node.assertSequence();
+  for (const auto &source_node : sources_node) {
+    source_ids_.push_back(registerRequirement(source_node.as<std::string>()));
   }
-  target_id_ = registerProvision(yml::readAs<std::string>(config["target"]), 0);
+  target_id_ = registerProvision(config["target"].as<std::string>(), 0);
 
   try {
     init();
@@ -87,24 +88,25 @@ bool ConcatOperator::update(FieldMap &context) {
   return true;
 }
 
-ConstOperator::ConstOperator(const YAML::Node &config) {
-  STEPIT_ASSERT(config["target"] or config["field"], "Const op must contain 'target' or 'field'.");
-  STEPIT_ASSERT(yml::hasValue(config, "value"), "Const op must contain 'value'.");
+ConstOperator::ConstOperator(const yml::Node &config) {
+  STEPIT_ASSERT(config["target"].hasValue() or config["field"].hasValue(),
+                "Const op must contain 'target' or 'field'.");
+  STEPIT_ASSERT(config["value"].hasValue(), "Const op must contain 'value'.");
 
-  auto target_name = yml::hasValue(config, "target") ? yml::readAs<std::string>(config, "target")
-                                                     : yml::readAs<std::string>(config, "field");
+  auto target_name = config["target"].hasValue() ? config["target"].as<std::string>()
+                                                 : config["field"].as<std::string>();
 
   auto value_node = config["value"];
-  STEPIT_ASSERT(value_node.IsScalar() or value_node.IsSequence(), "Const op 'value' must be a scalar or sequence.");
+  STEPIT_ASSERT(value_node.isScalar() or value_node.isSequence(), "Const op 'value' must be a scalar or sequence.");
 
   FieldSize size{};
-  if (value_node.IsScalar()) {
-    yml::setTo(config, "size", size);
+  if (value_node.isScalar()) {
+    config["size"].to(size);
     value_.setZero(size);
-    yml::setTo(value_node, value_);
+    value_node.to(value_);
   } else {
-    yml::setTo(value_node, value_);
-    yml::setIf(config, "size", size);
+    value_node.to(value_);
+    config["size"].to(size, true);
     if (size > 0) {
       STEPIT_ASSERT(value_.size() == size, "Const op has mismatched 'size' and 'value' lengths.");
     } else {
@@ -120,10 +122,10 @@ bool ConstOperator::update(FieldMap &context) {
   return true;
 }
 
-CopyOperator::CopyOperator(const YAML::Node &config) {
-  STEPIT_ASSERT(config["source"] and config["target"], "Copy op must contain 'source' and 'target'.");
-  auto source_name = yml::readAs<std::string>(config, "source");
-  auto target_name = yml::readAs<std::string>(config, "target");
+CopyOperator::CopyOperator(const yml::Node &config) {
+  config.assertHasValue("source", "target");
+  auto source_name = config["source"].as<std::string>();
+  auto target_name = config["target"].as<std::string>();
   STEPIT_ASSERT(source_name != target_name, "Source and target cannot be the same in a copy op.");
   source_id_ = registerRequirement(source_name);
   target_id_ = registerProvision(target_name, 0);
@@ -144,18 +146,17 @@ bool CopyOperator::update(FieldMap &context) {
   return true;
 }
 
-HistoryOperator::HistoryOperator(const YAML::Node &config) {
-  STEPIT_ASSERT(yml::hasValue(config, "source") and yml::hasValue(config, "target"),
-                "History op must contain 'source' and 'target'.");
-  auto source_name = yml::readAs<std::string>(config, "source");
-  auto target_name = yml::readAs<std::string>(config, "target");
-  yml::setIf(config, "source_size", source_size_);
-  yml::setTo(config, "history_len", history_len_);
+HistoryOperator::HistoryOperator(const yml::Node &config) {
+  config.assertHasValue("source", "target");
+  auto source_name = config["source"].as<std::string>();
+  auto target_name = config["target"].as<std::string>();
+  source_size_     = config["source_size"].as<FieldSize>(0);
+  history_len_     = config["history_len"].as<std::uint32_t>();
   STEPIT_ASSERT(history_len_ > 0, "'history_len' of history op must be greater than 0.");
-  yml::setIf(config, "newest_first", newest_first_);
-  yml::setIf(config, "include_current_frame", include_current_frame_);
-  if (yml::isDefined(config, "default_value")) {
-    if (yml::hasValue(config, "default_value")) yml::setTo(config, "default_value", default_value_);
+  newest_first_          = config["newest_first"].as<bool>(true);
+  include_current_frame_ = config["include_current_frame"].as<bool>(true);
+  if (config["default_value"].isDefined()) {
+    if (config["default_value"].hasValue()) config["default_value"].to(default_value_);
   } else {  // Fill with zeros by default if not provided
     default_value_ = ArrXf::Zero(1);
   }
@@ -239,34 +240,34 @@ void HistoryOperator::commit(const FieldMap &context) {
   }
 }
 
-MaskedFillOperator::MaskedFillOperator(const YAML::Node &config) {
-  if (yml::hasValue(config, "field")) {
-    auto field_name = yml::readAs<std::string>(config, "field");
+MaskedFillOperator::MaskedFillOperator(const yml::Node &config) {
+  if (config["field"].hasValue()) {
+    auto field_name = config["field"].as<std::string>();
     source_id_      = registerRequirement(field_name);
     target_id_      = source_id_;
   } else {
-    STEPIT_ASSERT(config["source"] and config["target"],
+    STEPIT_ASSERT(config["source"].hasValue() and config["target"].hasValue(),
                   "masked_fill op must contain 'field' or both 'source' and 'target'.");
-    auto source_name = yml::readAs<std::string>(config, "source");
-    auto target_name = yml::readAs<std::string>(config, "target");
+    auto source_name = config["source"].as<std::string>();
+    auto target_name = config["target"].as<std::string>();
     source_id_       = registerRequirement(source_name);
     target_id_       = registerProvision(target_name, 0);
   }
 
-  if (yml::hasValue(config, "indices")) {
+  if (config["indices"].hasValue()) {
     const auto indices_node = config["indices"];
-    STEPIT_ASSERT(indices_node.IsSequence() and indices_node.size() > 0,
+    STEPIT_ASSERT(indices_node.isSequence() and indices_node.size() > 0,
                   "'indices' in masked_fill op must be a non-empty sequence.");
     for (const auto &index_node : indices_node) {
-      indices_.push_back(yml::readAs<FieldSize>(index_node));
+      indices_.push_back(index_node.as<FieldSize>());
     }
   } else {
-    auto start = yml::readAs<FieldSize>(config, "start");
-    auto end   = yml::readAs<FieldSize>(config, "end");
+    auto start = config["start"].as<FieldSize>();
+    auto end   = config["end"].as<FieldSize>();
     STEPIT_ASSERT(end > start, "Slice range [start={}, end={}) is invalid.", start, end);
     for (FieldSize i{start}; i < end; ++i) indices_.push_back(i);
   }
-  yml::setIf(config, "value", value_);
+  config["value"].to(value_, true);
 
   try {
     init();
@@ -293,25 +294,26 @@ bool MaskedFillOperator::update(FieldMap &context) {
   return true;
 }
 
-SliceOperator::SliceOperator(const YAML::Node &config) {
-  STEPIT_ASSERT(config["source"] and config["target"], "Slice op must contain 'source' and 'target'.");
+SliceOperator::SliceOperator(const yml::Node &config) {
+  STEPIT_ASSERT(config["source"].hasValue() and config["target"].hasValue(),
+                "Slice op must contain 'source' and 'target'.");
 
-  if (yml::hasValue(config, "indices")) {
+  if (config["indices"].hasValue()) {
     const auto indices_node = config["indices"];
-    STEPIT_ASSERT(indices_node.IsSequence() and indices_node.size() > 0,
+    STEPIT_ASSERT(indices_node.isSequence() and indices_node.size() > 0,
                   "'indices' in slice op must be a non-empty sequence.");
     for (const auto &index_node : indices_node) {
-      indices_.push_back(yml::readAs<FieldSize>(index_node));
+      indices_.push_back(index_node.as<FieldSize>());
     }
   } else {
-    auto start = yml::readAs<FieldSize>(config, "start");
-    auto end   = yml::readAs<FieldSize>(config, "end");
+    auto start = config["start"].as<FieldSize>();
+    auto end   = config["end"].as<FieldSize>();
     STEPIT_ASSERT(end > start, "Slice range [start={}, end={}) is invalid.", start, end);
     for (FieldSize i{start}; i < end; ++i) indices_.push_back(i);
   }
 
-  source_id_ = registerRequirement(yml::readAs<std::string>(config, "source"));
-  target_id_ = registerProvision(yml::readAs<std::string>(config, "target"), static_cast<FieldSize>(indices_.size()));
+  source_id_ = registerRequirement(config["source"].as<std::string>());
+  target_id_ = registerProvision(config["target"].as<std::string>(), static_cast<FieldSize>(indices_.size()));
 }
 
 void SliceOperator::init() {
@@ -332,17 +334,16 @@ bool SliceOperator::update(FieldMap &context) {
   return true;
 }
 
-SplitOperator::SplitOperator(const YAML::Node &config) {
-  STEPIT_ASSERT(config["source"] and config["targets"], "Split op must contain 'source' and 'targets'.");
-  source_id_ = registerRequirement(yml::readAs<std::string>(config, "source"));
+SplitOperator::SplitOperator(const yml::Node &config) {
+  config.assertHasValue("source", "targets");
+  source_id_ = registerRequirement(config["source"].as<std::string>());
 
   const auto targets_node = config["targets"];
-  STEPIT_ASSERT(targets_node.IsSequence(), "'targets' in split op must be a sequence.");
+  targets_node.assertSequence();
   for (const auto &target_node : targets_node) {
-    STEPIT_ASSERT(target_node.IsMap() and target_node["name"] and target_node["size"],
-                  "Each split target must be a map containing keys 'name' and 'size'.");
-    auto name = yml::readAs<std::string>(target_node, "name");
-    auto size = yml::readAs<FieldSize>(target_node, "size");
+    target_node.assertMap();
+    auto name = target_node["name"].as<std::string>();
+    auto size = target_node["size"].as<FieldSize>();
     target_ids_.push_back(registerProvision(name, size));
     segment_sizes_.push_back(size);
   }

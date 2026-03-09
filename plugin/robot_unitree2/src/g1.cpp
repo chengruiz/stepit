@@ -3,8 +3,8 @@
 namespace stepit {
 G1Api::G1Api() : RobotApi(kRobotName), low_state_(getDoF(), getNumLegs()) {
   low_cmd_.mode_pr(0);
-  if (yml::hasValue(config_, "motor_enabled")) {
-    yml::setTo(config_, "motor_enabled", motor_enabled_);
+  if (config_["motor_enabled"].hasValue()) {
+    config_["motor_enabled"].to(motor_enabled_);
   } else {
     motor_enabled_.fill(true);
   }

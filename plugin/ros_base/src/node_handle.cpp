@@ -8,8 +8,8 @@ ros::NodeHandle &getNodeHandle() {
 
 ros::TransportHints parseTransportHints(const yml::Node &node) {
   ros::TransportHints value;
-  if (not node) return value.tcpNoDelay();
-  auto type = yml::readIf<std::string>(node, "type", "tcpnodelay");
+  if (not node.hasValue()) return value.tcpNoDelay();
+  auto type = node["type"].as<std::string>("tcpnodelay");
   toLowercaseInplace(type);
   if (type == "reliable") {
     value.reliable();
@@ -24,8 +24,8 @@ ros::TransportHints parseTransportHints(const yml::Node &node) {
   } else {
     STEPIT_THROW("Unknown transport hint type '{}'.", type);
   }
-  if (node["max_datagram_size"]) {
-    auto size = yml::readAs<int>(node, "max_datagram_size");
+  if (node["max_datagram_size"].hasValue()) {
+    auto size = node["max_datagram_size"].as<int>();
     value.maxDatagramSize(size);
   }
   return value;

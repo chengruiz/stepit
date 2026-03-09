@@ -4,9 +4,9 @@ namespace stepit {
 namespace neuro_policy {
 RelativeOriSource::RelativeOriSource(const NeuroPolicySpec &policy_spec, const ModuleSpec &module_spec)
     : Module(policy_spec, ModuleSpec(module_spec, "relative_pose/ori")) {
-  current_ori_name_ = yml::readIf<std::string>(config_, "current_ori_name", "base_global_ori");
-  target_ori_name_  = yml::readIf<std::string>(config_, "target_ori_name", "base_target_ori");
-  auto rot6d_order  = yml::readIf<std::string>(config_, "rotation_6d_order", "row_major");
+  current_ori_name_ = config_["current_ori_name"].as<std::string>("base_global_ori");
+  target_ori_name_  = config_["target_ori_name"].as<std::string>("base_target_ori");
+  auto rot6d_order  = config_["rotation_6d_order"].as<std::string>("row_major");
   if (rot6d_order == "row_major") {
     rot6d_order_ = Rotation6dOrder::kRowMajor;
   } else if (rot6d_order == "column_major") {
@@ -59,9 +59,9 @@ bool RelativeOriSource::update(const LowState &, ControlRequests &, FieldMap &co
 
 RelativePosSource::RelativePosSource(const NeuroPolicySpec &policy_spec, const ModuleSpec &module_spec)
     : Module(policy_spec, ModuleSpec(module_spec, "relative_pose/pos")) {
-  current_pos_name_ = yml::readIf<std::string>(config_, "current_pos_name", "base_global_pos");
-  current_ori_name_ = yml::readIf<std::string>(config_, "current_ori_name", "base_global_ori");
-  target_pos_name_  = yml::readIf<std::string>(config_, "target_pos_name", "base_target_pos");
+  current_pos_name_ = config_["current_pos_name"].as<std::string>("base_global_pos");
+  current_ori_name_ = config_["current_ori_name"].as<std::string>("base_global_ori");
+  target_pos_name_  = config_["target_pos_name"].as<std::string>("base_target_pos");
 
   current_pos_id_  = registerRequirement(current_pos_name_, 3);
   current_ori_id_  = registerRequirement(current_ori_name_, 4);
@@ -98,13 +98,13 @@ MotionAlignment::MotionAlignment(const NeuroPolicySpec &policy_spec, const Modul
   aligned_ = false;
   world_to_init_yaw_.setIdentity();
   world_to_init_pos_.setZero();
-  reference_index_          = yml::readIf<int>(config_, "reference_index", 0);
+  reference_index_          = config_["reference_index"].as<int>(0);
   resolved_reference_index_ = 0;
 
-  current_pos_name_ = yml::readIf<std::string>(config_, "current_pos_name", "base_global_pos");
-  current_ori_name_ = yml::readIf<std::string>(config_, "current_ori_name", "base_global_ori");
-  target_pos_name_  = yml::readIf<std::string>(config_, "target_pos_name", "base_target_pos");
-  target_ori_name_  = yml::readIf<std::string>(config_, "target_ori_name", "base_target_ori");
+  current_pos_name_ = config_["current_pos_name"].as<std::string>("base_global_pos");
+  current_ori_name_ = config_["current_ori_name"].as<std::string>("base_global_ori");
+  target_pos_name_  = config_["target_pos_name"].as<std::string>("base_target_pos");
+  target_ori_name_  = config_["target_ori_name"].as<std::string>("base_target_ori");
 
   current_ori_id_        = registerRequirement(current_ori_name_, 4);
   target_ori_id_         = registerRequirement(target_ori_name_);

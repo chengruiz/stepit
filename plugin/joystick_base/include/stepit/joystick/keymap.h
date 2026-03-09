@@ -15,7 +15,7 @@ struct Slots {
 
 struct Keymap {
   Keymap() = default;
-  Keymap(const YAML::Node &config);
+  Keymap(const yml::Node &config);
 
   std::size_t A      = 0;
   std::size_t B      = 1;

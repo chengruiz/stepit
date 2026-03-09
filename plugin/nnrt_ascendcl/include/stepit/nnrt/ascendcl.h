@@ -11,7 +11,7 @@
 namespace stepit {
 class AscendCLApi : public NnrtApi {
  public:
-  AscendCLApi(const std::string &path, const YAML::Node &config);
+  AscendCLApi(const std::string &path, const yml::Node &config);
   virtual ~AscendCLApi();
 
   void clearState() override;

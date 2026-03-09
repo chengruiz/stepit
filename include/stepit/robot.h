@@ -73,7 +73,7 @@ using LowCmd = std::vector<MotorCmd>;
 
 struct RobotSpec {
   RobotSpec() = default;
-  explicit RobotSpec(const YAML::Node &config);
+  explicit RobotSpec(const yml::Node &config);
 
   /* Name of the robot */
   std::string robot_name;
@@ -134,7 +134,7 @@ class RobotApi : public Interface<RobotApi> {
   std::size_t getCommFreq() const { return spec_.comm_freq; }
 
  protected:
-  YAML::Node config_;
+  yml::Node config_;
   RobotSpec spec_;
 };
 

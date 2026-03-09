@@ -57,7 +57,7 @@ class CuLogger : public nvinfer1::ILogger {
 
 class TensorRTApi : public NnrtApi {
  public:
-  explicit TensorRTApi(const std::string &path, const YAML::Node &config);
+  explicit TensorRTApi(const std::string &path, const yml::Node &config);
   ~TensorRTApi() override;
 
   void runInference() override;

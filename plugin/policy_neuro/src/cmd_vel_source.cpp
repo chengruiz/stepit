@@ -28,15 +28,15 @@ CmdVelSource::CmdVelSource(const NeuroPolicySpec &policy_spec, const ModuleSpec 
   cmd_stall_id_ = registerProvision("cmd_stall", 1);
   timestep_     = 1.0F / static_cast<float>(policy_spec.control_freq);
 
-  if (config_) {
-    yml::setIf(config_, "velocity_scale_factor", velocity_scale_factor_);
-    yml::setIf(config_, "velocity_turbo_factor", velocity_turbo_factor_);
-    yml::setIf(config_, "velocity_deadzone", velocity_deadzone_);
-    yml::setIf(config_, "smoothing", smoothing_);
-    yml::setIf(config_, "max_acceleration", max_acceleration_);
-    yml::setIf(config_, "stall_mode_enabled", mode_enabled_[kStall]);
-    yml::setIf(config_, "move_mode_enabled", mode_enabled_[kMove]);
-    yml::setIf(config_, "joystick_enabled", joystick_enabled_);
+  if (config_.hasValue()) {
+    config_["velocity_scale_factor"].to(velocity_scale_factor_, true);
+    config_["velocity_turbo_factor"].to(velocity_turbo_factor_, true);
+    config_["velocity_deadzone"].to(velocity_deadzone_, true);
+    config_["smoothing"].to(smoothing_, true);
+    config_["max_acceleration"].to(max_acceleration_, true);
+    config_["stall_mode_enabled"].to(mode_enabled_[kStall], true);
+    config_["move_mode_enabled"].to(mode_enabled_[kMove], true);
+    config_["joystick_enabled"].to(joystick_enabled_, true);
   }
 }
 
@@ -44,7 +44,7 @@ bool CmdVelSource::reset() {
   mode_ = kAuto;
   cmd_vel_.setZero();
   target_cmd_vel_.setZero();
-  cmd_stall_ = true;
+  cmd_stall_            = true;
   velocity_turbo_ratio_ = 0.0;
 
   joystick_rules_.emplace_back([this](const joystick::State &js) -> std::string {

@@ -3,7 +3,7 @@
 
 namespace stepit {
 B2Api::B2Api() : RobotApi(kRobotName), low_state_(getDoF(), getNumLegs()) {
-  yml::setIf(config_, "joint_vel_filter_window", joint_vel_filter_window_);
+  joint_vel_filter_window_ = config_["joint_vel_filter_window"].as<std::size_t>(0);
   if (joint_vel_filter_window_ > 0) low_state_buf_.allocate(joint_vel_filter_window_);
 
   low_cmd_.head()[0]    = 0xFE;

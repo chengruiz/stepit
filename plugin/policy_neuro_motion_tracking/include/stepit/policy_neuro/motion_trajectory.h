@@ -30,7 +30,7 @@ class MotionTrajectory : public Module {
   };
 
   void checkFps(std::size_t control_freq);
-  void initField(const YAML::Node &node, FieldView &field_spec);
+  void initField(const yml::Node &node, FieldView &field_spec);
 
   std::string path_;
   std::unique_ptr<DataLoader> data_;

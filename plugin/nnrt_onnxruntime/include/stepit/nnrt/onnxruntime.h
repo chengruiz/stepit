@@ -12,7 +12,7 @@
 namespace stepit {
 class OnnxrtApi : public NnrtApi {
  public:
-  explicit OnnxrtApi(const std::string &path, const YAML::Node &config);
+  explicit OnnxrtApi(const std::string &path, const yml::Node &config);
   ~OnnxrtApi() override = default;
 
   void runInference() override;

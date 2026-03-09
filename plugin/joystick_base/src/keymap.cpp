@@ -2,28 +2,28 @@
 
 namespace stepit {
 namespace joystick {
-Keymap::Keymap(const YAML::Node &config) {
-  yml::setTo(config, "A", A);
-  yml::setTo(config, "B", B);
-  yml::setTo(config, "X", X);
-  yml::setTo(config, "Y", Y);
-  yml::setTo(config, "LB", LB);
-  yml::setTo(config, "RB", RB);
-  yml::setTo(config, "Select", Select);
-  yml::setTo(config, "Start", Start);
-  yml::setTo(config, "LAS", LAS);
-  yml::setTo(config, "RAS", RAS);
-  yml::setTo(config, "Up", Up);
-  yml::setTo(config, "Down", Down);
-  yml::setTo(config, "Left", Left);
-  yml::setTo(config, "Right", Right);
+Keymap::Keymap(const yml::Node &config) {
+  config["A"].to(A);
+  config["B"].to(B);
+  config["X"].to(X);
+  config["Y"].to(Y);
+  config["LB"].to(LB);
+  config["RB"].to(RB);
+  config["Select"].to(Select);
+  config["Start"].to(Start);
+  config["LAS"].to(LAS);
+  config["RAS"].to(RAS);
+  config["Up"].to(Up);
+  config["Down"].to(Down);
+  config["Left"].to(Left);
+  config["Right"].to(Right);
 
-  yml::setTo(config, "las_x", las_x);
-  yml::setTo(config, "las_y", las_y);
-  yml::setTo(config, "ras_x", ras_x);
-  yml::setTo(config, "ras_y", ras_y);
-  yml::setTo(config, "lt", lt);
-  yml::setTo(config, "rt", rt);
+  config["las_x"].to(las_x);
+  config["las_y"].to(las_y);
+  config["ras_x"].to(ras_x);
+  config["ras_y"].to(ras_y);
+  config["lt"].to(lt);
+  config["rt"].to(rt);
 }
 }  // namespace joystick
 }  // namespace stepit

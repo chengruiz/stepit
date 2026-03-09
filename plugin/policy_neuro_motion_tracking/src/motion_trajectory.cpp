@@ -9,21 +9,20 @@ namespace stepit {
 namespace neuro_policy {
 MotionTrajectory::MotionTrajectory(const NeuroPolicySpec &policy_spec, const ModuleSpec &module_spec)
     : Module(policy_spec, ModuleSpec(module_spec, "motion_trajectory")) {
-  path_ = yml::readIf<std::string>(config_, "path", name_);
+  path_ = config_["path"].as<std::string>(name_);
   STEPIT_ASSERT(not path_.empty(), "'path' cannot be empty.");
   path_ = (path_[0] == '/') ? path_ : joinPaths(policy_spec.home_dir, path_);
 
-  const auto dataloader_factory = yml::readIf<std::string>(config_, "dataloader_factory", "");
+  const auto dataloader_factory = config_["dataloader_factory"].as<std::string>("");
   data_                         = DataLoader::make(dataloader_factory, path_);
 
-  const auto default_offsets = yml::readIf(config_, "offsets", std::vector<std::int64_t>{0});
+  const auto default_offsets = config_["offsets"].as<std::vector<std::int64_t>>({0});
   STEPIT_ASSERT(not default_offsets.empty(), "'offsets' cannot be empty.");
 
   checkFps(policy_spec.control_freq);
 
   const auto field_nodes = config_["field"];
-  STEPIT_ASSERT(field_nodes.IsDefined(), "Missing 'field' in '{}'.", config_filename_);
-  STEPIT_ASSERT(field_nodes.IsSequence(), "Expected 'field' to be a sequence.");
+  field_nodes.assertSequence();
   for (const auto &node : field_nodes) {
     FieldView field_spec;
     initField(node, field_spec);
@@ -57,10 +56,10 @@ void MotionTrajectory::checkFps(std::size_t control_freq) {
   }
 }
 
-void MotionTrajectory::initField(const YAML::Node &node, FieldView &field) {
-  STEPIT_ASSERT(node.IsMap(), "Expected each field to be a map.");
-  const auto name = yml::readAs<std::string>(node, "name");
-  const auto key  = yml::readAs<std::string>(node, "key");
+void MotionTrajectory::initField(const yml::Node &node, FieldView &field) {
+  STEPIT_ASSERT(node.isMap(), "Expected each field to be a map.");
+  const auto name = node["name"].as<std::string>();
+  const auto key  = node["key"].as<std::string>();
   STEPIT_ASSERT(data_->hasKey(key), "Key '{}' not found in '{}'.", key, path_);
   const auto &source = (*data_)[key];
   const auto &shape  = source.shape;
@@ -76,17 +75,17 @@ void MotionTrajectory::initField(const YAML::Node &node, FieldView &field) {
 
   std::size_t frame_size = std::accumulate(shape.begin() + 1, shape.end(), 1UL, std::multiplies<std::size_t>());
   std::vector<std::size_t> indices;
-  if (yml::hasValue(node, "indices")) {
+  if (node["indices"].hasValue()) {
     const auto indices_node = node["indices"];
-    STEPIT_ASSERT(indices_node.IsSequence() and indices_node.size() > 0,
+    STEPIT_ASSERT(indices_node.isSequence() and indices_node.size() > 0,
                   "'indices' for field '{}' must be a non-empty sequence.", name);
-    yml::setTo(indices_node, indices);
+    indices_node.to(indices);
     STEPIT_ASSERT(
         std::all_of(indices.begin(), indices.end(), [&frame_size](std::size_t index) { return index < frame_size; }),
         "'indices' of field '{}' should be in the range [0, {}).", name, frame_size);
   } else {
-    std::size_t start = yml::readIf<std::size_t>(node, "start", 0UL);
-    std::size_t end   = yml::readIf<std::size_t>(node, "end", frame_size);
+    std::size_t start = node["start"].as<std::size_t>(0UL);
+    std::size_t end   = node["end"].as<std::size_t>(frame_size);
     STEPIT_ASSERT(start < frame_size, "Start index {} is out of range [0, {}) for field '{}' (key '{}').", start,
                   frame_size, name, key);
     STEPIT_ASSERT(end <= frame_size, "End index {} is out of range (0, {}] for field '{}' (key '{}').", end, frame_size,
@@ -97,12 +96,12 @@ void MotionTrajectory::initField(const YAML::Node &node, FieldView &field) {
     }
   }
 
-  yml::setIf(node, "offsets", field.offsets);
+  node["offsets"].to(field.offsets, true);
   STEPIT_ASSERT(not field.offsets.empty(), "Offsets for field '{}' cannot be empty.", name);
   field.frame_size = indices.size();
   field.field_size = field.frame_size * field.offsets.size();
-  if (yml::hasValue(node, "size")) {
-    const auto declared_size = yml::readAs<std::size_t>(node, "size");
+  if (node["size"].hasValue()) {
+    const auto declared_size = node["size"].as<std::size_t>();
     STEPIT_ASSERT(declared_size == field.field_size,
                   "Field size specified ({}) does not match the stacked size ({}) of field '{}' (key '{}').",
                   declared_size, field.field_size, name, key);

@@ -63,13 +63,13 @@ CuLogger &CuLogger::instance() {
   return instance;
 }
 
-TensorRTApi::TensorRTApi(const std::string &path, const YAML::Node &config)
+TensorRTApi::TensorRTApi(const std::string &path, const yml::Node &config)
     : NnrtApi(addExtensionIfMissing(path, ".onnx"), config) {
   auto tensorrt_options = config["tensorrt_options"];
 
-  device_id_     = yml::readIf<int>(tensorrt_options, "device_id", 0);
-  force_rebuild_ = yml::readIf<bool>(tensorrt_options, "force_rebuild", false);
-  auto precision = toLowercase(yml::readIf<std::string>(tensorrt_options, "precision", "fp32"));
+  device_id_     = tensorrt_options["device_id"].as<int>(0);
+  force_rebuild_ = tensorrt_options["force_rebuild"].as<bool>(false);
+  auto precision = toLowercase(tensorrt_options["precision"].as<std::string>("fp32"));
   if (precision == "fp16") {
     use_fp16_ = true;
   } else if (precision == "fp32") {
@@ -78,7 +78,7 @@ TensorRTApi::TensorRTApi(const std::string &path, const YAML::Node &config)
     STEPIT_THROW("Unsupported TensorRT precision '{}'. Expected 'fp16' or 'fp32'.", precision);
   }
 
-  engine_path_ = yml::readIf<std::string>(tensorrt_options, "engine_path", replaceExtension(path_, ".engine"));
+  engine_path_ = tensorrt_options["engine_path"].as<std::string>(replaceExtension(path_, ".engine"));
   if (not engine_path_.empty() and engine_path_[0] != '/') {
     engine_path_ = joinPaths(fs::path(path_).parent_path().string(), engine_path_);
   }

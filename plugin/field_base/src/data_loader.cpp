@@ -62,7 +62,7 @@ CsvReader::CsvReader(const std::string &path) {
   auto metadata_path = input_dir / "metadata.yml";
   if (fs::is_regular_file(metadata_path)) {
     auto metadata = yml::loadFile(metadata_path.string());
-    yml::setIf(metadata, "skip_header", skip_header_);
+    metadata["skip_header"].to(skip_header_, true);
   }
 
   std::vector<fs::path> csv_files;

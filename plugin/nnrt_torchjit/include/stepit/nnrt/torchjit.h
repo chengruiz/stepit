@@ -11,7 +11,7 @@
 namespace stepit {
 class TorchJitApi : public NnrtApi {
  public:
-  explicit TorchJitApi(const std::string &path, const YAML::Node &config);
+  explicit TorchJitApi(const std::string &path, const yml::Node &config);
   ~TorchJitApi() override = default;
 
   void runInference() override;

@@ -15,9 +15,9 @@ CmdRollSource::CmdRollSource(const NeuroPolicySpec &policy_spec, const ModuleSpe
     : Module(policy_spec, ModuleSpec(module_spec, "cmd_posture/roll")) {
   cmd_roll_id_ = registerProvision("cmd_roll", 1);
 
-  if (config_) {
-    yml::setIf(config_, "roll_scale_factor", roll_scale_factor_);
-    yml::setIf(config_, "joystick_enabled", joystick_enabled_);
+  if (config_.hasValue()) {
+    config_["roll_scale_factor"].to(roll_scale_factor_, true);
+    config_["joystick_enabled"].to(joystick_enabled_, true);
   }
 }
 
@@ -87,9 +87,9 @@ CmdPitchSource::CmdPitchSource(const NeuroPolicySpec &policy_spec, const ModuleS
     : Module(policy_spec, ModuleSpec(module_spec, "cmd_posture/pitch")) {
   cmd_pitch_id_ = registerProvision("cmd_pitch", 1);
 
-  if (config_) {
-    yml::setIf(config_, "pitch_scale_factor", pitch_scale_factor_);
-    yml::setIf(config_, "joystick_enabled", joystick_enabled_);
+  if (config_.hasValue()) {
+    config_["pitch_scale_factor"].to(pitch_scale_factor_, true);
+    config_["joystick_enabled"].to(joystick_enabled_, true);
   }
 }
 
@@ -159,11 +159,11 @@ CmdHeightSource::CmdHeightSource(const NeuroPolicySpec &policy_spec, const Modul
     : Module(policy_spec, ModuleSpec(module_spec, "cmd_posture/height")) {
   cmd_height_id_ = registerProvision("cmd_height", 1);
 
-  if (config_) {
-    yml::setIf(config_, "default_cmd_height", default_cmd_height_);
-    yml::setIf(config_, "height_scale_factor", height_scale_factor_);
-    yml::setIf(config_, "height_range", height_range_);
-    yml::setIf(config_, "joystick_enabled", joystick_enabled_);
+  if (config_.hasValue()) {
+    config_["default_cmd_height"].to(default_cmd_height_, true);
+    config_["height_scale_factor"].to(height_scale_factor_, true);
+    config_["height_range"].to(height_range_, true);
+    config_["joystick_enabled"].to(joystick_enabled_, true);
   }
 }
 

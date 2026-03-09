@@ -11,7 +11,7 @@
 namespace stepit {
 class RknnrtApi : public NnrtApi {
  public:
-  explicit RknnrtApi(const std::string &path, const YAML::Node &config);
+  explicit RknnrtApi(const std::string &path, const yml::Node &config);
   ~RknnrtApi() override;
 
   void runInference() override;

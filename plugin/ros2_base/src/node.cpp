@@ -71,29 +71,32 @@ std::string getTopicType(const std::string &topic_name, const std::string &defau
 
 rclcpp::QoS parseQoS(const yml::Node &node) {
   rclcpp::QoS value{getDefaultQoS()};
-  if (not node) return value;
+  if (not node.hasValue()) return value;
 
-  if (YAML::Node reliability_node = node["reliability"]) {
-    auto reliability = yml::readAs<std::string>(reliability_node);
+  const auto reliability_node = node["reliability"];
+  if (reliability_node.hasValue()) {
+    auto reliability = reliability_node.as<std::string>();
     toLowercaseInplace(reliability);
     auto reliability_policy = kReliabilityPolicyMap.find(reliability);
     STEPIT_ASSERT(reliability_policy != kReliabilityPolicyMap.end(), "Unknown QoS reliability '{}'.", reliability);
     value.reliability(reliability_policy->second);
   }
 
-  if (YAML::Node durability_node = node["durability"]) {
-    auto durability = yml::readAs<std::string>(durability_node);
+  const auto durability_node = node["durability"];
+  if (durability_node.hasValue()) {
+    auto durability = durability_node.as<std::string>();
     toLowercaseInplace(durability);
     auto durability_policy = kDurabilityPolicyMap.find(durability);
     STEPIT_ASSERT(durability_policy != kDurabilityPolicyMap.end(), "Unknown QoS durability '{}'.", durability);
     value.durability(durability_policy->second);
   }
 
-  if (YAML::Node history_node = node["history"]) {
-    if (yml::isType<std::size_t>(history_node)) {
-      value.keep_last(yml::readIf<std::size_t>(history_node, "history_node", 1));
+  const auto history_node = node["history"];
+  if (history_node.hasValue()) {
+    if (history_node.isType<std::size_t>()) {
+      value.keep_last(history_node.as<std::size_t>());
     } else {
-      auto history = yml::readAs<std::string>(history_node);
+      auto history = history_node.as<std::string>();
       toLowercaseInplace(history);
       auto history_policy = kHistoryPolicyMap.find(history);
       STEPIT_ASSERT(history_policy != kHistoryPolicyMap.end(), "Unknown QoS history '{}'.", history);
@@ -106,11 +109,11 @@ rclcpp::QoS parseQoS(const yml::Node &node) {
 TopicInfo parseTopicInfo(const yml::Node &node, const std::string &default_name, const std::string &default_type) {
   TopicInfo info{};
   if (default_name.empty()) {
-    yml::setTo(node, "topic", info.name);
+    node["topic"].to(info.name);
   } else {
-    info.name = yml::readIf(node, "topic", default_name);
+    info.name = node["topic"].as<std::string>(default_name);
   }
-  info.type = getTopicType(info.name, yml::readIf(node, "topic_type", default_type));
+  info.type = getTopicType(info.name, node["topic_type"].as<std::string>(default_type));
   info.qos  = parseQoS(node["qos"]);
   return info;
 }

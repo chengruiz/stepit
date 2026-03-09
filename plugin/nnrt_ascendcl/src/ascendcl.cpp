@@ -19,7 +19,7 @@ void initializeACL() {
   }
 }
 
-AscendCLApi::AscendCLApi(const std::string &path, const YAML::Node &config)
+AscendCLApi::AscendCLApi(const std::string &path, const yml::Node &config)
     : NnrtApi(addExtensionIfMissing(path, ".om"), config) {
   initializeACL();
 
