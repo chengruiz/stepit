@@ -1,7 +1,6 @@
 #ifndef STEPIT_UTILS_H_
 #define STEPIT_UTILS_H_
 
-#include <algorithm>
 #include <numeric>
 
 #include <boost/filesystem.hpp>
@@ -13,6 +12,7 @@
 #include <llu/math.h>
 #include <llu/range.h>
 #include <llu/ring.h>
+#include <llu/string.h>
 #include <llu/typename.h>
 #include <llu/yaml.h>
 #include <stepit/logging.h>
@@ -57,8 +57,6 @@ std::vector<T> array2vector(const std::array<T, N> &arr) {
   return std::vector<T>(arr.begin(), arr.end());
 }
 
-inline std::string nonEmptyOr(const std::string &str1, const std::string &str2) { return str1.empty() ? str2 : str1; }
-
 inline void appendPaths(fs::path &) {}
 
 template <typename Path, typename... Paths>
@@ -87,19 +85,6 @@ inline std::string replaceExtension(const std::string &path, const std::string &
 template <typename T>
 T product(const std::vector<T> &vec) {
   return std::accumulate(vec.begin(), vec.end(), static_cast<T>(1), std::multiplies<>());
-}
-
-inline std::string trim(const std::string &value) {
-  std::size_t first = 0;
-  while (first < value.size() and std::isspace(static_cast<unsigned char>(value[first]))) {
-    ++first;
-  }
-
-  std::size_t last = value.size();
-  while (last > first and std::isspace(static_cast<unsigned char>(value[last - 1]))) {
-    --last;
-  }
-  return value.substr(first, last - first);
 }
 }  // namespace stepit
 

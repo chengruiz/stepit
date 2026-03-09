@@ -49,7 +49,7 @@ struct ControlRequest {
   std::future<ControlResponse> getResponse() { return response_.get_future(); }
   void response(std::uint8_t code = 0, std::string message = "");
   void response(ErrorCode code, std::string message = "");
-  bool channelMatches(const std::string &prefix) const { return channel_.rfind(prefix, 0) == 0; }
+  bool channelMatches(const std::string &prefix) const { return startsWith(channel_, prefix); }
   friend std::ostream &operator<<(std::ostream &os, const ControlRequest &request) { return os << request.string_; }
 
  private:

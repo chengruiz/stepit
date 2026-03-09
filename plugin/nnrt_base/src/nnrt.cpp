@@ -84,7 +84,7 @@ void NnrtApi::postInit() {
         recur_params_.emplace_back("c0", "cn");
       } else {
         const std::string prefix = "memory_in";
-        if (in_name.rfind(prefix, 0) != 0) continue;
+        if (not startsWith(in_name, prefix)) continue;
         std::string suffix = in_name.substr(prefix.size());
         recur_params_.emplace_back(in_name, "memory_out" + suffix);
       }

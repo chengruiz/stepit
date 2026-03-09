@@ -109,14 +109,10 @@ std::vector<std::string> PluginManager::getPluginDirs(const std::string &executa
 }
 
 bool PluginManager::isValidPlugin(const std::string &filename) {
-  std::size_t prefix_len = std::strlen(kPluginPrefix);
-  std::size_t suffix_len = std::strlen(kPluginSuffix);
-  std::size_t total_len  = prefix_len + suffix_len;
-
-  if (filename.length() <= total_len) return false;
-  if (filename.compare(0, prefix_len, kPluginPrefix) != 0) return false;
-  if (filename.compare(filename.length() - suffix_len, suffix_len, kPluginSuffix) != 0) return false;
-  return true;
+  const std::size_t prefix_len = std::strlen(kPluginPrefix);
+  const std::size_t suffix_len = std::strlen(kPluginSuffix);
+  return filename.size() > prefix_len + suffix_len and startsWith(filename, kPluginPrefix) and
+         endsWith(filename, kPluginSuffix);
 }
 
 std::string PluginManager::getPluginName(const std::string &path) {
@@ -126,12 +122,8 @@ std::string PluginManager::getPluginName(const std::string &path) {
   const std::size_t prefix_len = std::strlen(kPluginPrefix);
   const std::size_t suffix_len = std::strlen(kPluginSuffix);
 
-  if (name.size() > prefix_len && name.compare(0, prefix_len, kPluginPrefix) == 0) {
-    name = name.substr(prefix_len);
-  }
-  if (name.size() > suffix_len && name.compare(name.size() - suffix_len, suffix_len, kPluginSuffix) == 0) {
-    name = name.substr(0, name.size() - suffix_len);
-  }
+  if (startsWith(name, kPluginPrefix)) name = name.substr(prefix_len);
+  if (endsWith(name, kPluginSuffix)) name = name.substr(0, name.size() - suffix_len);
   return name;
 }
 
