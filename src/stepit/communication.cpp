@@ -1,3 +1,4 @@
+#include <cerrno>
 #include <pthread.h>
 #include <sched.h>
 #include <unistd.h>
@@ -20,18 +21,28 @@ namespace stepit {
  *         requested CPU ID was invalid.
  */
 int setThreadCPU(pid_t pid, long cpuid) {
-  cpu_set_t mask;
-  CPU_ZERO(&mask);
-  CPU_SET(cpuid, &mask);
-  int status = sched_setaffinity(pid, sizeof(mask), &mask);
-  if (status) {
-    STEPIT_WARN("Failed to set thread affinity (error code: {}).", status);
+  long num_cpus = sysconf(_SC_NPROCESSORS_CONF);
+  if (num_cpus <= 0) {
+    STEPIT_WARN("Failed to query the number of CPUs.");
     return -1;
   }
-  sched_getaffinity(pid, sizeof(mask), &mask);
-  long num_cpus = sysconf(_SC_NPROCESSORS_CONF);
-  if (cpuid >= num_cpus) {
+  if (cpuid < 0 or cpuid >= num_cpus or cpuid >= static_cast<long>(CPU_SETSIZE)) {
     STEPIT_WARN("Invalid CPU ID '{}'.", cpuid);
+    return -1;
+  }
+
+  cpu_set_t mask;
+  CPU_ZERO(&mask);
+  CPU_SET(static_cast<int>(cpuid), &mask);
+  int status = sched_setaffinity(pid, sizeof(mask), &mask);
+  if (status) {
+    int err = errno;
+    STEPIT_WARN("Failed to set thread affinity (errno: {}).", err);
+    return -1;
+  }
+  if (sched_getaffinity(pid, sizeof(mask), &mask) != 0) {
+    int err = errno;
+    STEPIT_WARN("Failed to read thread affinity (errno: {}).", err);
     return -1;
   }
   for (int i{}; i < num_cpus; ++i) {
@@ -61,61 +72,68 @@ int setThreadRT(pthread_t thread) {
   return param.sched_priority;
 }
 
-Communication::Communication(const std::string &robot_type)
-    : api_(RobotApi::make(robot_type)),
+Communication::Communication(const std::string &robot_factory)
+    : api_(RobotApi::make(robot_factory)),
       dof_{api_->getDoF()},
-      comm_freq_{api_->getCommFreq()},
-      low_state_msg_(api_->getDoF(), api_->getNumLegs()),
-      low_cmd_msg_(api_->getDoF()) {
+      freq_{api_->getCommFreq()},
+      low_state_(api_->getDoF(), api_->getNumLegs()),
+      low_cmd_(api_->getDoF()) {
   api_->getControl(true);
 }
 
 Communication::~Communication() {
-  stopCommunicationThread();
+  shutdown();
   api_->getControl(false);
 }
 
 LowState Communication::getLowState() {
-  std::lock_guard<std::mutex> lock(comm_mtx_);
-  return low_state_msg_;
+  std::lock_guard<std::mutex> lock(mutex_);
+  return low_state_;
 }
 
-void Communication::startCommunicationThread() {
-  if (comm_thread_.joinable()) {  // thread has already started
+void Communication::setLowCmd(const LowCmd &low_cmd) {
+  STEPIT_ASSERT_EQ(low_cmd.size(), dof_, "Low command size mismatch.");
+  std::lock_guard<std::mutex> lock(mutex_);
+  low_cmd_ = low_cmd;
+}
+
+void Communication::launch() {
+  if (main_loop_thread_.joinable()) {  // thread has already started
     if (communicating_) communicating_ = false;
-    comm_thread_.join();
+    main_loop_thread_.join();
   }
 
-  active_      = false;
-  comm_thread_ = std::thread([this] { communicationMainLoop(); });
+  thread_id_        = -1;
+  active_           = false;
+  main_loop_thread_ = std::thread([this] { mainLoop(); });
 
-  while (comm_tid_ < 0) std::this_thread::sleep_for(USec(10));
+  while (thread_id_ < 0) std::this_thread::sleep_for(USec(10));
   long comm_cpuid{-1};
   if (getenv("STEPIT_COMM_CPUID", comm_cpuid)) {
-    setThreadCPU(comm_tid_, comm_cpuid);
+    setThreadCPU(thread_id_, comm_cpuid);
   }
-  int priority = setThreadRT(comm_thread_.native_handle());
+  int priority = setThreadRT(main_loop_thread_.native_handle());
   if (priority > 0) STEPIT_LOG("Set communication thread priority to {}.", priority);
 }
 
-void Communication::stopCommunicationThread() {
+void Communication::shutdown() {
   communicating_ = false;
   connected_     = false;
-  if (comm_thread_.joinable()) {
-    comm_thread_.join();
+  if (main_loop_thread_.joinable()) {
+    main_loop_thread_.join();
     STEPIT_LOG("Disconnected from Robot.");
   }
-  comm_tid_ = -1;
+  thread_id_ = -1;
 }
 
-void Communication::communicationMainLoop() {
-  comm_tid_      = gettid();
+void Communication::mainLoop() {
+  thread_id_     = gettid();
   communicating_ = true;
-  Rate rate(comm_freq_);
+  Rate rate(freq_);
   bool printed1 = false, printed2 = false;
 
   while (communicating_) {
-    communicationEvent();
+    mainEvent();
     if (not printed1 and connected_) {
       STEPIT_LOG("Robot connected.");
       printed1 = printed2 = true;
@@ -128,37 +146,35 @@ void Communication::communicationMainLoop() {
   }
 }
 
-void Communication::communicationEvent() {
+void Communication::mainEvent() {
   api_->recv();
   {
-    std::lock_guard<std::mutex> _(comm_mtx_);
-    api_->getRecv(low_state_msg_);
-    connected_ = low_state_msg_.tick != 0;
+    std::lock_guard<std::mutex> _(mutex_);
+    api_->getRecv(low_state_);
+    connected_ = low_state_.tick != 0;
     if (frozen_) active_ = false;
-    if (not active_) setDampedMode();
-    api_->setSend(low_cmd_msg_);
+    if (not active_) {
+      for (auto &motor_cmd : low_cmd_) {
+        motor_cmd.q   = 0.;
+        motor_cmd.dq  = 0.;
+        motor_cmd.tor = 0.;
+        motor_cmd.Kp  = 0.;
+        motor_cmd.Kd  = spec().kd_damped_mode;
+      }
+    }
+    api_->setSend(low_cmd_);
   }
   if (active_ or not spec().auto_damped_mode) api_->send();
   {
-    std::lock_guard<std::mutex> _(comm_mtx_);
-    publisher::publishLowLevel(spec(), low_state_msg_, low_cmd_msg_);
+    std::lock_guard<std::mutex> _(mutex_);
+    publisher::publishLowLevel(spec(), low_state_, low_cmd_);
   }
-  comm_tick_.store(comm_tick_ + 1, std::memory_order_release);
+  tick_.fetch_add(1, std::memory_order_release);
 }
 
-void Communication::waitForCommunicationTick(std::size_t tick) const {
-  while (comm_tick_.load(std::memory_order_acquire) < tick) {
+void Communication::waitUntil(std::size_t tick) const {
+  while (tick_.load(std::memory_order_acquire) < tick) {
     std::this_thread::sleep_for(USec(10));
-  }
-}
-
-void Communication::setDampedMode() {
-  for (auto &motor_cmd : low_cmd_msg_) {
-    motor_cmd.q   = 0.;
-    motor_cmd.dq  = 0.;
-    motor_cmd.tor = 0.;
-    motor_cmd.Kp  = 0.;
-    motor_cmd.Kd  = spec().kd_damped_mode;
   }
 }
 }  // namespace stepit

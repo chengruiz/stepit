@@ -18,14 +18,14 @@ const std::map<std::string, Agent::Action> Agent::kActionMap = {
 };
 // clang-format on
 
-Agent::Agent(const std::string &robot_type, const std::vector<std::string> &ctrl_type)
-    : Communication(robot_type), ctrl_input_(ctrl_type), command_(dof()) {}
+Agent::Agent(const std::string &robot_factory, const std::vector<std::string> &control_factories)
+    : communication_(robot_factory), ctrl_input_(control_factories), low_cmd_(communication_.dof()) {}
 
-void Agent::addPolicy(const std::string &policy_type, const std::string &home_dir) {
-  auto policy = Policy::make(policy_type, spec(), home_dir);
-  if (getCommunicationFreq() % policy->getControlFreq() != 0) {
+void Agent::addPolicy(const std::string &policy_factory, const std::string &home_dir) {
+  auto policy = Policy::make(policy_factory, spec(), home_dir);
+  if (communication_.getFreq() % policy->getControlFreq() != 0) {
     STEPIT_WARN("Policy control frequency ({}) is not a divisor of the communication frequency ({}).",
-                policy->getControlFreq(), getCommunicationFreq());
+                policy->getControlFreq(), communication_.getFreq());
   }
   policies_.push_back(std::move(policy));
   if (policies_.size() == 1) {
@@ -35,44 +35,45 @@ void Agent::addPolicy(const std::string &policy_type, const std::string &home_di
 }
 
 int Agent::stepit() {
-  startCommunicationThread();
-  startAgentThread();
+  communication_.launch();
+  launch();
   return spin();
 }
 
-void Agent::startAgentThread() {
-  if (agent_thread_.joinable()) {
+void Agent::launch() {
+  if (main_loop_thread_.joinable()) {
     if (agent_started_) agent_started_ = false;
-    agent_thread_.join();
+    main_loop_thread_.join();
   }
-  agent_thread_ = std::thread([this] { agentMainLoop(); });
+  thread_id_        = -1;
+  main_loop_thread_ = std::thread([this] { mainLoop(); });
 
-  while (agent_tid_ < 0) std::this_thread::sleep_for(USec(10));
+  while (thread_id_ < 0) std::this_thread::sleep_for(USec(10));
   long agent_cpuid{-1};
   if (getenv("STEPIT_AGENT_CPUID", agent_cpuid)) {
-    setThreadCPU(agent_tid_, agent_cpuid);
+    setThreadCPU(thread_id_, agent_cpuid);
   }
-  int priority = setThreadRT(agent_thread_.native_handle());
+  int priority = setThreadRT(main_loop_thread_.native_handle());
   if (priority > 0) STEPIT_LOG("Set agent thread priority to {}.", priority);
 }
 
-void Agent::stopAgentThread() {
-  if (agent_thread_.joinable()) {
+void Agent::shutdown() {
+  if (main_loop_thread_.joinable()) {
     agent_started_ = false;
-    agent_thread_.join();
-    agent_tid_ = -1;
+    main_loop_thread_.join();
+    thread_id_ = -1;
     STEPIT_LOG("Agent stopped.");
   }
 }
 
-void Agent::agentMainLoop() {
+void Agent::mainLoop() {
   STEPIT_LOG("Agent started.");
 
-  agent_tid_            = gettid();
+  thread_id_            = gettid();
   agent_started_        = true;
   ctrl_available_       = ctrl_input_.available();
-  bool robot_connected  = isConnected();
-  std::size_t next_tick = getCommunicationTick();
+  bool robot_connected  = communication_.isConnected();
+  std::size_t next_tick = communication_.getTick();
 
   if (ctrl_available_) {
     STEPIT_LOG("Control input is available.");
@@ -82,20 +83,20 @@ void Agent::agentMainLoop() {
 
   while (agent_started_) {
     if (not robot_connected) {
-      robot_connected = isConnected();
-    } else if (not isConnected()) {
+      robot_connected = communication_.isConnected();
+    } else if (not communication_.isConnected()) {
       STEPIT_CRIT("Agent quit due to interrupted communication.");
       return;
     } else {
-      agentMainEvent();
+      mainEvent();
     }
 
     publishStatus();
-    waitForCommunicationTick(++next_tick);
+    communication_.waitUntil(++next_tick);
   }
 }
 
-void Agent::agentMainEvent() {
+void Agent::mainEvent() {
   updateControlInput();
   stepStateMachine();
 }
@@ -237,10 +238,10 @@ void Agent::stepStateMachine() {
   switch (curr_state_) {
     case State::kFrozen:
       if (state_tick_ == 0) STEPIT_LOG("Agent frozen.");
-      setFrozen();
+      communication_.setFrozen();
       break;
     case State::kResting:
-      setActive(false);
+      communication_.setActive(false);
       break;
     case State::kStandingStill:
       next_state = eventStandingStill();
@@ -267,8 +268,8 @@ void Agent::stepStateMachine() {
 
 void Agent::trySwitchState(State next_state) {
   if (next_state > State::kResting and not(next_state == State::kPolicy and isActivePolicyTrusted())) {
-    if (std::abs(low_state_msg_.imu.rpy[0]) > spec().safety.roll or
-        std::abs(low_state_msg_.imu.rpy[1]) > spec().safety.pitch) {
+    LowState low_state{communication_.getLowState()};
+    if (std::abs(low_state.imu.rpy[0]) > spec().safety.roll or std::abs(low_state.imu.rpy[1]) > spec().safety.pitch) {
       next_state = State::kFrozen;
       STEPIT_WARN("Agent froze due to safety violations.");
     }
@@ -288,7 +289,7 @@ void Agent::onExit(State curr_state) {
   switch (curr_state) {
     case State::kFrozen:
       STEPIT_LOG("Agent unfroze.");
-      setFrozen(false);
+      communication_.setFrozen(false);
       break;
     case State::kPolicy:
       active_policy_->exit();
@@ -308,69 +309,67 @@ Agent::State Agent::eventStandingStill() {
   }
 
   for (std::size_t i{}; i < dof(); ++i) {
-    command_[i].q   = spec().standing_cfg[i];
-    command_[i].dq  = 0.0F;
-    command_[i].tor = 0.0F;
-    command_[i].Kp  = spec().kp[i];
-    command_[i].Kd  = spec().kd[i];
+    low_cmd_[i].q   = spec().standing_cfg[i];
+    low_cmd_[i].dq  = 0.0F;
+    low_cmd_[i].tor = 0.0F;
+    low_cmd_[i].Kp  = spec().kp[i];
+    low_cmd_[i].Kd  = spec().kd[i];
   }
-  applyCommand();
+  communication_.setLowCmd(low_cmd_);
   return State::kStandingStill;
 }
 
 Agent::State Agent::eventStandingUp() {
+  LowState low_state{communication_.getLowState()};
   std::vector<float> joint_pos(dof());
-  {
-    std::lock_guard<std::mutex> _(comm_mtx_);
-    for (std::size_t i{}; i < dof(); ++i) {
-      joint_pos[i] = low_state_msg_.motor_state[i].q;
-    }
+  for (std::size_t i{}; i < dof(); ++i) {
+    joint_pos[i] = low_state.motor_state[i].q;
   }
 
   if (state_tick_ == 0) {
     STEPIT_LOG("Standing up...");
     for (std::size_t i{}; i < dof(); ++i) {
-      command_[i].q   = joint_pos[i];
-      command_[i].dq  = 0.0F;
-      command_[i].tor = 0.0F;
-      command_[i].Kp  = spec().kp[i];
-      command_[i].Kd  = spec().kd[i];
+      low_cmd_[i].q   = joint_pos[i];
+      low_cmd_[i].dq  = 0.0F;
+      low_cmd_[i].tor = 0.0F;
+      low_cmd_[i].Kp  = spec().kp[i];
+      low_cmd_[i].Kd  = spec().kd[i];
     }
-    setActive();
+    communication_.setActive();
   }
   for (std::size_t i{}; i < dof(); ++i) {
     float stuck_threshold = spec().stuck_threshold[i];
-    if (stuck_threshold > 0 and std::abs(command_[i].q - joint_pos[i]) > stuck_threshold) {
+    if (stuck_threshold > 0 and std::abs(low_cmd_[i].q - joint_pos[i]) > stuck_threshold) {
       STEPIT_WARN("Failed to stand up as legs are probably stuck.");
       return State::kResting;
     }
   }
 
-  std::size_t num_steps1 = getNumSteps(spec().resetting_time);
-  std::size_t num_steps2 = getNumSteps(spec().standing_up_time);
+  std::size_t num_steps1 = calculateStepCount(spec().resetting_time);
+  std::size_t num_steps2 = calculateStepCount(spec().standing_up_time);
   if (state_tick_ < num_steps1) {
     float factor = 1.0F / static_cast<float>(num_steps1 - state_tick_);
     for (std::size_t i{}; i < dof(); ++i) {
-      command_[i].q   = lerp(command_[i].q, spec().lying_cfg[i], factor);
-      command_[i].dq  = 0.0F;
-      command_[i].tor = 0.0F;
-      command_[i].Kp  = spec().kp[i];
-      command_[i].Kd  = spec().kd[i];
+      low_cmd_[i].q   = lerp(low_cmd_[i].q, spec().lying_cfg[i], factor);
+      low_cmd_[i].dq  = 0.0F;
+      low_cmd_[i].tor = 0.0F;
+      low_cmd_[i].Kp  = spec().kp[i];
+      low_cmd_[i].Kd  = spec().kd[i];
     }
-    applyCommand();
+    communication_.setLowCmd(low_cmd_);
     return State::kStandingUp;
   }
 
   std::size_t tick2 = state_tick_ - num_steps1;
   float factor      = 1.0F / static_cast<float>(num_steps2 - tick2 + 1);
   for (std::size_t i{}; i < dof(); ++i) {
-    command_[i].q   = lerp(command_[i].q, spec().standing_cfg[i], factor);
-    command_[i].dq  = 0.0F;
-    command_[i].tor = 0.0F;
-    command_[i].Kp  = spec().kp[i];
-    command_[i].Kd  = spec().kd[i];
+    low_cmd_[i].q   = lerp(low_cmd_[i].q, spec().standing_cfg[i], factor);
+    low_cmd_[i].dq  = 0.0F;
+    low_cmd_[i].tor = 0.0F;
+    low_cmd_[i].Kp  = spec().kp[i];
+    low_cmd_[i].Kd  = spec().kd[i];
   }
-  applyCommand();
+  communication_.setLowCmd(low_cmd_);
 
   if (tick2 < num_steps2) return State::kStandingUp;
   return State::kStandingStill;
@@ -379,21 +378,21 @@ Agent::State Agent::eventStandingUp() {
 Agent::State Agent::eventLyingDown() {
   if (state_tick_ == 0) {
     STEPIT_LOG("Lying down...");
-    std::lock_guard<std::mutex> _(comm_mtx_);
+    LowState low_state{communication_.getLowState()};
     for (std::size_t i{}; i < dof(); ++i) {
-      command_[i].q = low_state_msg_.motor_state[i].q;
+      low_cmd_[i].q = low_state.motor_state[i].q;
     }
   }
-  std::size_t num_steps = getNumSteps(spec().lying_down_time);
+  std::size_t num_steps = calculateStepCount(spec().lying_down_time);
   float factor          = 1.0F / static_cast<float>(num_steps - state_tick_ + 1);
   for (std::size_t i{}; i < dof(); ++i) {
-    command_[i].q   = lerp(command_[i].q, spec().lying_cfg[i], factor);
-    command_[i].dq  = 0.0F;
-    command_[i].tor = 0.0F;
-    command_[i].Kp  = spec().kp[i];
-    command_[i].Kd  = spec().kd[i];
+    low_cmd_[i].q   = lerp(low_cmd_[i].q, spec().lying_cfg[i], factor);
+    low_cmd_[i].dq  = 0.0F;
+    low_cmd_[i].tor = 0.0F;
+    low_cmd_[i].Kp  = spec().kp[i];
+    low_cmd_[i].Kd  = spec().kd[i];
   }
-  applyCommand();
+  communication_.setLowCmd(low_cmd_);
 
   if (state_tick_ < num_steps) return State::kLyingDown;
   STEPIT_LOG("Lying.");
@@ -403,23 +402,23 @@ Agent::State Agent::eventLyingDown() {
 Agent::State Agent::eventReturningToStanding() {
   if (state_tick_ == 0) {
     STEPIT_LOG("Policy quit.");
-    std::lock_guard<std::mutex> lock(comm_mtx_);
+    LowState low_state{communication_.getLowState()};
     for (std::size_t i{}; i < dof(); ++i) {
-      command_[i].q   = low_state_msg_.motor_state[i].q;
-      command_[i].dq  = 0.0F;
-      command_[i].tor = 0.0F;
+      low_cmd_[i].q   = low_state.motor_state[i].q;
+      low_cmd_[i].dq  = 0.0F;
+      low_cmd_[i].tor = 0.0F;
     }
   }
-  std::size_t num_steps = getNumSteps(spec().returning_to_standing_time);
+  std::size_t num_steps = calculateStepCount(spec().returning_to_standing_time);
   float factor          = 1.0F / static_cast<float>(num_steps - state_tick_ + 1);
   for (std::size_t i{}; i < dof(); ++i) {
-    command_[i].q   = lerp(command_[i].q, spec().standing_cfg[i], factor);
-    command_[i].dq  = 0.0F;
-    command_[i].tor = 0.0F;
-    command_[i].Kp  = spec().kp[i];
-    command_[i].Kd  = spec().kd[i];
+    low_cmd_[i].q   = lerp(low_cmd_[i].q, spec().standing_cfg[i], factor);
+    low_cmd_[i].dq  = 0.0F;
+    low_cmd_[i].tor = 0.0F;
+    low_cmd_[i].Kp  = spec().kp[i];
+    low_cmd_[i].Kd  = spec().kd[i];
   }
-  applyCommand();
+  communication_.setLowCmd(low_cmd_);
 
   if (state_tick_ < num_steps) return State::kReturningToStanding;
   return State::kStandingStill;
@@ -432,11 +431,11 @@ Agent::State Agent::eventPolicy() {
       return State::kResting;
     }
     policy_timer_.clear();
-    setActive();
+    communication_.setActive();
     STEPIT_LOG("Policy '{}' started.", active_policy_->getName());
   }
   std::size_t ratio = std::max(
-      static_cast<std::size_t>(std::round(static_cast<double>(getCommunicationFreq()) /
+      static_cast<std::size_t>(std::round(static_cast<double>(communication_.getFreq()) /
                                           static_cast<double>(active_policy_->getControlFreq()))),
       1UL);
   if (state_tick_ % ratio == 0) {
@@ -471,36 +470,31 @@ bool Agent::selectPolicy(std::size_t index) {
 
 bool Agent::runPolicy() {
   TimerContext _(policy_timer_);
-  LowState low_state{getLowState()};
+  LowState low_state{communication_.getLowState()};
 
-  if (active_policy_->act(low_state, policy_requests_, command_)) {
+  if (active_policy_->act(low_state, policy_requests_, low_cmd_)) {
     for (auto &&request : policy_requests_) {
       request.response(kUnrecognizedRequest);
     }
     policy_requests_.clear();
-    applyCommand();
+    communication_.setLowCmd(low_cmd_);
     return true;
   }
 
   for (std::size_t i{}; i < dof(); ++i) {
-    command_[i].q   = spec().standing_cfg[i];
-    command_[i].dq  = 0.0F;
-    command_[i].tor = 0.0F;
-    command_[i].Kp  = spec().kp[i];
-    command_[i].Kd  = spec().kd[i];
+    low_cmd_[i].q   = spec().standing_cfg[i];
+    low_cmd_[i].dq  = 0.0F;
+    low_cmd_[i].tor = 0.0F;
+    low_cmd_[i].Kp  = spec().kp[i];
+    low_cmd_[i].Kd  = spec().kd[i];
   }
-  applyCommand();
+  communication_.setLowCmd(low_cmd_);
   return false;
-}
-
-void Agent::applyCommand() {
-  std::lock_guard<std::mutex> lock(comm_mtx_);
-  low_cmd_msg_ = command_;
 }
 
 void Agent::publishStatus() const {
   publisher::updateStatus("Agent/ActivePolicy", active_policy_ ? active_policy_->getName() : "null");
-  publisher::updateStatus("Agent/Connected", isConnected());
+  publisher::updateStatus("Agent/Connected", communication_.isConnected());
   publisher::updateStatus("Agent/ControlAvailable", ctrl_available_);
   publisher::updateStatus("Agent/State", static_cast<std::uint8_t>(curr_state_));
   publisher::publishStatus();

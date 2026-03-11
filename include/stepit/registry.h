@@ -52,8 +52,8 @@ class Registry {
 
   std::unique_ptr<T> make(std::string name, Args... args);
   std::string entryListString() const;
-  Registration createRegistration(const std::string &name, int priority, Factory factory) {
-    return {this, name, priority, std::move(factory)};
+  Registration createRegistration(std::string name, int priority, Factory factory) {
+    return {this, std::move(name), priority, std::move(factory)};
   }
 
  private:
@@ -259,8 +259,8 @@ class Interface {
 
   class Registration : public Registry::Registration {
    public:
-    Registration(const std::string &name, int priority, Factory factory)
-        : Registry::Registration(&registry(), name, priority, std::move(factory)) {}
+    Registration(std::string name, int priority, Factory factory)
+        : Registry::Registration(&registry(), std::move(name), priority, std::move(factory)) {}
   };
 
   static Ptr make(std::string name, Args... args) {

@@ -11,12 +11,12 @@
 #include <stepit/policy.h>
 
 namespace stepit {
-class Agent final : public Communication {
+class Agent final {
  public:
-  explicit Agent(const std::string &robot_type, const std::vector<std::string> &ctrl_type);
-  ~Agent() override { stopAgentThread(); }
+  explicit Agent(const std::string &robot_factory, const std::vector<std::string> &control_factories);
+  ~Agent() { shutdown(); }
 
-  void addPolicy(const std::string &policy_type, const std::string &home_dir);
+  void addPolicy(const std::string &policy_factory, const std::string &home_dir);
   int stepit();
 
   enum class State : std::uint8_t {
@@ -46,10 +46,10 @@ class Agent final : public Communication {
  private:
   static const std::map<std::string, Action> kActionMap;
 
-  void startAgentThread();
-  void stopAgentThread();
-  void agentMainLoop();
-  void agentMainEvent();
+  void launch();
+  void shutdown();
+  void mainLoop();
+  void mainEvent();
   void updateControlInput();
   void handleControlRequest(ControlRequest request);
   void stepStateMachine();
@@ -65,7 +65,6 @@ class Agent final : public Communication {
   bool selectPolicy(const std::string &name);
   bool selectPolicy(std::size_t index);
   bool runPolicy();
-  void applyCommand();
   void publishStatus() const;
 
   bool isActivePolicyTrusted() const { return active_policy_ != nullptr and active_policy_->isTrusted(); }
@@ -74,16 +73,20 @@ class Agent final : public Communication {
            or (curr_state_ != State::kFrozen and isActivePolicyTrusted())  // trusted policy
         ;
   }
-  std::size_t getNumSteps(double seconds) const {
-    return static_cast<std::size_t>(seconds * static_cast<double>(getCommunicationFreq()));
+  std::size_t calculateStepCount(double seconds) const {
+    return static_cast<std::size_t>(seconds * static_cast<double>(communication_.getFreq()));
   }
 
+  const RobotSpec &spec() const { return communication_.spec(); }
+  std::size_t dof() const { return communication_.dof(); }
+
+  Communication communication_;
   MultipleControlInputs ctrl_input_;
   bool ctrl_available_{false};
 
-  std::thread agent_thread_;
-  std::atomic<pid_t> agent_tid_{-1};
-  LowCmd command_;
+  std::thread main_loop_thread_;
+  std::atomic<pid_t> thread_id_{-1};
+  LowCmd low_cmd_;
   std::atomic<bool> agent_started_{false};
   State curr_state_{State::kResting};
   State next_state_{State::kResting};
