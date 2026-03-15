@@ -30,5 +30,5 @@ stepit_add_plugin(${PROJECT_NAME}
 
 set(TENSORRT_INCLUDE_DIR ${TENSORRT_LIB_DIR}/../include)
 if (EXISTS "${TENSORRT_INCLUDE_DIR}")
-  target_include_directories(${PROJECT_NAME} PUBLIC ${TENSORRT_INCLUDE_DIR})
+  target_include_directories(${PROJECT_NAME} SYSTEM PUBLIC ${TENSORRT_INCLUDE_DIR})
 endif ()

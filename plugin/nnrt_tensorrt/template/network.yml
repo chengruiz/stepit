@@ -19,6 +19,8 @@ recurrent_params:            # [Optional] List[Tuple[String, String]], override 
 
 tensorrt_options:            # [Optional] Dict, TensorRT build / load options
   precision: fp32            # [Optional] Literal["fp16", "fp32"], TensorRT precision mode
+                             #   On TensorRT 10.12+, 'fp16' relies on FP16 types already present in the ONNX model
+                             #   or on a prebuilt engine because BuilderFlag::kFP16 is deprecated
   device_id: 0               # [Optional] Int, CUDA device index used before build / load
   engine_path: model.engine  # [Optional] String, serialized TensorRT engine path
                              #   Defaults to model_path with the .engine extension

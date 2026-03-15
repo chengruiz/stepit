@@ -1,24 +1,40 @@
 #include <cctype>
 #include <fstream>
+#include <functional>
 #include <iostream>
+#include <numeric>
+#include <type_traits>
+
+#include <NvInferVersion.h>
 
 #include <stepit/nnrt/tensorrt.h>
 
-#define STEPIT_CUDA_CALL(api, ...)                                            \
-  do {                                                                        \
-    auto ret = api(__VA_ARGS__);                                              \
-    STEPIT_ASSERT(ret == cudaSuccess, #api " failed (error code: {}).", ret); \
+#define STEPIT_CUDA_CALL(api, ...)                                                        \
+  do {                                                                                    \
+    auto status = api(__VA_ARGS__);                                                       \
+    STEPIT_ASSERT(status == cudaSuccess, #api " failed (error code: {}).",                \
+                  static_cast<typename std::underlying_type<cudaError_t>::type>(status)); \
   } while (0)
+
+#define TENSORRT_VERSION_AT_LEAST(major, minor, patch) \
+  ((NV_TENSORRT_MAJOR > (major)) or                    \
+   (NV_TENSORRT_MAJOR == (major) and                   \
+    (NV_TENSORRT_MINOR > (minor) or (NV_TENSORRT_MINOR == (minor) and NV_TENSORRT_PATCH >= (patch)))))
+
+#if !TENSORRT_VERSION_AT_LEAST(8, 5, 1)
+#error "stepit_plugin_nnrt_tensorrt requires TensorRT 8.5.1 or newer."
+#endif
 
 namespace stepit {
 namespace {
 std::string dimsToString(const nvinfer1::Dims &dims) {
-  std::vector<int32_t> values(dims.d, dims.d + dims.nbDims);
+  using Dim = std::remove_reference_t<decltype(nvinfer1::Dims::d[0])>;
+  std::vector<Dim> values(dims.d, dims.d + dims.nbDims);
   return fmt::format("{}", values);
 }
 
 bool hasDynamicDim(const nvinfer1::Dims &dims) {
-  for (int i{}; i < dims.nbDims; ++i) {
+  for (std::int32_t i{}; i < dims.nbDims; ++i) {
     if (dims.d[i] < 0) return true;
   }
   return false;
@@ -113,23 +129,24 @@ TensorRTApi::TensorRTApi(const std::string &path, const yml::Node &config)
     STEPIT_ASSERT(not hasDynamicDim(dims),
                   "TensorRT tensor '{}' has dynamic shape {}. Use 'trtexec' for advanced dynamic-shape builds.", name,
                   dimsToString(dims));
-    auto size = std::accumulate(dims.d, dims.d + dims.nbDims, 1, std::multiplies<>());
+    auto size  = std::accumulate(dims.d, dims.d + dims.nbDims, 1, std::multiplies<>());
+    auto bytes = static_cast<std::size_t>(size) * sizeof(float);
 
     if (engine_->getTensorIOMode(name) == nvinfer1::TensorIOMode::kINPUT) {
       in_shapes_.emplace_back(dims.d, dims.d + dims.nbDims);
       in_sizes_.push_back(size);
       in_names_.push_back(name);
-      inputs_.emplace_back(cu_stream_, size * sizeof(float));
+      inputs_.emplace_back(cu_stream_, bytes);
       ++num_in_;
       STEPIT_ASSERT(context_->setTensorAddress(name, inputs_.back()), "Failed to set tensor address!");
     } else {
       out_shapes_.emplace_back(dims.d, dims.d + dims.nbDims);
       out_sizes_.push_back(size);
       float *memory{nullptr};
-      cudaMallocHost(&memory, size * sizeof(float));
+      STEPIT_CUDA_CALL(cudaMallocHost, &memory, bytes);
       out_data_.push_back(memory);
       out_names_.push_back(name);
-      outputs_.emplace_back(cu_stream_, size * sizeof(float));
+      outputs_.emplace_back(cu_stream_, bytes);
       ++num_out_;
       STEPIT_ASSERT(context_->setTensorAddress(name, outputs_.back()), "Failed to set tensor address!");
     }
@@ -155,9 +172,20 @@ bool TensorRTApi::build(const std::string &onnx_path, const std::string &engine_
   auto builder = std::unique_ptr<nvinfer1::IBuilder>(nvinfer1::createInferBuilder(CuLogger::instance()));
   if (builder == nullptr) return false;
 
-  const auto explicit_batch_flag = 1U << static_cast<uint32_t>(
-                                       nvinfer1::NetworkDefinitionCreationFlag::kEXPLICIT_BATCH);
-  auto network = std::unique_ptr<nvinfer1::INetworkDefinition>(builder->createNetworkV2(explicit_batch_flag));
+  nvinfer1::NetworkDefinitionCreationFlags flags{0U};
+#if !TENSORRT_VERSION_AT_LEAST(10, 0, 0)
+  flags |= 1U << static_cast<uint32_t>(nvinfer1::NetworkDefinitionCreationFlag::kEXPLICIT_BATCH);
+#endif
+#if TENSORRT_VERSION_AT_LEAST(10, 12, 0)
+  if (use_fp16_) {
+    STEPIT_WARNNT(
+        "TensorRT 10.12+ builds the ONNX model with strongly typed mode for 'precision: fp16'. Use an FP16 ONNX model "
+        "or a prebuilt FP16 engine if you require FP16 inference.");
+    flags |= 1U << static_cast<uint32_t>(nvinfer1::NetworkDefinitionCreationFlag::kSTRONGLY_TYPED);
+  }
+#endif
+
+  auto network = std::unique_ptr<nvinfer1::INetworkDefinition>(builder->createNetworkV2(flags));
   if (network == nullptr) return false;
 
   auto parser = std::unique_ptr<nvonnxparser::IParser>(nvonnxparser::createParser(*network, CuLogger::instance()));
@@ -177,7 +205,9 @@ bool TensorRTApi::build(const std::string &onnx_path, const std::string &engine_
 
   auto config = std::unique_ptr<nvinfer1::IBuilderConfig>(builder->createBuilderConfig());
   if (config == nullptr) return false;
+#if !TENSORRT_VERSION_AT_LEAST(10, 12, 0)
   if (use_fp16_) config->setFlag(nvinfer1::BuilderFlag::kFP16);
+#endif
 
   auto plan = std::unique_ptr<nvinfer1::IHostMemory>{builder->buildSerializedNetwork(*network, *config)};
   if (plan == nullptr) return false;
