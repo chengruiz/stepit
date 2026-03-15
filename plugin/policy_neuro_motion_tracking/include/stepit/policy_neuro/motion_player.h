@@ -3,6 +3,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <string>
 #include <vector>
 
 #include <stepit/joystick/joystick.h>
@@ -27,6 +28,7 @@ class MotionPlayer : public Module {
 
  private:
   struct MotionData {
+    std::string name;
     std::vector<std::vector<ArrXf>> fields;
     std::size_t num_frames{};
   };
@@ -51,6 +53,7 @@ class MotionPlayer : public Module {
   std::vector<FieldSpec> field_specs_;
   std::vector<ArrXf> buffers_;
   std::vector<JoystickRule> joystick_rules_;
+  FieldId motion_frame_index_id_{};
 
   std::size_t clip_index_{};
   std::size_t frame_index_{};

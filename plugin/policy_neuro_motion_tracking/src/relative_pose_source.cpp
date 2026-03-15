@@ -1,3 +1,4 @@
+#include <cstddef>
 #include <stepit/policy_neuro/relative_pose_source.h>
 
 namespace stepit {
@@ -95,7 +96,6 @@ bool RelativePosSource::update(const LowState &, ControlRequests &, FieldMap &co
 
 MotionAlignment::MotionAlignment(const NeuroPolicySpec &policy_spec, const ModuleSpec &module_spec)
     : Module(policy_spec, ModuleSpec(module_spec, "motion_alignment")) {
-  aligned_ = false;
   world_to_init_yaw_.setIdentity();
   world_to_init_pos_.setZero();
   reference_index_          = config_["reference_index"].as<int>(0);
@@ -108,6 +108,7 @@ MotionAlignment::MotionAlignment(const NeuroPolicySpec &policy_spec, const Modul
 
   current_ori_id_        = registerRequirement(current_ori_name_, 4);
   target_ori_id_         = registerRequirement(target_ori_name_);
+  motion_frame_index_id_ = registerRequirement("motion_frame_index", 1);
   aligned_target_ori_id_ = registerProvision("aligned_target_ori", 0);
 
   if (not target_pos_name_.empty()) {
@@ -145,7 +146,6 @@ void MotionAlignment::init() {
 }
 
 bool MotionAlignment::reset() {
-  aligned_ = false;
   world_to_init_yaw_.setIdentity();
   world_to_init_pos_.setZero();
   return true;
@@ -158,14 +158,13 @@ bool MotionAlignment::update(const LowState &, ControlRequests &, FieldMap &cont
   Vec3f current_pos = current_pos_id_ == kInvalidFieldId ? Vec3f::Zero() : context.at(current_pos_id_);
   ArrXf target_pos  = target_pos_id_ == kInvalidFieldId ? ArrXf::Zero(target_ori.size()) : context.at(target_pos_id_);
 
-  if (not aligned_) {
+  if (static_cast<std::size_t>(context.at(motion_frame_index_id_)(0)) == 0) {
     Quatf reference_ori(target_ori.segment(4 * resolved_reference_index_, 4));
     Quatf current_yaw   = Quatf::fromYaw(current_ori.eulerAngles().z());
     Quatf reference_yaw = Quatf::fromYaw(reference_ori.eulerAngles().z());
     Vec3f reference_pos = target_pos.segment(3 * resolved_reference_index_, 3);
     world_to_init_yaw_  = current_yaw * reference_yaw.inverse();
     world_to_init_pos_  = current_pos - world_to_init_yaw_ * reference_pos;
-    aligned_            = true;
   }
 
   ArrXf aligned_target_ori(4 * num_frames_);

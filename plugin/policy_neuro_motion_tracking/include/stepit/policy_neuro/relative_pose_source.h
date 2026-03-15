@@ -55,6 +55,7 @@ class MotionAlignment : public Module {
   std::string target_ori_name_;
   FieldId current_pos_id_{};
   FieldId current_ori_id_{};
+  FieldId motion_frame_index_id_{};
   FieldId target_pos_id_{};
   FieldId target_ori_id_{};
   FieldId aligned_target_pos_id_{};
@@ -63,7 +64,6 @@ class MotionAlignment : public Module {
   int reference_index_{};
   std::size_t resolved_reference_index_{};
 
-  bool aligned_{};
   Quatf world_to_init_yaw_;
   Vec3f world_to_init_pos_;
 };

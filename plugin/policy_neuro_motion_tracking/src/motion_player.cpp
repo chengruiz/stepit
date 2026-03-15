@@ -60,11 +60,11 @@ MotionPlayer::MotionPlayer(const NeuroPolicySpec &policy_spec, const ModuleSpec 
   STEPIT_ASSERT(target_freq > 0., "Control frequency should be positive, but got {}.", target_freq);
   const auto dataloader_factory = config_["dataloader_factory"].as<std::string>("");
   for (const auto &motion_path : motion_paths) {
-    motions_.emplace_back();
-    auto &motion = motions_.back();
-    MotionClip motion_clip(motion_path, dataloader_factory);
+    MotionData motion;
+    motion.name = fs::path(motion_path).stem().string();
 
     // Load fields for the motion clip according to the field specifications
+    MotionClip motion_clip(motion_path, dataloader_factory);
     for (auto &field_spec : field_specs_) {
       auto field_frames = motion_clip.loadField(field_spec.name, field_spec.key, field_spec.indices, field_spec.type,
                                                 field_spec.differentiate, target_freq);
@@ -94,15 +94,15 @@ MotionPlayer::MotionPlayer(const NeuroPolicySpec &policy_spec, const ModuleSpec 
       }
       motion.fields.push_back(field_frames);
     }
-
-    STEPIT_DBUG("Loaded trajectory with {} frames and {} fields from '{}'.", motion.num_frames, motion.fields.size(),
-                motion_clip.path());
+    STEPIT_DBUG("Loaded motion with {} frames from '{}'.", motion.num_frames, motion_clip.path());
+    motions_.push_back(std::move(motion));
   }
 
   // Register the provision for the field
   for (auto &field_spec : field_specs_) {
     field_spec.field_id = registerProvision(field_spec.name, static_cast<FieldSize>(field_spec.field_size));
   }
+  motion_frame_index_id_ = registerProvision("motion_frame_index", 1);
   // Initialize buffers for each field
   buffers_.resize(field_specs_.size());
   for (std::size_t i{}; i < field_specs_.size(); ++i) {
@@ -124,8 +124,9 @@ bool MotionPlayer::update(const LowState &, ControlRequests &requests, FieldMap 
   for (auto &&request : requests.filterByChannel("Policy/Motion")) {
     handleControlRequest(std::move(request));
   }
-  const auto &motion = motions_[clip_index_];
 
+  // Write the current frame of the current clip to the context according to the field specifications
+  const auto &motion = motions_[clip_index_];
   for (std::size_t field_index{}; field_index < field_specs_.size(); ++field_index) {
     const auto &field_spec = field_specs_[field_index];
     const auto &field      = motion.fields[field_index];
@@ -141,6 +142,7 @@ bool MotionPlayer::update(const LowState &, ControlRequests &requests, FieldMap 
     }
     context[field_spec.field_id] = buffer;
   }
+  context[motion_frame_index_id_] = ArrXf::Constant(1, static_cast<float>(frame_index_));
 
   if (frame_index_ + 1 < motions_[clip_index_].num_frames) ++frame_index_;
   return true;
@@ -152,6 +154,7 @@ void MotionPlayer::handleControlRequest(ControlRequest request) {
     case Action::kSelectNextClip: {
       clip_index_  = (clip_index_ + 1) % motions_.size();
       frame_index_ = 0;
+      STEPIT_LOG("Switched to motion clip '{}'.", motions_[clip_index_].name);
       request.response(kSuccess);
       break;
     }
