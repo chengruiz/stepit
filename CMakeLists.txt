@@ -59,6 +59,7 @@ stepit_add_library(stepit_core SHARED
     src/stepit/utils.cpp
 )
 target_compile_definitions(stepit_core PRIVATE STEPIT_CONFIG_DIR=\"${STEPIT_HOME_DIRECTORY}/config\")
+target_compile_definitions(stepit_core PUBLIC FMT_HEADER_ONLY=1)
 target_compile_options(stepit_core PUBLIC -fPIC PRIVATE -Wall -Wextra -Wpedantic -Wno-unused-parameter)
 target_include_directories(stepit_core PUBLIC ${STEPIT_HOME_DIRECTORY}/include)
 target_link_libraries(stepit_core PUBLIC

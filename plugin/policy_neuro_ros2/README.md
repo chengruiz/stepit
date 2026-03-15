@@ -2,10 +2,10 @@
 
 StepIt plugin for ROS2-based modules that subscribe to ROS2 topics and feed data into the StepIt neuro policy.
 
-## Preliminaries
+### Prerequisites
 
 ```shell
-sudo apt install ros-${ROS_DISTRO}-grid-map-ros
+sudo apt install ros-${ROS_DISTRO}-cv-bridge ros-${ROS_DISTRO}-grid-map-ros
 ```
 
 ### Provided Factories

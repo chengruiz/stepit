@@ -2,6 +2,12 @@
 
 StepIt plugin for ROS-based modules that subscribe ROS topics and feed data into the StepIt neuro policy.
 
+### Prerequisites
+
+```shell
+sudo apt install ros-${ROS_DISTRO}-cv-bridge ros-${ROS_DISTRO}-grid-map-ros
+```
+
 ### Provided Factories
 
 `stepit::neuro_policy::Module`:
@@ -31,43 +37,43 @@ StepIt plugin for ROS-based modules that subscribe ROS topics and feed data into
 
 - Channel: `Policy/CmdVel`
 
-  | Action              | Argument | Description                           |
-  | :------------------ | :------- | :------------------------------------ |
-  | `EnableSubscriber`  |          | Enables subscription to ROS topics.   |
-  | `DisableSubscriber` |          | Disables subscription to ROS topics.  |
-  | `SwitchSubscriber`  |          | Toggles subscription to ROS topics.   |
+  | Action              | Argument | Description                          |
+  | :------------------ | :------- | :----------------------------------- |
+  | `EnableSubscriber`  |          | Enables subscription to ROS topics.  |
+  | `DisableSubscriber` |          | Disables subscription to ROS topics. |
+  | `SwitchSubscriber`  |          | Toggles subscription to ROS topics.  |
 
 - Channel: `Policy/CmdRoll`
 
-  | Action              | Argument | Description                           |
-  | :------------------ | :------- | :------------------------------------ |
-  | `EnableSubscriber`  |          | Enables subscription to ROS topics.   |
-  | `DisableSubscriber` |          | Disables subscription to ROS topics.  |
-  | `SwitchSubscriber`  |          | Toggles subscription to ROS topics.   |
+  | Action              | Argument | Description                          |
+  | :------------------ | :------- | :----------------------------------- |
+  | `EnableSubscriber`  |          | Enables subscription to ROS topics.  |
+  | `DisableSubscriber` |          | Disables subscription to ROS topics. |
+  | `SwitchSubscriber`  |          | Toggles subscription to ROS topics.  |
 
 - Channel: `Policy/CmdPitch`
 
-  | Action              | Argument | Description                           |
-  | :------------------ | :------- | :------------------------------------ |
-  | `EnableSubscriber`  |          | Enables subscription to ROS topics.   |
-  | `DisableSubscriber` |          | Disables subscription to ROS topics.  |
-  | `SwitchSubscriber`  |          | Toggles subscription to ROS topics.   |
+  | Action              | Argument | Description                          |
+  | :------------------ | :------- | :----------------------------------- |
+  | `EnableSubscriber`  |          | Enables subscription to ROS topics.  |
+  | `DisableSubscriber` |          | Disables subscription to ROS topics. |
+  | `SwitchSubscriber`  |          | Toggles subscription to ROS topics.  |
 
 - Channel: `Policy/CmdHeight`
 
-  | Action              | Argument | Description                           |
-  | :------------------ | :------- | :------------------------------------ |
-  | `EnableSubscriber`  |          | Enables subscription to ROS topics.   |
-  | `DisableSubscriber` |          | Disables subscription to ROS topics.  |
-  | `SwitchSubscriber`  |          | Toggles subscription to ROS topics.   |
+  | Action              | Argument | Description                          |
+  | :------------------ | :------- | :----------------------------------- |
+  | `EnableSubscriber`  |          | Enables subscription to ROS topics.  |
+  | `DisableSubscriber` |          | Disables subscription to ROS topics. |
+  | `SwitchSubscriber`  |          | Toggles subscription to ROS topics.  |
 
 - Channel: `Policy/Heightmap`
 
-  | Action              | Argument | Description                           |
-  | :------------------ | :------- | :------------------------------------ |
-  | `EnableSubscriber`  |          | Enables subscription to ROS topics.   |
-  | `DisableSubscriber` |          | Disables subscription to ROS topics.  |
-  | `SwitchSubscriber`  |          | Toggles subscription to ROS topics.   |
+  | Action              | Argument | Description                          |
+  | :------------------ | :------- | :----------------------------------- |
+  | `EnableSubscriber`  |          | Enables subscription to ROS topics.  |
+  | `DisableSubscriber` |          | Disables subscription to ROS topics. |
+  | `SwitchSubscriber`  |          | Toggles subscription to ROS topics.  |
 
 
 ### Joystick Key Bindings
