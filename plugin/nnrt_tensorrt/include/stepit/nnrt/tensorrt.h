@@ -3,6 +3,7 @@
 
 #include <memory>
 #include <string>
+#include <type_traits>
 #include <vector>
 
 #include <NvInfer.h>
@@ -13,46 +14,36 @@
 #include <stepit/nnrt/nnrt.h>
 
 namespace stepit {
-class CuMemory {
- public:
-  explicit CuMemory(std::size_t size);
-  explicit CuMemory(cudaStream_t stream, std::size_t size);
-  CuMemory(const CuMemory &)            = delete;
-  CuMemory &operator=(const CuMemory &) = delete;
-  CuMemory(CuMemory &&other) noexcept;
-  ~CuMemory();
-
-  void *ptr() const { return ptr_; }
-  operator void *() const { return ptr_; }
-  std::size_t size() const { return size_; }
-
- private:
-  void *ptr_{nullptr};
-  cudaStream_t stream_{nullptr};
-  std::size_t size_{};
+struct CudaDeviceMemoryDeleter {
+  void operator()(void *ptr) const;
 };
 
-class CuLogger : public nvinfer1::ILogger {
- public:
-  static CuLogger &instance();
+struct CudaGraphDeleter {
+  void operator()(cudaGraph_t graph) const;
+};
 
-  void log(Severity severity, const char *msg) noexcept override {
-    switch (severity) {
-      case Severity::kINTERNAL_ERROR:
-      case Severity::kERROR:
-        STEPIT_CRITNT(msg);
-        return;
-      case Severity::kWARNING:
-        STEPIT_WARNNT(msg);
-        break;
-      case Severity::kINFO:
-        STEPIT_LOGNT(msg);
-        break;
-      default:
-        STEPIT_DBUGNT(msg);
-        break;
-    }
-  }
+struct CudaGraphExecDeleter {
+  void operator()(cudaGraphExec_t instance) const;
+};
+
+struct CudaHostMemoryDeleter {
+  void operator()(float *memory) const;
+};
+
+struct CudaStreamDeleter {
+  void operator()(cudaStream_t stream) const;
+};
+
+using CudaDeviceMemoryPtr = std::unique_ptr<void, CudaDeviceMemoryDeleter>;
+using CudaGraphPtr        = std::unique_ptr<std::remove_pointer_t<cudaGraph_t>, CudaGraphDeleter>;
+using CudaGraphExecPtr    = std::unique_ptr<std::remove_pointer_t<cudaGraphExec_t>, CudaGraphExecDeleter>;
+using CudaHostMemoryPtr   = std::unique_ptr<float, CudaHostMemoryDeleter>;
+using CudaStreamPtr       = std::unique_ptr<std::remove_pointer_t<cudaStream_t>, CudaStreamDeleter>;
+
+class TensorRTLogger : public nvinfer1::ILogger {
+ public:
+  static TensorRTLogger &instance();
+  void log(Severity severity, const char *msg) noexcept override;
 };
 
 class TensorRTApi : public NnrtApi {
@@ -78,15 +69,15 @@ class TensorRTApi : public NnrtApi {
   bool force_rebuild_{};
   std::string engine_path_;
 
-  std::vector<CuMemory> inputs_, outputs_;
-  std::vector<float *> out_data_;
+  std::vector<CudaDeviceMemoryPtr> inputs_, outputs_;
+  std::vector<CudaHostMemoryPtr> out_data_;
 
-  std::unique_ptr<nvinfer1::IRuntime> runtime_{nullptr};
-  std::unique_ptr<nvinfer1::ICudaEngine> engine_{nullptr};
-  std::unique_ptr<nvinfer1::IExecutionContext> context_{nullptr};
-  cudaGraph_t cu_graph_{nullptr};
-  cudaGraphExec_t cu_instance_{nullptr};
-  cudaStream_t cu_stream_{nullptr};
+  std::unique_ptr<nvinfer1::IRuntime> runtime_;
+  std::unique_ptr<nvinfer1::ICudaEngine> engine_;
+  std::unique_ptr<nvinfer1::IExecutionContext> context_;
+  CudaGraphPtr cuda_graph_;
+  CudaGraphExecPtr cuda_instance_;
+  CudaStreamPtr cuda_stream_;
 };
 }  // namespace stepit
 

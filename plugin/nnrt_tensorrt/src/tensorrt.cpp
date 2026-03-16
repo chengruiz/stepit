@@ -1,6 +1,5 @@
 #include <cctype>
 #include <fstream>
-#include <functional>
 #include <iostream>
 #include <numeric>
 #include <type_traits>
@@ -27,6 +26,8 @@
 
 namespace stepit {
 namespace {
+std::size_t tensorBytes(std::int64_t elements) { return static_cast<std::size_t>(elements) * sizeof(float); }
+
 std::string dimsToString(const nvinfer1::Dims &dims) {
   using Dim = std::remove_reference_t<decltype(nvinfer1::Dims::d[0])>;
   std::vector<Dim> values(dims.d, dims.d + dims.nbDims);
@@ -39,44 +40,89 @@ bool hasDynamicDim(const nvinfer1::Dims &dims) {
   }
   return false;
 }
-}  // namespace
 
-class CuStream {
+class CudaDeviceGuard {
  public:
-  explicit CuStream() { STEPIT_CUDA_CALL(cudaStreamCreate, &stream_); }
-  ~CuStream() { cudaStreamDestroy(stream_); }
-  operator cudaStream_t() const { return stream_; }
+  explicit CudaDeviceGuard(int device_id) : device_id_(device_id) {
+    STEPIT_CUDA_CALL(cudaGetDevice, &previous_device_);
+    if (previous_device_ != device_id_) {
+      STEPIT_CUDA_CALL(cudaSetDevice, device_id_);
+      restore_previous_device_ = true;
+    }
+  }
+
+  ~CudaDeviceGuard() {
+    if (restore_previous_device_) cudaSetDevice(previous_device_);
+  }
 
  private:
-  cudaStream_t stream_{nullptr};
+  int device_id_{};
+  int previous_device_{};
+  bool restore_previous_device_{false};
 };
 
-CuMemory::CuMemory(std::size_t size) : size_(size) { STEPIT_CUDA_CALL(cudaMalloc, &ptr_, size); }
-
-CuMemory::CuMemory(cudaStream_t stream, std::size_t size) : stream_(stream), size_(size) {
-  STEPIT_CUDA_CALL(cudaMallocAsync, &ptr_, size, stream_);
+CudaStreamPtr makeCudaStream() {
+  cudaStream_t stream{nullptr};
+  STEPIT_CUDA_CALL(cudaStreamCreate, &stream);
+  return CudaStreamPtr(stream);
 }
 
-CuMemory::CuMemory(CuMemory &&other) noexcept {
-  ptr_          = other.ptr_;
-  stream_       = other.stream_;
-  size_         = other.size_;
-  other.ptr_    = nullptr;
-  other.stream_ = nullptr;
-  other.size_   = 0;
+CudaDeviceMemoryPtr makeCudaDeviceMemory(std::size_t size) {
+  void *memory{nullptr};
+  STEPIT_CUDA_CALL(cudaMalloc, &memory, size);
+  return CudaDeviceMemoryPtr(memory);
 }
 
-CuMemory::~CuMemory() {
-  if (stream_) {
-    cudaFreeAsync(ptr_, stream_);
-  } else {
-    cudaFree(ptr_);
-  }
+CudaHostMemoryPtr makeCudaHostMemory(std::size_t size) {
+  float *memory{nullptr};
+  STEPIT_CUDA_CALL(cudaMallocHost, &memory, size);
+  return CudaHostMemoryPtr(memory);
+}
+}  // namespace
+
+void CudaDeviceMemoryDeleter::operator()(void *ptr) const {
+  if (ptr != nullptr) cudaFree(ptr);
 }
 
-CuLogger &CuLogger::instance() {
-  static CuLogger instance;
+void CudaGraphDeleter::operator()(cudaGraph_t graph) const {
+  if (graph != nullptr) cudaGraphDestroy(graph);
+}
+
+void CudaGraphExecDeleter::operator()(cudaGraphExec_t instance) const {
+  if (instance != nullptr) cudaGraphExecDestroy(instance);
+}
+
+void CudaHostMemoryDeleter::operator()(float *memory) const {
+  if (memory != nullptr) cudaFreeHost(memory);
+}
+
+void CudaStreamDeleter::operator()(cudaStream_t stream) const {
+  if (stream == nullptr) return;
+  cudaStreamSynchronize(stream);
+  cudaStreamDestroy(stream);
+}
+
+TensorRTLogger &TensorRTLogger::instance() {
+  static TensorRTLogger instance;
   return instance;
+}
+
+void TensorRTLogger::log(Severity severity, const char *msg) noexcept {
+  switch (severity) {
+    case Severity::kINTERNAL_ERROR:
+    case Severity::kERROR:
+      STEPIT_CRITNT(msg);
+      return;
+    case Severity::kWARNING:
+      STEPIT_WARNNT(msg);
+      break;
+    case Severity::kINFO:
+      STEPIT_LOGNT(msg);
+      break;
+    default:
+      STEPIT_DBUGNT(msg);
+      break;
+  }
 }
 
 TensorRTApi::TensorRTApi(const std::string &path, const yml::Node &config)
@@ -99,8 +145,8 @@ TensorRTApi::TensorRTApi(const std::string &path, const yml::Node &config)
     engine_path_ = joinPaths(fs::path(path_).parent_path().string(), engine_path_);
   }
 
-  STEPIT_CUDA_CALL(cudaSetDevice, device_id_);
-  STEPIT_CUDA_CALL(cudaStreamCreate, &cu_stream_);
+  CudaDeviceGuard device_guard(device_id_);
+  cuda_stream_ = makeCudaStream();
 
   if (force_rebuild_ or not std::ifstream(engine_path_).good()) {
     STEPIT_ASSERT(build(path_, engine_path_), "Failed to build TensorRT engine!");
@@ -108,13 +154,16 @@ TensorRTApi::TensorRTApi(const std::string &path, const yml::Node &config)
   }
 
   std::ifstream file(engine_path_, std::ios::binary | std::ios::ate);
+  STEPIT_ASSERT(file.is_open(), "Failed to open TensorRT engine file '{}'.", engine_path_);
   std::streamsize filesize = file.tellg();
+  STEPIT_ASSERT(filesize > 0, "TensorRT engine file '{}' is empty or invalid.", engine_path_);
   file.seekg(0, std::ios::beg);
+  STEPIT_ASSERT(file.good(), "Failed to seek TensorRT engine file '{}'.", engine_path_);
 
-  std::vector<char> buffer(filesize);
-  STEPIT_ASSERT(file.read(buffer.data(), filesize), "Failed to read engine file");
+  std::vector<char> buffer(static_cast<std::size_t>(filesize));
+  STEPIT_ASSERT(file.read(buffer.data(), filesize), "Failed to read TensorRT engine file '{}'.", engine_path_);
 
-  runtime_ = std::unique_ptr<nvinfer1::IRuntime>{nvinfer1::createInferRuntime(CuLogger::instance())};
+  runtime_ = std::unique_ptr<nvinfer1::IRuntime>{nvinfer1::createInferRuntime(TensorRTLogger::instance())};
   STEPIT_ASSERT(runtime_, "Failed to create TensorRT runtime!");
 
   engine_ = std::unique_ptr<nvinfer1::ICudaEngine>(runtime_->deserializeCudaEngine(buffer.data(), buffer.size()));
@@ -130,25 +179,23 @@ TensorRTApi::TensorRTApi(const std::string &path, const yml::Node &config)
                   "TensorRT tensor '{}' has dynamic shape {}. Use 'trtexec' for advanced dynamic-shape builds.", name,
                   dimsToString(dims));
     auto size  = std::accumulate(dims.d, dims.d + dims.nbDims, 1, std::multiplies<>());
-    auto bytes = static_cast<std::size_t>(size) * sizeof(float);
+    auto bytes = tensorBytes(size);
 
     if (engine_->getTensorIOMode(name) == nvinfer1::TensorIOMode::kINPUT) {
       in_shapes_.emplace_back(dims.d, dims.d + dims.nbDims);
       in_sizes_.push_back(size);
       in_names_.push_back(name);
-      inputs_.emplace_back(cu_stream_, bytes);
+      inputs_.emplace_back(makeCudaDeviceMemory(bytes));
       ++num_in_;
-      STEPIT_ASSERT(context_->setTensorAddress(name, inputs_.back()), "Failed to set tensor address!");
+      STEPIT_ASSERT(context_->setTensorAddress(name, inputs_.back().get()), "Failed to set tensor address!");
     } else {
       out_shapes_.emplace_back(dims.d, dims.d + dims.nbDims);
       out_sizes_.push_back(size);
-      float *memory{nullptr};
-      STEPIT_CUDA_CALL(cudaMallocHost, &memory, bytes);
-      out_data_.push_back(memory);
+      out_data_.emplace_back(makeCudaHostMemory(bytes));
       out_names_.push_back(name);
-      outputs_.emplace_back(cu_stream_, bytes);
+      outputs_.emplace_back(makeCudaDeviceMemory(bytes));
       ++num_out_;
-      STEPIT_ASSERT(context_->setTensorAddress(name, outputs_.back()), "Failed to set tensor address!");
+      STEPIT_ASSERT(context_->setTensorAddress(name, outputs_.back().get()), "Failed to set tensor address!");
     }
   }
   createCudaGraph();
@@ -157,19 +204,21 @@ TensorRTApi::TensorRTApi(const std::string &path, const yml::Node &config)
 }
 
 TensorRTApi::~TensorRTApi() {
+  CudaDeviceGuard device_guard(device_id_);
+  if (cuda_stream_) STEPIT_CUDA_CALL(cudaStreamSynchronize, cuda_stream_.get());
+  cuda_instance_.reset();
+  cuda_graph_.reset();
+  context_.reset();
   inputs_.clear();
   outputs_.clear();
-  for (auto *ptr : out_data_) cudaFreeHost(ptr);
-  cudaGraphExecDestroy(cu_instance_);
-  cudaGraphDestroy(cu_graph_);
-  runtime_.reset();
-  context_.reset();
+  out_data_.clear();
   engine_.reset();
-  cudaStreamDestroy(cu_stream_);
+  runtime_.reset();
+  cuda_stream_.reset();
 }
 
 bool TensorRTApi::build(const std::string &onnx_path, const std::string &engine_path) {
-  auto builder = std::unique_ptr<nvinfer1::IBuilder>(nvinfer1::createInferBuilder(CuLogger::instance()));
+  auto builder = std::unique_ptr<nvinfer1::IBuilder>(nvinfer1::createInferBuilder(TensorRTLogger::instance()));
   if (builder == nullptr) return false;
 
   nvinfer1::NetworkDefinitionCreationFlags flags{0U};
@@ -188,7 +237,8 @@ bool TensorRTApi::build(const std::string &onnx_path, const std::string &engine_
   auto network = std::unique_ptr<nvinfer1::INetworkDefinition>(builder->createNetworkV2(flags));
   if (network == nullptr) return false;
 
-  auto parser = std::unique_ptr<nvonnxparser::IParser>(nvonnxparser::createParser(*network, CuLogger::instance()));
+  auto parser = std::unique_ptr<nvonnxparser::IParser>(
+      nvonnxparser::createParser(*network, TensorRTLogger::instance()));
   if (parser == nullptr) return false;
 
   auto constructed = parser->parseFromFile(onnx_path.c_str(), 0);
@@ -213,61 +263,74 @@ bool TensorRTApi::build(const std::string &onnx_path, const std::string &engine_
   if (plan == nullptr) return false;
 
   std::ofstream outfile(engine_path, std::ofstream::binary);
+  if (not outfile.is_open()) return false;
   outfile.write(reinterpret_cast<const char *>(plan->data()), plan->size());
-  return true;
+  return outfile.good();
 }
 
 bool TensorRTApi::createCudaGraph() {
-  CuStream graph_stream;
+  CudaDeviceGuard device_guard(device_id_);
+  auto graph_stream = makeCudaStream();
 
-  if (cudaStreamBeginCapture(graph_stream, cudaStreamCaptureModeGlobal) != cudaSuccess) {
+  if (cudaStreamBeginCapture(graph_stream.get(), cudaStreamCaptureModeGlobal) != cudaSuccess) {
     STEPIT_WARNNT("During creating cuda graph: Failed to capture the cuda stream!");
     return false;
   }
-  if (not context_->enqueueV3(graph_stream)) {
-    STEPIT_WARNNT("During creating cuda graph: Failed to run inference!");
-    return false;
-  }
-  if (cudaStreamEndCapture(graph_stream, &cu_graph_) != cudaSuccess) {
+  context_->enqueueV3(graph_stream.get());
+  cudaGraph_t graph{nullptr};
+  if (cudaStreamEndCapture(graph_stream.get(), &graph) != cudaSuccess) {
     STEPIT_WARNNT("During creating cuda graph: Failed to capture the cuda stream!");
     return false;
   }
-  if (cudaGraphInstantiate(&cu_instance_, cu_graph_, nullptr, nullptr, 0) != cudaSuccess) {
+  auto captured_graph = CudaGraphPtr(graph);
+  cudaGraphExec_t instance{nullptr};
+  if (cudaGraphInstantiate(&instance, captured_graph.get(), nullptr, nullptr, 0) != cudaSuccess) {
     STEPIT_WARNNT("During creating cuda graph: Failed to instantiate the cuda graph!");
     return false;
   }
+  cuda_graph_    = std::move(captured_graph);
+  cuda_instance_ = CudaGraphExecPtr(instance);
   return true;
 }
 
 void TensorRTApi::runInference() {
-  if (cu_instance_) {
-    STEPIT_CUDA_CALL(cudaGraphLaunch, cu_instance_, cu_stream_);
+  CudaDeviceGuard device_guard(device_id_);
+  if (cuda_instance_) {
+    STEPIT_CUDA_CALL(cudaGraphLaunch, cuda_instance_.get(), cuda_stream_.get());
   } else {
-    STEPIT_ASSERT(context_->enqueueV3(cu_stream_), "Failed to run inference!");
+    STEPIT_ASSERT(context_->enqueueV3(cuda_stream_.get()), "Failed to run inference!");
   }
   for (const auto &pair : recur_param_indices_) {
-    STEPIT_CUDA_CALL(cudaMemcpyAsync, inputs_[pair.first], outputs_[pair.second], inputs_[pair.first].size(),
-                     cudaMemcpyDeviceToDevice, cu_stream_);
+    STEPIT_CUDA_CALL(cudaMemcpyAsync, inputs_[pair.first].get(), outputs_[pair.second].get(),
+                     tensorBytes(in_sizes_[pair.first]), cudaMemcpyDeviceToDevice, cuda_stream_.get());
   }
 }
 
 void TensorRTApi::clearState() {
+  CudaDeviceGuard device_guard(device_id_);
   for (const auto &pair : recur_param_indices_) {
-    STEPIT_CUDA_CALL(cudaMemsetAsync, inputs_[pair.first], 0, inputs_[pair.first].size(), cu_stream_);
+    STEPIT_CUDA_CALL(cudaMemsetAsync, inputs_[pair.first].get(), 0, tensorBytes(in_sizes_[pair.first]),
+                     cuda_stream_.get());
   }
 }
 
-void TensorRTApi::synchronize() { cudaStreamSynchronize(cu_stream_); }
+void TensorRTApi::synchronize() {
+  CudaDeviceGuard device_guard(device_id_);
+  STEPIT_CUDA_CALL(cudaStreamSynchronize, cuda_stream_.get());
+}
 
 void TensorRTApi::setInput(std::size_t idx, float *data) {
-  STEPIT_CUDA_CALL(cudaMemcpyAsync, inputs_[idx], data, inputs_[idx].size(), cudaMemcpyHostToDevice, cu_stream_);
+  CudaDeviceGuard device_guard(device_id_);
+  STEPIT_CUDA_CALL(cudaMemcpyAsync, inputs_[idx].get(), data, tensorBytes(in_sizes_[idx]), cudaMemcpyHostToDevice,
+                   cuda_stream_.get());
 }
 
 const float *TensorRTApi::getOutput(std::size_t idx) {
-  STEPIT_CUDA_CALL(cudaMemcpyAsync, out_data_[idx], outputs_[idx], outputs_[idx].size(), cudaMemcpyDeviceToHost,
-                   cu_stream_);
+  CudaDeviceGuard device_guard(device_id_);
+  STEPIT_CUDA_CALL(cudaMemcpyAsync, out_data_[idx].get(), outputs_[idx].get(), tensorBytes(out_sizes_[idx]),
+                   cudaMemcpyDeviceToHost, cuda_stream_.get());
   synchronize();
-  return out_data_[idx];
+  return out_data_[idx].get();
 }
 
 STEPIT_REGISTER_NNRTAPI(tensorrt, kDefPriority, NnrtApi::make<TensorRTApi>);
