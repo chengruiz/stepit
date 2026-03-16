@@ -45,7 +45,7 @@ void Go2Api::getRecv(LowState &state_msg) {
 }
 
 void Go2Api::send() {
-  low_cmd_.crc() = crc32core(reinterpret_cast<uint32_t *>(&low_cmd_), (sizeof(u2_msg::LowCmd_) >> 2) - 1);
+  fillLowCmdCrc(low_cmd_);
   low_cmd_pub_->Write(low_cmd_);
 }
 
@@ -110,7 +110,7 @@ void Go2WApi::getRecv(LowState &state_msg) {
 }
 
 void Go2WApi::send() {
-  low_cmd_.crc() = crc32core(reinterpret_cast<uint32_t *>(&low_cmd_), (sizeof(u2_msg::LowCmd_) >> 2) - 1);
+  fillLowCmdCrc(low_cmd_);
   low_cmd_pub_->Write(low_cmd_);
 }
 

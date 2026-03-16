@@ -43,7 +43,7 @@ class Unitree2ServiceClient {
   bool simulated_{false};
   bool disabled_{false};
   long domain_id_{0};
-  std::string network_interface_{"eth0"};
+  std::string network_interface_{""};
   std::unique_ptr<u2_sdk::b2::MotionSwitcherClient> client_;
   std::string robot_type_, motion_type_;
 };
