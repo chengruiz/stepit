@@ -70,6 +70,14 @@ operators:
     target: joint_pos_history    # String, target field name
     history_len: 3               # Int > 0, number of frames to stack
     source_size: 12              # [Optional] Int, size of the source field
+    # ------------ Frame selection ------------
+    # [Optional] When omitted, all history_len frames are stacked.
+    # Option 1: specify frame indices explicitly
+    # indices: [ 0, 2 ]          # Select history frames after stacking order is established
+    # Option 2: specify frame range by start / end
+    # start: 0                   # Int, inclusive frame index
+    # end: 2                     # Int, exclusive frame index
+    # -----------------------------------------
     newest_first: true           # [Optional] Bool, newest frame at beginning when true
     include_current_frame: true  # [Optional] Bool, include current frame in output when true
     default_value: 0.0           # [Optional] Union[Null, Float, List[Float]], used for initial history fill

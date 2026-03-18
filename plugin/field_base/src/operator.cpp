@@ -156,6 +156,7 @@ HistoryOperator::HistoryOperator(const yml::Node &config) {
   source_size_     = config["source_size"].as<FieldSize>(0);
   history_len_     = config["history_len"].as<std::uint32_t>();
   config["history_len"].require(history_len_ > 0, "'history_len' must be greater than 0");
+  config.to(indices_);
   newest_first_          = config["newest_first"].as<bool>(true);
   include_current_frame_ = config["include_current_frame"].as<bool>(true);
   if (config["default_value"].isDefined()) {
@@ -179,7 +180,8 @@ HistoryOperator::HistoryOperator(const yml::Node &config) {
 void HistoryOperator::init() {
   if (target_size_ > 0) return;
   source_size_ = getFieldSize(source_id_);
-  target_size_ = source_size_ * history_len_;
+  indices_.canonicalize(history_len_);
+  target_size_ = source_size_ * static_cast<FieldSize>(indices_.size());
   setFieldSize(target_id_, target_size_);
 
   if (default_value_.size() == 1) {
@@ -212,8 +214,8 @@ void HistoryOperator::push(const ArrXf &frame) {
 
 void HistoryOperator::updateOutput() {
   FieldSize offset = 0;
-  for (const auto &frame : history_) {
-    stackField(frame, offset, output_);
+  for (auto index : indices_) {
+    stackField(history_[index], offset, output_);
   }
   STEPIT_ASSERT(offset == output_.size(), "History field size ({}) does not match the target size ({}).", offset,
                 output_.size());

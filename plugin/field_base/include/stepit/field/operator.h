@@ -85,6 +85,7 @@ class HistoryOperator : public Operator {
   std::uint32_t history_len_{};
   FieldSize source_size_{};
   FieldSize target_size_{};
+  yml::Indices indices_;
   bool newest_first_{true};
   bool include_current_frame_{true};
   ArrXf default_value_;
