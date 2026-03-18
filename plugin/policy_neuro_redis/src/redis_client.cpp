@@ -1,5 +1,10 @@
 #include <stepit/policy_neuro_redis/redis_client.h>
 
+#define STEPIT_HIREDIS_VERSION_AT_LEAST(major, minor, patch)                                                \
+  ((HIREDIS_MAJOR > (major)) or                                                                             \
+   (HIREDIS_MAJOR == (major) and                                                                            \
+    (HIREDIS_MINOR > (minor) or (HIREDIS_MINOR == (minor) and HIREDIS_PATCH >= (patch)))))
+
 namespace stepit {
 namespace neuro_policy {
 namespace {
@@ -10,6 +15,20 @@ timeval makeTimeval(int timeout_ms) {
   return value;
 }
 
+bool isSupportedReplyType(int type) {
+  switch (type) {
+    case REDIS_REPLY_STRING:
+    case REDIS_REPLY_STATUS:
+    case REDIS_REPLY_INTEGER:
+#ifdef REDIS_REPLY_DOUBLE
+    case REDIS_REPLY_DOUBLE:
+#endif
+      return true;
+    default:
+      return false;
+  }
+}
+
 std::string getReplyText(const redisReply &reply) {
   switch (reply.type) {
     case REDIS_REPLY_STRING:
@@ -18,8 +37,10 @@ std::string getReplyText(const redisReply &reply) {
       return reply.str == nullptr ? std::string() : std::string(reply.str, reply.len);
     case REDIS_REPLY_INTEGER:
       return std::to_string(reply.integer);
+#ifdef REDIS_REPLY_DOUBLE
     case REDIS_REPLY_DOUBLE:
-      return reply.str == nullptr ? std::to_string(reply.dval) : std::string(reply.str, reply.len);
+      return reply.str == nullptr ? std::string() : std::string(reply.str, reply.len);
+#endif
     default:
       return std::string();
   }
@@ -62,6 +83,9 @@ RedisReadStatus RedisClient::hget(const std::string &key, const std::string &fie
 bool RedisClient::connect() {
   if (redis_ != nullptr and redis_->err == REDIS_OK) return true;
 
+  RedisContextPtr context(nullptr, &redisFree);
+
+#if STEPIT_HIREDIS_VERSION_AT_LEAST(1, 0, 0)
   redisOptions options{};
   REDIS_OPTIONS_SET_TCP(&options, config_.host.c_str(), config_.port);
 
@@ -77,7 +101,26 @@ bool RedisClient::connect() {
     options.command_timeout = &command_timeout;
   }
 
-  RedisContextPtr context(redisConnectWithOptions(&options), &redisFree);
+  context.reset(redisConnectWithOptions(&options));
+#else
+  if (config_.connect_timeout_ms > 0) {
+    const timeval connect_timeout = makeTimeval(config_.connect_timeout_ms);
+    context.reset(redisConnectWithTimeout(config_.host.c_str(), config_.port, connect_timeout));
+  } else {
+    context.reset(redisConnect(config_.host.c_str(), config_.port));
+  }
+
+  if (context != nullptr and context->err == REDIS_OK and config_.command_timeout_ms > 0) {
+    const timeval command_timeout = makeTimeval(config_.command_timeout_ms);
+    if (redisSetTimeout(context.get(), command_timeout) != REDIS_OK) {
+      reportError(
+          fmt::format("Failed to set Redis command timeout for {}:{}{}.", config_.host, config_.port,
+                      getContextErrorSuffix(context.get())));
+      return false;
+    }
+  }
+#endif
+
   if (not context) {
     reportError(fmt::format("Failed to connect to Redis at {}:{}.", config_.host, config_.port));
     return false;
@@ -156,8 +199,7 @@ RedisReadStatus RedisClient::readValue(const std::string &key, const std::string
     reportError(fmt::format("Redis read failed for '{}': {}.", formatTarget(key, field), getReplyText(*reply)));
     return RedisReadStatus::kError;
   }
-  if (reply->type != REDIS_REPLY_STRING and reply->type != REDIS_REPLY_STATUS and reply->type != REDIS_REPLY_INTEGER and
-      reply->type != REDIS_REPLY_DOUBLE) {
+  if (not isSupportedReplyType(reply->type)) {
     reportError(
         fmt::format("Redis read for '{}' returned unsupported reply type {}.", formatTarget(key, field), reply->type));
     return RedisReadStatus::kError;
