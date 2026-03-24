@@ -4,8 +4,9 @@ namespace stepit {
 namespace neuro_policy {
 Actuator::Actuator(const NeuroPolicySpec &policy_spec, const ModuleSpec &module_spec)
     : Module(policy_spec, ModuleSpec(module_spec, "actuator")) {
-  auto policy_config = yml::loadFile(joinPaths(policy_spec.home_dir, "policy.yml"));
-  config_            = policy_config["actuator"];
+  if (not config_.hasValue()) {
+    config_ = policy_spec.policy_config["actuator"];
+  }
   config_.assertMap();
 
   scale_.setOnes(policy_spec.dof);

@@ -5,9 +5,10 @@ namespace neuro_policy {
 NeuroPolicy::NeuroPolicy(const RobotSpec &robot_spec, const std::string &home_dir)
     : spec_(robot_spec, home_dir), config_(yml::loadFile(joinPaths(home_dir, "policy.yml"))) {
   config_["control_freq"].to(spec_.control_freq);
-  spec_.policy_name = config_["name"].as<std::string>("");
-  spec_.trusted     = config_["trusted"].as<bool>(false);
-  tailored_         = config_["tailored"].as<std::string>("");
+  spec_.policy_config = config_;
+  spec_.policy_name   = config_["name"].as<std::string>("");
+  spec_.trusted       = config_["trusted"].as<bool>(false);
+  tailored_           = config_["tailored"].as<std::string>("");
 
   std::string default_action_key = config_.getDefinedKey({"default_action", "action_mean"});
   config_[default_action_key].to(spec_.default_action, true);

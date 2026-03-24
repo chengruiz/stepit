@@ -13,6 +13,9 @@ using namespace ::stepit::field;
 
 struct NeuroPolicySpec : PolicySpec {
   using PolicySpec::PolicySpec;
+
+  /* The configuration node */
+  yml::Node policy_config;
   /* The default action to take */
   ArrXf default_action;
 };

@@ -16,6 +16,7 @@ NeuroModule::NeuroModule(const NeuroPolicySpec &policy_spec, const ModuleSpec &m
   std::string displayed_name = run_name_.empty() ? name_ : fmt::format("{} ({})", name_, run_name_);
   displayFormattedBanner(60, kGreen, "NeuroModule {}", displayed_name);
   nn_ = NnrtApi::make(nnrt_factory_, model_path_, config_);
+  if (STEPIT_VERBOSITY >= kInfo) nn_->printInfo();
 
   for (const auto &input_name : nn_->getInputNames()) {
     if (not nn_->isInputRecurrent(input_name)) {
@@ -37,7 +38,6 @@ NeuroModule::NeuroModule(const NeuroPolicySpec &policy_spec, const ModuleSpec &m
   parseFields(false, output_names_, output_dims_, output_field_names_, output_field_sizes_, output_field_ids_);
 
   if (STEPIT_VERBOSITY >= kInfo) {
-    nn_->printInfo();
     STEPIT_LOGNT("Input:");
     printNodeFields(input_names_, input_field_ids_);
     STEPIT_LOGNT("Output:");
