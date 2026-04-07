@@ -1,8 +1,13 @@
 cmake_minimum_required(VERSION 3.16)
 project(stepit_plugin_nnrt_onnxruntime)
 
-if (NOT CMAKE_SYSTEM_PROCESSOR STREQUAL "x86_64")
-  message(STATUS "Skipped plugin '${PROJECT_NAME}': Requires x86_64 architecture, got '${CMAKE_SYSTEM_PROCESSOR}'.")
+string(TOLOWER "${CMAKE_SYSTEM_PROCESSOR}" ONNXRUNTIME_SYSTEM_PROCESSOR)
+if (ONNXRUNTIME_SYSTEM_PROCESSOR STREQUAL "x86_64")
+  set(ONNXRUNTIME_ARCHIVE_ARCH "x64")
+elseif (ONNXRUNTIME_SYSTEM_PROCESSOR MATCHES "^(aarch64|arm64)$")
+  set(ONNXRUNTIME_ARCHIVE_ARCH "aarch64")
+else ()
+  message(STATUS "Skipped plugin '${PROJECT_NAME}': Requires x86_64 or arm64/aarch64 architectures, got '${CMAKE_SYSTEM_PROCESSOR}'.")
   return()
 endif ()
 
@@ -13,7 +18,7 @@ if (ONNXRUNTIME_LIB_DIR)
 else ()
   set(ONNXRUNTIME_TAG 1.21.0)
   set(NN_RUNTIME_DIR "${STEPIT_HOME_DIRECTORY}/extern/nn_runtime")
-  set(ONNXRUNTIME_FULLNAME "onnxruntime-linux-x64-${ONNXRUNTIME_TAG}")
+  set(ONNXRUNTIME_FULLNAME "onnxruntime-linux-${ONNXRUNTIME_ARCHIVE_ARCH}-${ONNXRUNTIME_TAG}")
   set(ONNXRUNTIME_DIR "${NN_RUNTIME_DIR}/${ONNXRUNTIME_FULLNAME}")
 
   # Download onnxruntime if not already downloaded
