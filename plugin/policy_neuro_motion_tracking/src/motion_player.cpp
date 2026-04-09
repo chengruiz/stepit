@@ -8,8 +8,9 @@ namespace stepit {
 namespace neuro_policy {
 // clang-format off
 const std::map<std::string, MotionPlayer::Action> MotionPlayer::kActionMap = {
-    {"SelectNextClip",     Action::kSelectNextClip},
     {"ReplayCurrentClip",  Action::kReplayCurrentClip},
+    {"SelectNextClip",     Action::kSelectNextClip},
+    {"SelectPreviousClip", Action::kSelectPreviousClip},
 };
 // clang-format on
 
@@ -115,7 +116,10 @@ bool MotionPlayer::reset() {
   frame_index_ = 0;
 
   joystick_rules_.emplace_back([](const joystick::State &js) -> std::string {
-    return js.Start().on_press ? "Policy/Motion/SelectNextClip" : "";
+    if (js.Select().on_press) return "Policy/Motion/ReplayCurrentClip";
+    if (js.LB().pressed and js.Start().on_press) return "Policy/Motion/SelectPreviousClip";
+    if (js.RB().pressed and js.Start().on_press) return "Policy/Motion/SelectNextClip";
+    return "";
   });
   return true;
 }
@@ -151,6 +155,12 @@ bool MotionPlayer::update(const LowState &, ControlRequests &requests, FieldMap 
 void MotionPlayer::handleControlRequest(ControlRequest request) {
   auto action = lookupAction(request.action(), kActionMap);
   switch (action) {
+    case Action::kReplayCurrentClip: {
+      frame_index_ = 0;
+      request.response(kSuccess);
+      STEPIT_LOG("Replaying motion clip '{}'.", motions_[clip_index_].name);
+      break;
+    }
     case Action::kSelectNextClip: {
       clip_index_  = (clip_index_ + 1) % motions_.size();
       frame_index_ = 0;
@@ -158,8 +168,10 @@ void MotionPlayer::handleControlRequest(ControlRequest request) {
       request.response(kSuccess);
       break;
     }
-    case Action::kReplayCurrentClip: {
+    case Action::kSelectPreviousClip: {
+      clip_index_  = (clip_index_ + motions_.size() - 1) % motions_.size();
       frame_index_ = 0;
+      STEPIT_LOG("Switched to motion clip '{}'.", motions_[clip_index_].name);
       request.response(kSuccess);
       break;
     }

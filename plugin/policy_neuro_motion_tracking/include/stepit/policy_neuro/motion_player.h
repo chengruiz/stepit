@@ -21,8 +21,9 @@ class MotionPlayer : public Module {
   void exit() override;
 
   enum class Action : std::uint8_t {
-    kSelectNextClip,
     kReplayCurrentClip,
+    kSelectNextClip,
+    kSelectPreviousClip,
     kInvalid = 255,
   };
 
