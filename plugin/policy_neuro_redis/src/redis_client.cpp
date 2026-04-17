@@ -74,10 +74,25 @@ RedisClient::RedisClient(std::string label, RedisClientConfig config) : label_(s
 
 void RedisClient::disconnect() { redis_.reset(); }
 
-RedisReadStatus RedisClient::get(const std::string &key, std::string &value) { return readValue(key, "", value); }
+RedisReadStatus RedisClient::get(const std::string &key, JsonDict &value) {
+  std::string raw_value;
+  RedisReadStatus status = readValue(key, raw_value);
+  if (status != RedisReadStatus::kOk) return status;
 
-RedisReadStatus RedisClient::hget(const std::string &key, const std::string &field, std::string &value) {
-  return readValue(key, field, value);
+  try {
+    value = JsonDict::parse(raw_value);
+  } catch (const JsonDict::exception &err) {
+    reportError(fmt::format("Redis key '{}' does not contain valid JSON: {}.", key, err.what()));
+    return RedisReadStatus::kInvalidData;
+  }
+
+  if (not value.is_object()) {
+    reportError(fmt::format("Redis key '{}' must contain a JSON object, got {}.", key, value.type_name()));
+    return RedisReadStatus::kInvalidData;
+  }
+
+  clearError();
+  return RedisReadStatus::kOk;
 }
 
 bool RedisClient::connect() {
@@ -182,25 +197,23 @@ bool RedisClient::selectDb() {
   return true;
 }
 
-RedisReadStatus RedisClient::readValue(const std::string &key, const std::string &field, std::string &value) {
+RedisReadStatus RedisClient::readValue(const std::string &key, std::string &value) {
   if (not connect()) return RedisReadStatus::kError;
 
-  RedisReplyPtr reply = field.empty() ? runCommand("GET", key) : runCommand("HGET", key, field);
+  RedisReplyPtr reply = runCommand("GET", key);
   if (not reply) {
-    reportError(
-        fmt::format("Redis read failed for '{}'{}.", formatTarget(key, field), getContextErrorSuffix(redis_.get())));
+    reportError(fmt::format("Redis read failed for '{}'{}.", key, getContextErrorSuffix(redis_.get())));
     disconnect();
     return RedisReadStatus::kError;
   }
   if (reply->type == REDIS_REPLY_NIL) return RedisReadStatus::kMissing;
 
   if (reply->type == REDIS_REPLY_ERROR) {
-    reportError(fmt::format("Redis read failed for '{}': {}.", formatTarget(key, field), getReplyText(*reply)));
+    reportError(fmt::format("Redis read failed for '{}': {}.", key, getReplyText(*reply)));
     return RedisReadStatus::kError;
   }
   if (not isSupportedReplyType(reply->type)) {
-    reportError(
-        fmt::format("Redis read for '{}' returned unsupported reply type {}.", formatTarget(key, field), reply->type));
+    reportError(fmt::format("Redis read for '{}' returned unsupported reply type {}.", key, reply->type));
     return RedisReadStatus::kError;
   }
 
@@ -226,11 +239,6 @@ RedisClient::RedisReplyPtr RedisClient::runCommand(const std::string &command, c
   const char *argv[] = {command.c_str(), arg1.c_str(), arg2.c_str()};
   size_t argvlen[]   = {command.size(), arg1.size(), arg2.size()};
   return runCommand(3, argv, argvlen);
-}
-
-std::string RedisClient::formatTarget(const std::string &key, const std::string &field) const {
-  if (field.empty()) return key;
-  return key + "[" + field + "]";
 }
 
 void RedisClient::reportError(const std::string &message) {

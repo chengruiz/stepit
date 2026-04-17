@@ -14,4 +14,4 @@ sudo apt install libhiredis-dev nlohmann-json3-dev
 
 `stepit::neuro_policy::Module`:
 
-- `redis_field_subscriber`: reads configured Redis keys or hash fields, parses JSON arrays of numbers into float vectors, and provides the named StepIt fields declared in its config map.
+- `redis_field_subscriber`: reads configured Redis keys, expects each value to be a JSON object, extracts numeric JSON arrays by member name, and provides the named StepIt fields declared in its config map.

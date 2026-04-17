@@ -12,10 +12,10 @@ connection:                 # Required, Redis connection settings
 fields:                     # Required, Map[String, Dict]
   cmd_vel:                  # String, StepIt field name
     key: "stepit:policy"    # String, Redis key
-    field: "cmd_vel"        # [Optional] String, Redis hash field; if missing, use GET key
+    field: "cmd_vel"        # [Optional] String, JSON dict member name; if missing, use the StepIt field name
     size: 3                 # Int > 0, field dimension
     timeout_threshold: 0.2  # [Optional] Float, seconds before the cached value is considered stale
-                            #   Redis value must be a JSON array, e.g. [0.1, 0.2, 0.3]
+                            #   Redis value must be a JSON dict, e.g. {"cmd_vel": [0.1, 0.2, 0.3]}
 
   gait_phase:
     key: "stepit:gait_phase"

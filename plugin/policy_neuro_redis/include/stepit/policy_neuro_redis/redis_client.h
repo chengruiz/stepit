@@ -5,6 +5,7 @@
 #include <string>
 
 #include <hiredis/hiredis.h>
+#include <nlohmann/json.hpp>
 
 #include <stepit/utils.h>
 
@@ -32,12 +33,13 @@ enum class RedisReadStatus {
 
 class RedisClient {
  public:
+  using JsonDict = nlohmann::json;
+
   RedisClient(std::string label, RedisClientConfig config);
 
   void disconnect();
 
-  RedisReadStatus get(const std::string &key, std::string &value);
-  RedisReadStatus hget(const std::string &key, const std::string &field, std::string &value);
+  RedisReadStatus get(const std::string &key, JsonDict &value);
 
  private:
   using RedisContextPtr = std::unique_ptr<redisContext, decltype(&redisFree)>;
@@ -47,12 +49,10 @@ class RedisClient {
   bool authenticate();
   bool selectDb();
 
-  RedisReadStatus readValue(const std::string &key, const std::string &field, std::string &value);
+  RedisReadStatus readValue(const std::string &key, std::string &value);
   RedisReplyPtr runCommand(int argc, const char **argv, const size_t *argvlen);
   RedisReplyPtr runCommand(const std::string &command, const std::string &arg1);
   RedisReplyPtr runCommand(const std::string &command, const std::string &arg1, const std::string &arg2);
-
-  std::string formatTarget(const std::string &key, const std::string &field) const;
   void reportError(const std::string &message);
   void clearError();
 

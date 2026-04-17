@@ -23,7 +23,7 @@ class RedisFieldSubscriber : public Module {
     FieldId id{};
     std::string name;
     std::string key;
-    std::string redis_field;
+    std::string json_field;
     std::size_t size{};
     float timeout_threshold{};
 
@@ -38,7 +38,7 @@ class RedisFieldSubscriber : public Module {
   bool fetchFields();
   RedisReadStatus fetchField(FieldData &field);
 
-  bool parseFieldValue(const FieldData &field, const std::string &value, VecXf &data) const;
+  bool parseFieldValue(const FieldData &field, const RedisClient::JsonDict &payload, VecXf &data) const;
   std::string formatRedisField(const FieldData &field) const;
 
   RedisClientConfig connection_;
