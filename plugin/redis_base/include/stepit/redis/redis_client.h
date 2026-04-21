@@ -1,5 +1,5 @@
-#ifndef STEPIT_NEURO_POLICY_REDIS_CLIENT_H_
-#define STEPIT_NEURO_POLICY_REDIS_CLIENT_H_
+#ifndef STEPIT_REDIS_CLIENT_H_
+#define STEPIT_REDIS_CLIENT_H_
 
 #include <memory>
 #include <string>
@@ -10,7 +10,7 @@
 #include <stepit/utils.h>
 
 namespace stepit {
-namespace neuro_policy {
+namespace redis {
 struct RedisClientConfig {
   RedisClientConfig() = default;
   explicit RedisClientConfig(const yml::Node &node);
@@ -61,7 +61,7 @@ class RedisClient {
   RedisContextPtr redis_{nullptr, &redisFree};
   std::string last_error_;
 };
-}  // namespace neuro_policy
+}  // namespace redis
 }  // namespace stepit
 
-#endif  // STEPIT_NEURO_POLICY_REDIS_CLIENT_H_
+#endif  // STEPIT_REDIS_CLIENT_H_

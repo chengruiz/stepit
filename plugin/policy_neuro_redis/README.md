@@ -4,7 +4,8 @@ StepIt plugin for reading vector fields from Redis and feeding them into the Ste
 
 ### Prerequisites
 
-Install [hiredis](https://github.com/redis/hiredis.git) and [nlohmann-json3](https://github.com/nlohmann/json) via `apt`:
+This plugin depends on `redis_base`. Install [hiredis](https://github.com/redis/hiredis.git) and
+[nlohmann-json3](https://github.com/nlohmann/json) via `apt`:
 
 ```shell
 sudo apt install libhiredis-dev nlohmann-json3-dev

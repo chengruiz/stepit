@@ -7,7 +7,7 @@
 #include <vector>
 
 #include <stepit/policy_neuro/module.h>
-#include <stepit/policy_neuro_redis/redis_client.h>
+#include <stepit/redis/redis_client.h>
 
 namespace stepit {
 namespace neuro_policy {
@@ -36,14 +36,14 @@ class RedisFieldSubscriber : public Module {
   void addField(const yml::Node &key_node, const yml::Node &value_node);
 
   bool fetchFields();
-  RedisReadStatus fetchField(FieldData &field);
+  redis::RedisReadStatus fetchField(FieldData &field);
 
-  bool parseFieldValue(const FieldData &field, const RedisClient::JsonDict &payload, VecXf &data) const;
+  bool parseFieldValue(const FieldData &field, const redis::RedisClient::JsonDict &payload, VecXf &data) const;
   std::string formatRedisField(const FieldData &field) const;
 
-  RedisClientConfig connection_;
+  redis::RedisClientConfig connection_;
   std::vector<FieldData> fields_;
-  std::unique_ptr<RedisClient> redis_client_;
+  std::unique_ptr<redis::RedisClient> redis_client_;
   std::mutex mutex_;
 };
 }  // namespace neuro_policy

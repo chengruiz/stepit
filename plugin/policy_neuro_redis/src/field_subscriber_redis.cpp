@@ -8,8 +8,8 @@ RedisFieldSubscriber::RedisFieldSubscriber(const NeuroPolicySpec &policy_spec, c
     : Module(policy_spec, ModuleSpec(module_spec, "redis_field_subscriber")) {
   config_.assertMap();
   config_.assertHasValue("connection", "fields");
-  connection_   = RedisClientConfig(config_["connection"]);
-  redis_client_ = std::make_unique<RedisClient>(name(), connection_);
+  connection_   = redis::RedisClientConfig(config_["connection"]);
+  redis_client_ = std::make_unique<redis::RedisClient>(name(), connection_);
   parseFields();
   STEPIT_ASSERT(not fields_.empty(), "Module '{}' requires at least one Redis field mapping.", name());
 }
@@ -79,27 +79,28 @@ void RedisFieldSubscriber::addField(const yml::Node &key_node, const yml::Node &
 bool RedisFieldSubscriber::fetchFields() {
   bool updated = false;
   for (auto &field : fields_) {
-    RedisReadStatus status = fetchField(field);
-    updated                = (status == RedisReadStatus::kOk) or updated;
-    if (status == RedisReadStatus::kError) break;
+    redis::RedisReadStatus status = fetchField(field);
+
+    updated = (status == redis::RedisReadStatus::kOk) or updated;
+    if (status == redis::RedisReadStatus::kError) break;
   }
   return updated;
 }
 
-RedisReadStatus RedisFieldSubscriber::fetchField(FieldData &field) {
+redis::RedisReadStatus RedisFieldSubscriber::fetchField(FieldData &field) {
   VecXf data;
-  RedisClient::JsonDict payload;
-  RedisReadStatus status = redis_client_->get(field.key, payload);
-  if (status != RedisReadStatus::kOk) return status;
-  if (not parseFieldValue(field, payload, data)) return RedisReadStatus::kInvalidData;
+  redis::RedisClient::JsonDict payload;
+  redis::RedisReadStatus status = redis_client_->get(field.key, payload);
+  if (status != redis::RedisReadStatus::kOk) return status;
+  if (not parseFieldValue(field, payload, data)) return redis::RedisReadStatus::kInvalidData;
 
   field.data     = std::move(data);
   field.received = true;
   field.stamp    = SteadyClock::now();
-  return RedisReadStatus::kOk;
+  return redis::RedisReadStatus::kOk;
 }
 
-bool RedisFieldSubscriber::parseFieldValue(const FieldData &field, const RedisClient::JsonDict &payload,
+bool RedisFieldSubscriber::parseFieldValue(const FieldData &field, const redis::RedisClient::JsonDict &payload,
                                            VecXf &data) const {
   try {
     auto it = payload.find(field.json_field);

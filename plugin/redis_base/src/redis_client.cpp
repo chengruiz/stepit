@@ -1,4 +1,4 @@
-#include <stepit/policy_neuro_redis/redis_client.h>
+#include <stepit/redis/redis_client.h>
 
 #define STEPIT_HIREDIS_VERSION_AT_LEAST(major, minor, patch) \
   ((HIREDIS_MAJOR > (major)) or                              \
@@ -6,7 +6,7 @@
     (HIREDIS_MINOR > (minor) or (HIREDIS_MINOR == (minor) and HIREDIS_PATCH >= (patch)))))
 
 namespace stepit {
-namespace neuro_policy {
+namespace redis {
 namespace {
 timeval makeTimeval(int timeout_ms) {
   timeval value{};
@@ -252,5 +252,5 @@ void RedisClient::clearError() {
   STEPIT_INFO("Redis client '{}' connected to {}:{}.", label_, config_.host, config_.port);
   last_error_.clear();
 }
-}  // namespace neuro_policy
+}  // namespace redis
 }  // namespace stepit
