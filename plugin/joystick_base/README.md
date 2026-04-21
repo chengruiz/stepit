@@ -10,6 +10,10 @@ StepIt plugin providing joystick interface and control.
 
 - `stepit::ControlInput`: `joystick`
 
+### Executables
+
+- `joystick_test`: Polls a joystick and prints the current state.
+
 ### Joystick Key Bindings
 
 | Key                   | Command                  |

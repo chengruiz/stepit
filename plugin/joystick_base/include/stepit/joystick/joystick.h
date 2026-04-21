@@ -51,6 +51,9 @@ class JoystickControl::Registration {
 using joystick::Joystick;
 using joystick::JoystickControl;
 using JoystickRule = JoystickControl::Registration;
+
+template <>
+Interface<joystick::Joystick>::Registry &Interface<joystick::Joystick>::registry();
 }  // namespace stepit
 
 #define STEPIT_REGISTER_JOYSTICK(name, priority, factory) \

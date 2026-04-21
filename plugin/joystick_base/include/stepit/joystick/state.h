@@ -2,6 +2,9 @@
 #define STEPIT_JOYSTICK_STATE_H_
 
 #include <array>
+#include <ostream>
+
+#include <stepit/utils.h>
 
 namespace stepit {
 namespace joystick {
@@ -81,7 +84,31 @@ class State {
   std::array<Button, 14> buttons_{};
   std::array<Axis, 6> axes_{};  // ranging from [-1, 1]
 };
+
+inline std::ostream &operator<<(std::ostream &os, const Button &button) {
+  os << (button.pressed ? '1' : '0');
+  if (button.on_press) os << '+';
+  if (button.on_release) os << '-';
+  if (not button.on_press and not button.on_release) os << ' ';
+  return os;
+}
+
+inline std::ostream &operator<<(std::ostream &os, const State &state) {
+  return os << fmt::format(
+             "axes[las=({:.2f}, {:.2f}) ras=({:.2f}, {:.2f}) lt={:.2f} rt={:.2f}] "
+             "buttons[A={} B={} X={} Y={} LB={} RB={} Select={} Start={} LAS={} RAS={} Up={} Down={} Left={} "
+             "Right={}] ",
+             state.las_x(), state.las_y(), state.ras_x(), state.ras_y(), state.lt(), state.rt(), state.A(), state.B(),
+             state.X(), state.Y(), state.LB(), state.RB(), state.Select(), state.Start(), state.LAS(), state.RAS(),
+             state.Up(), state.Down(), state.Left(), state.Right());
+}
 }  // namespace joystick
 }  // namespace stepit
 
+#if FMT_VERSION >= 90000
+template <>
+struct fmt::formatter<stepit::joystick::Button> : fmt::ostream_formatter {};
+template <>
+struct fmt::formatter<stepit::joystick::State> : fmt::ostream_formatter {};
+#endif
 #endif  // STEPIT_JOYSTICK_STATE_H_

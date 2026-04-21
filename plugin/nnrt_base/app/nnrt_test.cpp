@@ -22,6 +22,8 @@ int main(int argc, char *argv[]) {
           "Path to the model")
       ("config_path", po::value<std::string>(),
           "YAML configuration file for the model")
+      ("verbosity,v", po::value<int>(),
+          "Verbosity level (0-3)")
       (" arg1 arg2 ...",
           "Plugins arguments (after '--')")
       ;
@@ -46,6 +48,10 @@ int main(int argc, char *argv[]) {
     return -1;
   }
 
+  if (arg_map.find("verbosity") != arg_map.end()) {
+    STEPIT_SET_VERBOSITY(static_cast<VerbosityLevel>(arg_map["verbosity"].as<int>()));
+  }
+
   PluginManager plugin_manager(plugin_args);
 
   auto factory      = arg_map["factory"].as<std::string>();
@@ -55,7 +61,7 @@ int main(int argc, char *argv[]) {
                           : yml::Node();
   if (startsWith(factory, "nnrtapi@")) {
     factory = factory.substr(std::strlen("nnrtapi@"));
-  } else if (factory.find("@") != std::string::npos) {
+  } else if (factory.find('@') != std::string::npos) {
     fmt::print(std::cerr, "{} Invalid factory name '{}'. Expected a factory name of nnrtapi.\n", kErrorPrefix, factory);
     return -1;
   }
