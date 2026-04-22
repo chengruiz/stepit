@@ -63,6 +63,21 @@ RedisClientConfig::RedisClientConfig(const yml::Node &node) {
   node["command_timeout_ms"].to(command_timeout_ms, true);
 }
 
+RedisClientConfig &getDefaultRedisClientConfig() {
+  static RedisClientConfig config = [] {
+    RedisClientConfig value;
+    getenv("STEPIT_REDIS_HOST", value.host);
+    getenv("STEPIT_REDIS_PORT", value.port);
+    getenv("STEPIT_REDIS_DB", value.db);
+    getenv("STEPIT_REDIS_USERNAME", value.username);
+    getenv("STEPIT_REDIS_PASSWORD", value.password);
+    getenv("STEPIT_REDIS_CONNECT_TIMEOUT_MS", value.connect_timeout_ms);
+    getenv("STEPIT_REDIS_COMMAND_TIMEOUT_MS", value.command_timeout_ms);
+    return value;
+  }();
+  return config;
+}
+
 RedisClient::RedisClient(std::string label, RedisClientConfig config) : label_(std::move(label)), config_(config) {
   STEPIT_ASSERT(config_.port > 0, "Redis port must be positive, got {}.", config_.port);
   STEPIT_ASSERT(config_.db >= 0, "Redis db index must be non-negative, got {}.", config_.db);
@@ -72,9 +87,13 @@ RedisClient::RedisClient(std::string label, RedisClientConfig config) : label_(s
                 config_.command_timeout_ms);
 }
 
-void RedisClient::disconnect() { redis_.reset(); }
+void RedisClient::disconnect() {
+  std::lock_guard<std::mutex> _(mutex_);
+  redis_.reset();
+}
 
 RedisReadStatus RedisClient::get(const std::string &key, JsonDict &value) {
+  std::lock_guard<std::mutex> _(mutex_);
   std::string raw_value;
   RedisReadStatus status = readValue(key, raw_value);
   if (status != RedisReadStatus::kOk) return status;
@@ -93,6 +112,11 @@ RedisReadStatus RedisClient::get(const std::string &key, JsonDict &value) {
 
   clearError();
   return RedisReadStatus::kOk;
+}
+
+RedisClient &getDefaultRedisClient() {
+  static RedisClient client("default", getDefaultRedisClientConfig());
+  return client;
 }
 
 bool RedisClient::connect() {
@@ -146,11 +170,11 @@ bool RedisClient::connect() {
 
   redis_ = std::move(context);
   if (not authenticate()) {
-    disconnect();
+    redis_.reset();
     return false;
   }
   if (not selectDb()) {
-    disconnect();
+    redis_.reset();
     return false;
   }
 
@@ -203,7 +227,7 @@ RedisReadStatus RedisClient::readValue(const std::string &key, std::string &valu
   RedisReplyPtr reply = runCommand("GET", key);
   if (not reply) {
     reportError(fmt::format("Redis read failed for '{}'{}.", key, getContextErrorSuffix(redis_.get())));
-    disconnect();
+    redis_.reset();
     return RedisReadStatus::kError;
   }
   if (reply->type == REDIS_REPLY_NIL) return RedisReadStatus::kMissing;

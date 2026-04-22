@@ -10,8 +10,12 @@ Install [hiredis](https://github.com/redis/hiredis.git) and [nlohmann-json3](htt
 sudo apt install libhiredis-dev nlohmann-json3-dev
 ```
 
-### Provided Components
+### Environment Variables
 
-- `stepit::redis::RedisClientConfig`
-- `stepit::redis::RedisReadStatus`
-- `stepit::redis::RedisClient`
+- `STEPIT_REDIS_HOST` (string, default: `127.0.0.1`)
+- `STEPIT_REDIS_PORT` (int, default: `6379`)
+- `STEPIT_REDIS_DB` (int, default: `0`)
+- `STEPIT_REDIS_USERNAME` (string, default: empty)
+- `STEPIT_REDIS_PASSWORD` (string, default: empty)
+- `STEPIT_REDIS_CONNECT_TIMEOUT_MS` (int, default: `1000`)
+- `STEPIT_REDIS_COMMAND_TIMEOUT_MS` (int, default: `50`)

@@ -29,6 +29,17 @@ export STEPIT_JOY_NAME=""                   # string, the key mapping type of th
 export STEPIT_ROS_NODE_NAME="stepit_ros"    # string, the ROS1 node name (plugin: stepit_ros)
 export STEPIT_ROS2_NODE_NAME="stepit_ros2"  # string, the ROS2 node name (plugin: stepit_ros2)
 
+export STEPIT_REDIS_HOST="127.0.0.1"         # string, Redis host (plugin: redis_base)
+export STEPIT_REDIS_PORT=6379                # int, Redis port (plugin: redis_base)
+export STEPIT_REDIS_DB=0                     # int, Redis db index (plugin: redis_base)
+export STEPIT_REDIS_USERNAME=""              # string, Redis username (plugin: redis_base)
+export STEPIT_REDIS_PASSWORD=""              # string, Redis password (plugin: redis_base)
+export STEPIT_REDIS_CONNECT_TIMEOUT_MS=1000  # int, Redis connect timeout in ms (plugin: redis_base)
+export STEPIT_REDIS_COMMAND_TIMEOUT_MS=50    # int, Redis command timeout in ms (plugin: redis_base)
+
+export STEPIT_JOYSTICK_REDIS_KEY="joystick"       # string, Redis key for joystick state (plugin: joystick_redis)
+export STEPIT_JOYSTICK_REDIS_POLL_INTERVAL_MS=10  # int, Redis polling interval in ms (plugin: joystick_redis)
+
 export STEPIT_ROS2_QOS_RELIABILITY="best_effort"  # string, the ROS2 QoS reliability policy (plugin: stepit_ros2)
 export STEPIT_ROS2_QOS_DURABILITY="volatile"      # string, the ROS2 QoS durability policy (plugin: stepit_ros2)
 export STEPIT_ROS2_QOS_HISTORY="keep_last"        # string, the ROS2 QoS history policy (plugin: stepit_ros2)

@@ -2,6 +2,7 @@
 #define STEPIT_REDIS_CLIENT_H_
 
 #include <memory>
+#include <mutex>
 #include <string>
 
 #include <hiredis/hiredis.h>
@@ -23,6 +24,8 @@ struct RedisClientConfig {
   int connect_timeout_ms{1000};
   int command_timeout_ms{50};
 };
+
+RedisClientConfig &getDefaultRedisClientConfig();
 
 enum class RedisReadStatus {
   kOk,
@@ -60,7 +63,10 @@ class RedisClient {
   RedisClientConfig config_;
   RedisContextPtr redis_{nullptr, &redisFree};
   std::string last_error_;
+  std::mutex mutex_;
 };
+
+RedisClient &getDefaultRedisClient();
 }  // namespace redis
 }  // namespace stepit
 
