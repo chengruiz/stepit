@@ -21,7 +21,7 @@ RosJoystick::RosJoystick(const Keymap &keymap) : keymap_(keymap) {
                  .subscribe(topic_name, 10, &RosJoystick::callback, this, ros::TransportHints().tcpNoDelay());
 }
 
-bool RosJoystick::connected() const { return connected_ and getElapsedTime(stamp_) < 0.1; }
+bool RosJoystick::connected() const { return connected_ and getElapsedTime(stamp_) < 0.2; }
 
 void RosJoystick::getState(State &state) {
   if (not connected_) {

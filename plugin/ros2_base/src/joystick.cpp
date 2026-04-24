@@ -15,12 +15,13 @@ Ros2Joystick::Ros2Joystick() : Ros2Joystick(loadGlobalConfigYaml(fmt::format("jo
 
 Ros2Joystick::Ros2Joystick(const Keymap &keymap) : keymap_(keymap) {
   std::string topic_name = "/joy";
+  getNode()->declare_parameter("joy_topic", topic_name);
   getNode()->get_parameter_or("joy_topic", topic_name, std::string{"/joy"});
   joy_sub_ = getNode()->create_subscription<sensor_msgs::msg::Joy>(
       topic_name, getDefaultQoS(), [this](const sensor_msgs::msg::Joy::SharedPtr msg) { callback(msg); });
 }
 
-bool Ros2Joystick::connected() const { return connected_ and getElapsedTime(stamp_) < 0.1; }
+bool Ros2Joystick::connected() const { return connected_ and getElapsedTime(stamp_) < 0.2; }
 
 void Ros2Joystick::getState(State &state) {
   if (not connected_) {

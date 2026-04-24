@@ -2,6 +2,7 @@
 #include <chrono>
 #include <csignal>
 #include <cstring>
+#include <exception>
 #include <iostream>
 #include <thread>
 
@@ -9,16 +10,67 @@
 #include <fmt/format.h>
 
 #include <stepit/plugin.h>
+#include <stepit/spin.h>
 #include <stepit/joystick/joystick.h>
 
 using namespace stepit;
 namespace po = boost::program_options;
 
 namespace {
-std::atomic<bool> g_running{true};
+class JoystickStatePrinter {
+ public:
+  JoystickStatePrinter(std::string factory) : factory_(std::move(factory)) {}
+  void start() { worker_ = std::thread(&JoystickStatePrinter::run, this); }
+  void stop() { running_ = false; }
+  void join() {
+    if (worker_.joinable()) worker_.join();
+    if (worker_exception_) std::rethrow_exception(worker_exception_);
+  }
 
-void handleSignal(int) { g_running = false; }
+ private:
+  void run() {
+    try {
+      auto js = joystick::Joystick::make(factory_);
+      joystick::State state;
+      bool last_connected = false;
+      std::string last_line;
 
+      std::cout << "Polling joystick";
+      if (not factory_.empty()) std::cout << " with factory '" << factory_ << "'";
+      std::cout << ". Press Ctrl+C to exit." << std::endl;
+
+      while (running_.load()) {
+        const bool connected = js->connected();
+        if (connected) {
+          js->getState(state);
+          const std::string line = fmt::format("{}", state);
+          if (not last_connected || line != last_line) {
+            std::cout << line << std::endl;
+            last_line = line;
+          }
+        } else if (last_connected) {
+          std::cout << "Joystick disconnected. Waiting for reconnect..." << std::endl;
+          last_line.clear();
+        } else if (last_line.empty()) {
+          std::cout << "Waiting for joystick connection..." << std::endl;
+          last_line = "waiting";
+        }
+
+        last_connected = connected;
+        std::this_thread::sleep_for(std::chrono::milliseconds(interval_ms_));
+      }
+    } catch (...) {
+      worker_exception_ = std::current_exception();
+      std::raise(SIGINT);
+    }
+  }
+
+  std::string factory_;
+  int interval_ms_{10};
+  std::atomic<bool> running_{true};
+  std::thread worker_;
+  std::exception_ptr worker_exception_;
+};
 }  // namespace
 
 int main(int argc, char *argv[]) {
@@ -29,8 +81,6 @@ int main(int argc, char *argv[]) {
           "Show this help message")
       ("factory,f", po::value<std::string>()->default_value(""),
           "Joystick factory name")
-      ("interval-ms,i", po::value<int>()->default_value(50),
-          "Polling interval in milliseconds")
       ("verbosity,v", po::value<int>(),
           "Verbosity level (0-3)")
       (" arg1 arg2 ...",
@@ -56,9 +106,6 @@ int main(int argc, char *argv[]) {
     STEPIT_SET_VERBOSITY(static_cast<VerbosityLevel>(arg_map["verbosity"].as<int>()));
   }
 
-  const int interval_ms = arg_map["interval-ms"].as<int>();
-  STEPIT_ASSERT(interval_ms > 0, "Argument 'interval-ms' should be positive, got {}.", interval_ms);
-
   PluginManager plugin_manager(plugin_args);
 
   std::string factory = arg_map["factory"].as<std::string>();
@@ -70,38 +117,14 @@ int main(int argc, char *argv[]) {
     return -1;
   }
 
-  std::signal(SIGINT, handleSignal);
-  std::signal(SIGTERM, handleSignal);
-
   try {
-    auto js = joystick::Joystick::make(factory);
-    joystick::State state;
-    bool last_connected = false;
-    std::string last_line;
-
-    std::cout << "Polling joystick";
-    if (not factory.empty()) std::cout << " with factory '" << factory << "'";
-    std::cout << ". Press Ctrl+C to exit." << std::endl;
-
-    while (g_running.load()) {
-      const bool connected = js->connected();
-      if (connected) {
-        js->getState(state);
-        const std::string line = fmt::format("{}", state);
-        if (not last_connected || line != last_line) {
-          std::cout << line << std::endl;
-          last_line = line;
-        }
-      } else if (last_connected) {
-        std::cout << "Joystick disconnected. Waiting for reconnect..." << std::endl;
-        last_line.clear();
-      } else if (last_line.empty()) {
-        std::cout << "Waiting for joystick connection..." << std::endl;
-        last_line = "waiting";
-      }
-
-      last_connected = connected;
-      std::this_thread::sleep_for(std::chrono::milliseconds(interval_ms));
+    JoystickStatePrinter printer(factory);
+    printer.start();
+    const int spin_result = stepit::spin();
+    printer.stop();
+    printer.join();
+    if (spin_result != 0) {
+      return spin_result;
     }
   } catch (const std::exception &e) {
     fmt::print(std::cerr, "{}: {}\n", kErrorPrefix, e.what());
