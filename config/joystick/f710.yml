@@ -1,0 +1,21 @@
+A: 0
+B: 1
+X: 2
+Y: 3
+LB: 4
+RB: 5
+Select: 6
+Start: 7
+LAS: 9
+RAS: 10
+Up: 30
+Down: 31
+Left: 28
+Right: 29
+
+las_x: 0
+las_y: 1
+ras_x: 3
+ras_y: 4
+lt: 2
+rt: 5
