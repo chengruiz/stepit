@@ -6,8 +6,7 @@ int stepit_plugin_init(int &argc, char **argv) {
   return 0;
 }
 
-int stepit_plugin_cleanup(int &argc, char **argv) {
+void stepit_plugin_cleanup() {
   stepit::releasePythonInterpreter();
-  return 0;
 }
 }

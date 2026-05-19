@@ -10,9 +10,8 @@ int stepit_plugin_init(int &argc, char **argv) {
   return 0;
 }
 
-int stepit_plugin_cleanup() {
+void stepit_plugin_cleanup() {
   stepit::getNode().reset();
   rclcpp::shutdown();
-  return 0;
 }
 }
