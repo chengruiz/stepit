@@ -128,6 +128,7 @@ install(TARGETS stepit_plugin_builtin
 
 # Dynamically discover plugins from manifest files
 set(STEPIT_DISCOVERED_PLUGINS "")
+set(STEPIT_DISCOVERED_PLUGIN_DIRS "")
 # Add the default plugin search directory
 list(APPEND STEPIT_PLUGIN_DIRS "${CMAKE_CURRENT_LIST_DIR}/plugin")
 foreach (plugin_search_dir ${STEPIT_PLUGIN_DIRS})
@@ -149,16 +150,23 @@ foreach (plugin_search_dir ${STEPIT_PLUGIN_DIRS})
         AND EXISTS ${plugin_dir}/stepit_plugin_manifest.cmake
         AND NOT ${plugin_dir} STREQUAL ${CMAKE_CURRENT_LIST_DIR}
     )
-      stepit_load_plugin_manifest(${plugin_dir} plugin)
-      if (plugin IN_LIST STEPIT_DISCOVERED_PLUGINS)
-        stepit_get_plugin_property(${plugin} DIR existing_plugin_dir)
+      if (plugin_dir IN_LIST STEPIT_DISCOVERED_PLUGIN_DIRS)
+        continue()
+      endif ()
+      list(APPEND STEPIT_DISCOVERED_PLUGIN_DIRS "${plugin_dir}")
+
+      stepit_load_plugin_manifest(${plugin_dir} manifest_id)
+      stepit_get_plugin_manifest_property(${manifest_id} NAME plugin_name)
+      if (plugin_name IN_LIST STEPIT_DISCOVERED_PLUGINS)
+        stepit_get_plugin_property(${plugin_name} DIR existing_plugin_dir)
         message(
             FATAL_ERROR
-            "Duplicated plugin '${plugin}' declared in "
+            "Duplicated plugin '${plugin_name}' declared in "
             "'${existing_plugin_dir}' and '${plugin_dir}'."
         )
       endif ()
-      list(APPEND STEPIT_DISCOVERED_PLUGINS ${plugin})
+      stepit_commit_plugin_manifest(${manifest_id})
+      list(APPEND STEPIT_DISCOVERED_PLUGINS ${plugin_name})
     endif ()
   endforeach ()
 endforeach ()

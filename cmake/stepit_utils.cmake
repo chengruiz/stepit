@@ -14,6 +14,22 @@ function(stepit_get_plugin_property plugin property_name output_var)
   set(${output_var} "${property_value}" PARENT_SCOPE)
 endfunction()
 
+function(stepit_set_plugin_manifest_property manifest_id property_name)
+  if (ARGC GREATER 2)
+    set_property(GLOBAL PROPERTY "STEPIT_PLUGIN_MANIFEST_${manifest_id}_${property_name}" "${ARGN}")
+  else ()
+    set_property(GLOBAL PROPERTY "STEPIT_PLUGIN_MANIFEST_${manifest_id}_${property_name}" "")
+  endif ()
+endfunction()
+
+function(stepit_get_plugin_manifest_property manifest_id property_name output_var)
+  get_property(property_value GLOBAL PROPERTY "STEPIT_PLUGIN_MANIFEST_${manifest_id}_${property_name}")
+  if (NOT DEFINED property_value)
+    set(property_value "")
+  endif ()
+  set(${output_var} "${property_value}" PARENT_SCOPE)
+endfunction()
+
 function(stepit_append_unique_global_property property_name)
   get_property(property_values GLOBAL PROPERTY ${property_name})
   if (NOT property_values)
@@ -110,53 +126,30 @@ function(stepit_declare_plugin)
 endfunction()
 
 function(stepit_load_plugin_manifest plugin_dir output_var)
-  unset(STEPIT_PLUGIN_NAME)
-  unset(STEPIT_PLUGIN_DEPENDS)
-  set(STEPIT_PLUGIN_BUILDABLE TRUE)
-  set(STEPIT_PLUGIN_REASON "")
-  set(STEPIT_PLUGIN_DIR "${plugin_dir}")
+  string(MD5 manifest_id "${plugin_dir}")
+  stepit_set_plugin_manifest_property(${manifest_id} DIR "${plugin_dir}")
 
-  # Manifests are evaluated in the top-level directory scope, so save and restore
-  # directory properties to keep package find scripts from polluting unrelated targets.
-  get_directory_property(saved_compile_definitions COMPILE_DEFINITIONS)
-  get_directory_property(saved_compile_options COMPILE_OPTIONS)
-  get_directory_property(saved_include_directories INCLUDE_DIRECTORIES)
-  get_directory_property(saved_link_directories LINK_DIRECTORIES)
-  get_directory_property(saved_system_include_directories SYSTEM_INCLUDE_DIRECTORIES)
-
-  include("${plugin_dir}/stepit_plugin_manifest.cmake")
-
-  if (NOT DEFINED STEPIT_PLUGIN_NAME OR STEPIT_PLUGIN_NAME STREQUAL "")
-    message(
-        FATAL_ERROR
-        "Plugin manifest '${plugin_dir}/stepit_plugin_manifest.cmake' "
-        "must call stepit_declare_plugin(NAME <plugin> ...)."
-    )
-  endif ()
-  if (NOT DEFINED STEPIT_PLUGIN_DEPENDS)
-    set(STEPIT_PLUGIN_DEPENDS "")
-  endif ()
-  if (NOT DEFINED STEPIT_PLUGIN_BUILDABLE)
-    set(STEPIT_PLUGIN_BUILDABLE TRUE)
-  endif ()
-  if (NOT DEFINED STEPIT_PLUGIN_REASON)
-    set(STEPIT_PLUGIN_REASON "")
-  endif ()
-
-  set_directory_properties(PROPERTIES
-      COMPILE_DEFINITIONS "${saved_compile_definitions}"
-      COMPILE_OPTIONS "${saved_compile_options}"
-      INCLUDE_DIRECTORIES "${saved_include_directories}"
-      LINK_DIRECTORIES "${saved_link_directories}"
-      SYSTEM_INCLUDE_DIRECTORIES "${saved_system_include_directories}"
+  set(STEPIT_PLUGIN_MANIFEST_ID "${manifest_id}")
+  # Isolate directory properties that package find scripts may mutate.
+  add_subdirectory(
+      "${STEPIT_HOME_DIRECTORY}/cmake/plugin_manifest_scope"
+      "${CMAKE_CURRENT_BINARY_DIR}/plugin_manifest_scopes/${manifest_id}"
   )
 
-  set(plugin "${STEPIT_PLUGIN_NAME}")
-  stepit_set_plugin_property(${plugin} DIR "${plugin_dir}")
-  stepit_set_plugin_property(${plugin} DEPENDS ${STEPIT_PLUGIN_DEPENDS})
-  stepit_set_plugin_property(${plugin} BUILDABLE ${STEPIT_PLUGIN_BUILDABLE})
-  stepit_set_plugin_property(${plugin} REASON "${STEPIT_PLUGIN_REASON}")
-  set(${output_var} "${plugin}" PARENT_SCOPE)
+  set(${output_var} "${manifest_id}" PARENT_SCOPE)
+endfunction()
+
+function(stepit_commit_plugin_manifest manifest_id)
+  stepit_get_plugin_manifest_property(${manifest_id} NAME plugin_name)
+  stepit_get_plugin_manifest_property(${manifest_id} DIR STEPIT_PLUGIN_DIR)
+  stepit_get_plugin_manifest_property(${manifest_id} DEPENDS STEPIT_PLUGIN_DEPENDS)
+  stepit_get_plugin_manifest_property(${manifest_id} BUILDABLE STEPIT_PLUGIN_BUILDABLE)
+  stepit_get_plugin_manifest_property(${manifest_id} REASON STEPIT_PLUGIN_REASON)
+
+  stepit_set_plugin_property(${plugin_name} DIR "${STEPIT_PLUGIN_DIR}")
+  stepit_set_plugin_property(${plugin_name} DEPENDS ${STEPIT_PLUGIN_DEPENDS})
+  stepit_set_plugin_property(${plugin_name} BUILDABLE ${STEPIT_PLUGIN_BUILDABLE})
+  stepit_set_plugin_property(${plugin_name} REASON "${STEPIT_PLUGIN_REASON}")
 endfunction()
 
 function(stepit_resolve_plugin plugin dependency_stack)
