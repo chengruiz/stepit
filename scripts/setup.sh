@@ -33,6 +33,22 @@ require_cmd() {
 	command -v "$1" >/dev/null 2>&1 || die "Missing required command: $1"
 }
 
+version_ge() {
+	local have="$1"
+	local need="$2"
+	local lowest
+	lowest="$(printf '%s\n%s\n' "${need}" "${have}" | sort -V | head -n 1)"
+	[[ "${lowest}" == "${need}" ]]
+}
+
+cmake_version() {
+	local cmake_bin="$1"
+	local version_line
+	version_line="$("${cmake_bin}" --version 2>/dev/null | head -n 1 || true)"
+	[[ "${version_line}" =~ ([0-9]+(\.[0-9]+)+) ]] || return 1
+	printf '%s' "${BASH_REMATCH[1]}"
+}
+
 ensure_symlink() {
 	# ensure_symlink TARGET LINK_PATH
 	# Creates LINK_PATH -> TARGET if missing.
@@ -56,6 +72,103 @@ ensure_symlink() {
 	fi
 
 	run ln -s "${target}" "${link_path}"
+}
+
+download_file() {
+	local url="$1"
+	local output="$2"
+	if command -v curl >/dev/null 2>&1; then
+		run curl -L --fail --show-error -o "${output}" "${url}"
+	elif command -v wget >/dev/null 2>&1; then
+		run wget -O "${output}" "${url}"
+	else
+		die "Missing curl or wget; install one to download the workspace CMake package."
+	fi
+}
+
+detect_cmake_package_arch() {
+	local kernel
+	local machine
+	kernel="$(uname -s)"
+	machine="$(uname -m)"
+
+	[[ "${kernel}" == "Linux" ]] || die "Workspace CMake bootstrap currently supports Linux only."
+	case "${machine}" in
+		x86_64|amd64) printf '%s' "x86_64" ;;
+		aarch64|arm64) printf '%s' "aarch64" ;;
+		*) die "Unsupported CPU architecture for CMake bootstrap: ${machine}" ;;
+	esac
+}
+
+ensure_workspace_cmake() {
+	local min_version="3.23"
+	local bootstrap_version="3.31.12"
+	local cmake_bin=""
+	local detected_version=""
+
+	if command -v cmake >/dev/null 2>&1; then
+		cmake_bin="$(command -v cmake)"
+		detected_version="$(cmake_version "${cmake_bin}" || true)"
+		if [[ -n "${detected_version}" ]] && version_ge "${detected_version}" "${min_version}"; then
+			log "CMake:    ${cmake_bin} (${detected_version}, satisfies >= ${min_version})"
+			return 0
+		fi
+	fi
+
+	local tools_dir="${workspace_dir}/tools"
+	local cmake_link="${tools_dir}/cmake"
+	if [[ -x "${cmake_link}/bin/cmake" ]]; then
+		detected_version="$(cmake_version "${cmake_link}/bin/cmake" || true)"
+		if [[ -n "${detected_version}" ]] && version_ge "${detected_version}" "${min_version}"; then
+			log "CMake:    ${cmake_link}/bin/cmake (${detected_version}, workspace-local)"
+			return 0
+		fi
+	fi
+
+	local arch
+	local package_name
+	local archive
+	local sha_file
+	local base_url
+	local expected_sha
+	local actual_sha
+	arch="$(detect_cmake_package_arch)"
+	package_name="cmake-${bootstrap_version}-linux-${arch}"
+	archive="${tools_dir}/${package_name}.tar.gz"
+	sha_file="${tools_dir}/cmake-${bootstrap_version}-SHA-256.txt"
+	base_url="https://github.com/Kitware/CMake/releases/download/v${bootstrap_version}"
+
+	log "${GREEN}Preparing workspace CMake ${bootstrap_version}...${CLEAR}"
+	run mkdir -p "${tools_dir}"
+	download_file "${base_url}/${package_name}.tar.gz" "${archive}"
+	download_file "${base_url}/cmake-${bootstrap_version}-SHA-256.txt" "${sha_file}"
+
+	require_cmd awk
+	require_cmd sha256sum
+	expected_sha="$(awk -v file="$(basename "${archive}")" '
+		index($0, file) {
+			for (i = 1; i <= NF; ++i) {
+				if (length($i) == 64 && $i ~ /^[0-9a-fA-F]+$/) {
+					print tolower($i)
+					exit
+				}
+			}
+		}
+	' "${sha_file}")"
+	[[ -n "${expected_sha}" ]] || die "Could not find checksum for $(basename "${archive}") in ${sha_file}."
+	actual_sha="$(sha256sum "${archive}" | awk '{print $1}')"
+	[[ "${actual_sha}" == "${expected_sha}" ]] \
+		|| die "Checksum mismatch for ${archive}."
+
+	require_cmd tar
+	run rm -rf "${tools_dir}/${package_name}"
+	run tar -xzf "${archive}" -C "${tools_dir}"
+	ensure_symlink "${tools_dir}/${package_name}" "${cmake_link}"
+
+	detected_version="$(cmake_version "${cmake_link}/bin/cmake" || true)"
+	[[ -n "${detected_version}" ]] && version_ge "${detected_version}" "${min_version}" \
+		|| die "Downloaded CMake does not satisfy >= ${min_version}: ${cmake_link}/bin/cmake"
+	log "CMake:    ${cmake_link}/bin/cmake (${detected_version}, workspace-local)"
 }
 
 usage() {
@@ -170,6 +283,7 @@ else
 	deps=(
 		ca-certificates
 		git
+		curl
 		cmake
 		build-essential
 		libboost-dev
@@ -191,6 +305,8 @@ else
 	run git clone --depth 1 "$repo_url" "${stepit_dir}"
 	run git -C "${stepit_dir}" submodule update --init extern/llu
 fi
+
+ensure_workspace_cmake
 
 if [[ "${enable_zoo}" == true ]]; then
 	if [[ -e "${zoo_dir}" ]]; then

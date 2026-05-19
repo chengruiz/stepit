@@ -33,6 +33,38 @@ require_cmd() {
 	command -v "$1" >/dev/null 2>&1 || die "Missing required command: $1"
 }
 
+version_ge() {
+	local have="$1"
+	local need="$2"
+	local lowest
+	lowest="$(printf '%s\n%s\n' "${need}" "${have}" | sort -V | head -n 1)"
+	[[ "${lowest}" == "${need}" ]]
+}
+
+cmake_version() {
+	local cmake_bin="$1"
+	local version_line
+	version_line="$("${cmake_bin}" --version 2>/dev/null | head -n 1 || true)"
+	[[ "${version_line}" =~ ([0-9]+(\.[0-9]+)+) ]] || return 1
+	printf '%s' "${BASH_REMATCH[1]}"
+}
+
+configure_cmake_path() {
+	local min_version="3.23"
+	local workspace_cmake="${workspace_dir}/tools/cmake/bin/cmake"
+	if [[ -x "${workspace_cmake}" ]]; then
+		export PATH="$(dirname "${workspace_cmake}"):${PATH}"
+	fi
+
+	require_cmd cmake
+	STEPIT_CMAKE_BIN="$(command -v cmake)"
+	STEPIT_CMAKE_VERSION="$(cmake_version "${STEPIT_CMAKE_BIN}" || true)"
+	[[ -n "${STEPIT_CMAKE_VERSION}" ]] \
+		|| die "Could not detect CMake version from ${STEPIT_CMAKE_BIN}."
+	version_ge "${STEPIT_CMAKE_VERSION}" "${min_version}" \
+		|| die "CMake >= ${min_version} is required, found ${STEPIT_CMAKE_VERSION} at ${STEPIT_CMAKE_BIN}. Run ./scripts/setup.sh to install a workspace-local CMake."
+}
+
 usage() {
 	cat <<'EOF'
 Usage:
@@ -154,12 +186,14 @@ case "$build_tool" in
 	*) die "Unsupported build_tool: $build_tool" ;;
 esac
 
+configure_cmake_path
 
 log "${GREEN}============================= Building =============================${CLEAR}"
 log "${GREEN}Workspace:${CLEAR}   ${workspace_dir}"
 log "${GREEN}Build tool:${CLEAR}  ${build_tool}"
 log "${GREEN}Build type:${CLEAR}  ${build_type}"
 log "${GREEN}Jobs:${CLEAR}        ${jobs}"
+log "${GREEN}CMake:${CLEAR}       ${STEPIT_CMAKE_BIN} (${STEPIT_CMAKE_VERSION})"
 
 run mkdir -p "${workspace_dir}/.stepit"
 echo "$build_tool" > "${workspace_dir}/.stepit/build_tool"
