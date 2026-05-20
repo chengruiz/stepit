@@ -153,7 +153,13 @@ target_sources(${PROJECT_NAME}
         include/stepit/policy_neuro_ros/field_subscriber.h
         include/stepit/policy_neuro_ros/heightmap_subscriber.h
 )
-target_include_directories(${PROJECT_NAME} PUBLIC ${catkin_INCLUDE_DIRS})
+foreach (catkin_include_dir ${catkin_INCLUDE_DIRS})
+  target_include_directories(${PROJECT_NAME} PUBLIC "$<BUILD_INTERFACE:${catkin_include_dir}>")
+  if (NOT catkin_include_dir MATCHES "^${CMAKE_BINARY_DIR}(/|$)" AND
+      NOT catkin_include_dir MATCHES "^${CATKIN_DEVEL_PREFIX}(/|$)")
+    target_include_directories(${PROJECT_NAME} PUBLIC "$<INSTALL_INTERFACE:${catkin_include_dir}>")
+  endif ()
+endforeach ()
 target_link_libraries(${PROJECT_NAME} PUBLIC
     stepit_core
     stepit_plugin_policy_neuro

@@ -7,8 +7,10 @@ project(stepit_plugin_ros_base)
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
-find_package(catkin REQUIRED COMPONENTS roscpp sensor_msgs std_msgs stepit_ros_msgs)
-if (NOT stepit_ros_msgs_FOUND)
+if (STEPIT_BUILDING_WITH_CATKIN)
+  find_package(catkin REQUIRED COMPONENTS roscpp sensor_msgs std_msgs stepit_ros_msgs)
+else ()
+  find_package(catkin REQUIRED COMPONENTS roscpp sensor_msgs std_msgs)
   add_subdirectory(${STEPIT_HOME_DIRECTORY}/package/ros/stepit_ros_msgs ../stepit_ros_msgs)
 endif ()
 
@@ -144,7 +146,13 @@ target_sources(${PROJECT_NAME}
         include/stepit/ros/node_handle.h
         include/stepit/ros/publisher.h
 )
-target_include_directories(${PROJECT_NAME} PUBLIC ${catkin_INCLUDE_DIRS})
+foreach (catkin_include_dir ${catkin_INCLUDE_DIRS})
+  target_include_directories(${PROJECT_NAME} PUBLIC "$<BUILD_INTERFACE:${catkin_include_dir}>")
+  if (NOT catkin_include_dir MATCHES "^${CMAKE_BINARY_DIR}(/|$)" AND
+      NOT catkin_include_dir MATCHES "^${CATKIN_DEVEL_PREFIX}(/|$)")
+    target_include_directories(${PROJECT_NAME} PUBLIC "$<INSTALL_INTERFACE:${catkin_include_dir}>")
+  endif ()
+endforeach ()
 target_link_libraries(${PROJECT_NAME} PUBLIC
     stepit_core
     stepit_plugin_joystick_base
@@ -168,13 +176,13 @@ install(TARGETS ${entry_target}
     LIBRARY DESTINATION ${STEPIT_LIB_DESTINATION}
 )
 if (TARGET stepit_ros_msgs)
-  target_link_libraries(${PROJECT_NAME} PUBLIC stepit_ros_msgs)
+  target_link_libraries(${PROJECT_NAME} PUBLIC $<BUILD_INTERFACE:stepit_ros_msgs>)
 endif ()
 
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries
 ## either from message generation or dynamic reconfigure
-# add_dependencies(${PROJECT_NAME} ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+add_dependencies(${PROJECT_NAME} ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
