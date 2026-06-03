@@ -64,9 +64,7 @@ Read the corresponding `README.md` first if you use any of the plugins.
 - [`joystick_udp`](plugin/joystick_udp): Controlling with retroid gamepads.
 - [`joystick_usb`](plugin/joystick_usb): Controlling with USB joysticks, e.g. Xbox 360 controller.
 - [`nnrt_base`](plugin/nnrt_base): Interface for neural networks.
-- [`nnrt_ascendcl`](plugin/nnrt_ascendcl): Neural network inference on Ascend AI processors, e.g. OrangePI AIpro.
 - [`nnrt_onnxruntime`](plugin/nnrt_onnxruntime): Neural network inference on general x86_64 processors.
-- [`nnrt_rknnrt`](plugin/nnrt_rknnrt): Neural network inference on Rockchip platforms, e.g. RK3588.
 - [`nnrt_tensorrt`](plugin/nnrt_tensorrt): Neural network inference on NVIDIA GPUs and Jetson platforms, e.g. Jetson Orin NX.
 - [`nnrt_torchjit`](plugin/nnrt_torchjit): Neural network inference with TorchScript (PyTorch JIT) models.
 - [`policy_neuro`](plugin/policy_neuro): Neural network-based control policy.
