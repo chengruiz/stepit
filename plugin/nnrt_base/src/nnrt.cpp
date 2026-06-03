@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <cstring>
 #include <iostream>
 #include <sstream>
 
@@ -7,6 +8,34 @@
 #include <stepit/nnrt/nnrt.h>
 
 namespace stepit {
+std::size_t dataTypeSize(DataType dtype) {
+  switch (dtype) {
+    case DataType::kFloat32:
+      return 4;
+    case DataType::kInt32:
+      return 4;
+    case DataType::kInt64:
+      return 8;
+    case DataType::kBool:
+      return 1;
+  }
+  return 0;
+}
+
+const char *dataTypeName(DataType dtype) {
+  switch (dtype) {
+    case DataType::kFloat32:
+      return "float32";
+    case DataType::kInt32:
+      return "int32";
+    case DataType::kInt64:
+      return "int64";
+    case DataType::kBool:
+      return "bool";
+  }
+  return "unknown";
+}
+
 std::string shape2str(const std::vector<int64_t> &shape) {
   std::stringstream ss;
   ss << "[" << shape[0];
@@ -15,12 +44,12 @@ std::string shape2str(const std::vector<int64_t> &shape) {
   return ss.str();
 }
 
-NnrtApi::NnrtApi(const std::string &path, const yml::Node &config) : config_(config) {
+Nnrt::Nnrt(const std::string &path, const yml::Node &config) : config_(config) {
   STEPIT_ASSERT(fs::exists(path), "Model path '{}' does not exist.", path);
   path_ = fs::canonical(path).string();
 }
 
-void NnrtApi::warmup(int iterations) {
+void Nnrt::warmup(int iterations) {
   Timer timer;
   timer.start();
   for (int i{}; i < iterations; ++i) runInference();
@@ -29,7 +58,7 @@ void NnrtApi::warmup(int iterations) {
   STEPIT_DBUGNT("Average warmup inference time: {}.", timer.total<USec>() / iterations);
 }
 
-std::size_t NnrtApi::getInputIdx(const std::string &name, bool assert) const {
+std::size_t Nnrt::getInputIndex(const std::string &name, bool assert) const {
   auto it = std::find(in_names_.begin(), in_names_.end(), name);
   if (it == in_names_.end()) {
     if (not assert) return -1;
@@ -38,7 +67,7 @@ std::size_t NnrtApi::getInputIdx(const std::string &name, bool assert) const {
   return it - in_names_.begin();
 }
 
-std::size_t NnrtApi::getOutputIdx(const std::string &name, bool assert) const {
+std::size_t Nnrt::getOutputIndex(const std::string &name, bool assert) const {
   auto it = std::find(out_names_.begin(), out_names_.end(), name);
   if (it == out_names_.end()) {
     if (not assert) return -1;
@@ -47,7 +76,7 @@ std::size_t NnrtApi::getOutputIdx(const std::string &name, bool assert) const {
   return it - out_names_.begin();
 }
 
-void NnrtApi::postInit() {
+void Nnrt::postInit() {
   std::string input_names_key = config_.getDefinedKey({"input_name", "input_names"});
   if (not input_names_key.empty()) {
     std::vector<std::string> in_names;
@@ -97,8 +126,8 @@ void NnrtApi::postInit() {
   in_recur_.resize(num_in_, false);
   out_recur_.resize(num_out_, false);
   for (int i{}; i < recur_params_.size(); ++i) {
-    std::size_t in_idx  = getInputIdx(recur_params_[i].first, true);
-    std::size_t out_idx = getOutputIdx(recur_params_[i].second, true);
+    std::size_t in_idx  = getInputIndex(recur_params_[i].first, true);
+    std::size_t out_idx = getOutputIndex(recur_params_[i].second, true);
     STEPIT_ASSERT(in_shapes_[in_idx] == out_shapes_[out_idx],
                   "Recurrent parameter shape mismatch: '{}' ({}) vs '{}' ({}).", recur_params_[i].first,
                   shape2str(in_shapes_[in_idx]), recur_params_[i].second, shape2str(out_shapes_[out_idx]));
@@ -108,21 +137,23 @@ void NnrtApi::postInit() {
   }
 }
 
-void NnrtApi::printInfo() const {
+void Nnrt::printInfo() const {
   std::stringstream ss;
   ss << "Model: " << path_;
-  for (int i{}; i < num_in_; ++i) {
-    ss << fmt::format("\n- in  {} {}: {} = {}", i, in_names_[i], shape2str(in_shapes_[i]), in_sizes_[i]);
+  for (std::size_t i{}; i < num_in_; ++i) {
+    ss << fmt::format("\n- in  {} {} [{}]: {} = {}", i, in_names_[i], dataTypeName(in_dtypes_[i]),
+                      shape2str(in_shapes_[i]), in_sizes_[i]);
   }
-  for (int i{}; i < num_out_; ++i) {
-    ss << fmt::format("\n- out {} {}: {} = {}", i, out_names_[i], shape2str(out_shapes_[i]), out_sizes_[i]);
+  for (std::size_t i{}; i < num_out_; ++i) {
+    ss << fmt::format("\n- out {} {} [{}]: {} = {}", i, out_names_[i], dataTypeName(out_dtypes_[i]),
+                      shape2str(out_shapes_[i]), out_sizes_[i]);
   }
-  for (int i{}; i < recur_params_.size(); ++i) {
+  for (std::size_t i{}; i < recur_params_.size(); ++i) {
     ss << fmt::format("\n- rec {} (out {}) -> {} (in {})", recur_params_[i].second, recur_param_indices_[i].second,
                       recur_params_[i].first, recur_param_indices_[i].first);
   }
   std::cout << ss.str() << std::endl;
 }
 
-template class NnrtApi::Interface;
+template class Nnrt::Interface;
 }  // namespace stepit

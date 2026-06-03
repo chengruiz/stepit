@@ -18,7 +18,7 @@ int main(int argc, char *argv[]) {
       ("help,h",
           "Show this help message")
       ("factory,f", po::value<std::string>()->default_value(""),
-          "NnrtApi factory name")
+          "Nnrt factory name")
       ("model_path", po::value<std::string>(),
           "Path to the model")
       ("config_path", po::value<std::string>(),
@@ -64,15 +64,15 @@ int main(int argc, char *argv[]) {
   const auto config = (arg_map.find("config_path") != arg_map.end())
                           ? yml::loadFile(arg_map["config_path"].as<std::string>())
                           : yml::Node();
-  if (startsWith(factory, "nnrtapi@")) {
-    factory = factory.substr(std::strlen("nnrtapi@"));
+  if (startsWith(factory, "nnrt@")) {
+    factory = factory.substr(std::strlen("nnrt@"));
   } else if (factory.find('@') != std::string::npos) {
-    fmt::print(std::cerr, "{} Invalid factory name '{}'. Expected a factory name of nnrtapi.\n", kErrorPrefix, factory);
+    fmt::print(std::cerr, "{} Invalid factory name '{}'. Expected a factory name of nnrt.\n", kErrorPrefix, factory);
     return -1;
   }
 
-  auto model1 = NnrtApi::make(factory, path, config);
-  auto model2 = NnrtApi::make(factory, path, config);
+  auto model1 = Nnrt::make(factory, path, config);
+  auto model2 = Nnrt::make(factory, path, config);
   model1->printInfo();
   model1->clearState();
   model2->clearState();
@@ -97,8 +97,8 @@ int main(int argc, char *argv[]) {
 
     // Check outputs
     for (std::size_t i{}; i < model1->getNumOutputs(); ++i) {
-      auto output1 = cmArrXf(model1->getOutput(i), static_cast<Eigen::Index>(model1->getOutputSize(i)));
-      auto output2 = cmArrXf(model2->getOutput(i), static_cast<Eigen::Index>(model2->getOutputSize(i)));
+      auto output1 = cmArrXf(model1->getOutput<float>(i), static_cast<Eigen::Index>(model1->getOutputSize(i)));
+      auto output2 = cmArrXf(model2->getOutput<float>(i), static_cast<Eigen::Index>(model2->getOutputSize(i)));
       if (not output1.isApprox(output2)) {
         std::cerr << fmt::format("{}ERROR{}: Output '{}' is not consistent.", kRed, kClear, model1->getOutputName(i));
         return -1;

@@ -19,7 +19,7 @@ export STEPIT_PUBLISH_LOW_LEVEL=1      # bool, whether to publish the robot low-
 export STEPIT_PUBLISH_ARRAY=1          # bool, whether to publish other array data
 
 export STEPIT_DEFAULT_JOYSTICK=""      # string, the default joystick (plugin: joystick_base)
-export STEPIT_DEFAULT_NNRTAPI=""       # string, the default neural network runtime (plugin: nnrt_base)
+export STEPIT_DEFAULT_NNRT=""          # string, the default neural network runtime (plugin: nnrt_base)
 
 export STEPIT_JOYSTICK_ID=-1                # int, the joystick ID (/dev/js*) to read (plugin: joystick_native)
 export STEPIT_HOST_IP="192.168.1.120"       # string, the robot host ip (plugin: robot_deeprobotics_*)

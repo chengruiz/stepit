@@ -27,7 +27,7 @@ struct CudaGraphExecDeleter {
 };
 
 struct CudaHostMemoryDeleter {
-  void operator()(float *memory) const;
+  void operator()(void *memory) const;
 };
 
 struct CudaStreamDeleter {
@@ -37,7 +37,7 @@ struct CudaStreamDeleter {
 using CudaDeviceMemoryPtr = std::unique_ptr<void, CudaDeviceMemoryDeleter>;
 using CudaGraphPtr        = std::unique_ptr<std::remove_pointer_t<cudaGraph_t>, CudaGraphDeleter>;
 using CudaGraphExecPtr    = std::unique_ptr<std::remove_pointer_t<cudaGraphExec_t>, CudaGraphExecDeleter>;
-using CudaHostMemoryPtr   = std::unique_ptr<float, CudaHostMemoryDeleter>;
+using CudaHostMemoryPtr   = std::unique_ptr<void, CudaHostMemoryDeleter>;
 using CudaStreamPtr       = std::unique_ptr<std::remove_pointer_t<cudaStream_t>, CudaStreamDeleter>;
 
 class TensorRTLogger : public nvinfer1::ILogger {
@@ -46,18 +46,18 @@ class TensorRTLogger : public nvinfer1::ILogger {
   void log(Severity severity, const char *msg) noexcept override;
 };
 
-class TensorRTApi : public NnrtApi {
+class TensorRt : public Nnrt {
  public:
-  explicit TensorRTApi(const std::string &path, const yml::Node &config);
-  ~TensorRTApi() override;
+  explicit TensorRt(const std::string &path, const yml::Node &config);
+  ~TensorRt() override;
 
   void runInference() override;
   void clearState() override;
 
-  using NnrtApi::setInput;
-  void setInput(std::size_t idx, float *data) override;
-  using NnrtApi::getOutput;
-  const float *getOutput(std::size_t idx) override;
+  using Nnrt::setInput;
+  void setInput(std::size_t idx, const void *data) override;
+  using Nnrt::getOutput;
+  const void *getOutput(std::size_t idx) override;
 
  private:
   void synchronize() override;

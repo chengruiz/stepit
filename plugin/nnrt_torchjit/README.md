@@ -16,4 +16,4 @@ echo "export CMAKE_PREFIX_PATH=\$CMAKE_PREFIX_PATH:\$HOME/Libraries/libtorch" >>
 
 ### Provided Factories
 
-- `stepit::NnrtApi`: `torchjit`
+- `stepit::Nnrt`: `torchjit`

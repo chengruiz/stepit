@@ -26,7 +26,24 @@
 
 namespace stepit {
 namespace {
-std::size_t tensorBytes(std::int64_t elements) { return static_cast<std::size_t>(elements) * sizeof(float); }
+std::size_t tensorBytes(std::int64_t elements, DataType dtype) {
+  return static_cast<std::size_t>(elements) * dataTypeSize(dtype);
+}
+
+DataType mapTrtDtype(nvinfer1::DataType trt_type) {
+  switch (trt_type) {
+    case nvinfer1::DataType::kFLOAT:
+      return DataType::kFloat32;
+    case nvinfer1::DataType::kINT32:
+      return DataType::kInt32;
+    case nvinfer1::DataType::kINT64:
+      return DataType::kInt64;
+    case nvinfer1::DataType::kBOOL:
+      return DataType::kBool;
+    default:
+      STEPIT_THROW("Unsupported TensorRT data type: {}.", static_cast<int>(trt_type));
+  }
+}
 
 std::string dimsToString(const nvinfer1::Dims &dims) {
   using Dim = std::remove_reference_t<decltype(nvinfer1::Dims::d[0])>;
@@ -74,7 +91,7 @@ CudaDeviceMemoryPtr makeCudaDeviceMemory(std::size_t size) {
 }
 
 CudaHostMemoryPtr makeCudaHostMemory(std::size_t size) {
-  float *memory{nullptr};
+  void *memory{nullptr};
   STEPIT_CUDA_CALL(cudaMallocHost, &memory, size);
   return CudaHostMemoryPtr(memory);
 }
@@ -92,7 +109,7 @@ void CudaGraphExecDeleter::operator()(cudaGraphExec_t instance) const {
   if (instance != nullptr) cudaGraphExecDestroy(instance);
 }
 
-void CudaHostMemoryDeleter::operator()(float *memory) const {
+void CudaHostMemoryDeleter::operator()(void *memory) const {
   if (memory != nullptr) cudaFreeHost(memory);
 }
 
@@ -125,8 +142,8 @@ void TensorRTLogger::log(Severity severity, const char *msg) noexcept {
   }
 }
 
-TensorRTApi::TensorRTApi(const std::string &path, const yml::Node &config)
-    : NnrtApi(addExtensionIfMissing(path, ".onnx"), config) {
+TensorRt::TensorRt(const std::string &path, const yml::Node &config)
+    : Nnrt(addExtensionIfMissing(path, ".onnx"), config) {
   auto tensorrt_options = config["tensorrt_options"];
 
   device_id_     = tensorrt_options["device_id"].as<int>(0);
@@ -179,20 +196,17 @@ TensorRTApi::TensorRTApi(const std::string &path, const yml::Node &config)
                   "TensorRT tensor '{}' has dynamic shape {}. Use 'trtexec' for advanced dynamic-shape builds.", name,
                   dimsToString(dims));
     auto size  = std::accumulate(dims.d, dims.d + dims.nbDims, 1, std::multiplies<>());
-    auto bytes = tensorBytes(size);
+    auto dtype = mapTrtDtype(engine_->getTensorDataType(name));
+    auto bytes = tensorBytes(size, dtype);
 
     if (engine_->getTensorIOMode(name) == nvinfer1::TensorIOMode::kINPUT) {
-      in_shapes_.emplace_back(dims.d, dims.d + dims.nbDims);
-      in_sizes_.push_back(size);
-      in_names_.push_back(name);
+      addInput(name, {dims.d, dims.d + dims.nbDims}, size, dtype);
       inputs_.emplace_back(makeCudaDeviceMemory(bytes));
       ++num_in_;
       STEPIT_ASSERT(context_->setTensorAddress(name, inputs_.back().get()), "Failed to set tensor address!");
     } else {
-      out_shapes_.emplace_back(dims.d, dims.d + dims.nbDims);
-      out_sizes_.push_back(size);
+      addOutput(name, {dims.d, dims.d + dims.nbDims}, size, dtype);
       out_data_.emplace_back(makeCudaHostMemory(bytes));
-      out_names_.push_back(name);
       outputs_.emplace_back(makeCudaDeviceMemory(bytes));
       ++num_out_;
       STEPIT_ASSERT(context_->setTensorAddress(name, outputs_.back().get()), "Failed to set tensor address!");
@@ -203,7 +217,7 @@ TensorRTApi::TensorRTApi(const std::string &path, const yml::Node &config)
   postInit();
 }
 
-TensorRTApi::~TensorRTApi() {
+TensorRt::~TensorRt() {
   CudaDeviceGuard device_guard(device_id_);
   if (cuda_stream_) STEPIT_CUDA_CALL(cudaStreamSynchronize, cuda_stream_.get());
   cuda_instance_.reset();
@@ -217,7 +231,7 @@ TensorRTApi::~TensorRTApi() {
   cuda_stream_.reset();
 }
 
-bool TensorRTApi::build(const std::string &onnx_path, const std::string &engine_path) {
+bool TensorRt::build(const std::string &onnx_path, const std::string &engine_path) {
   auto builder = std::unique_ptr<nvinfer1::IBuilder>(nvinfer1::createInferBuilder(TensorRTLogger::instance()));
   if (builder == nullptr) return false;
 
@@ -268,7 +282,7 @@ bool TensorRTApi::build(const std::string &onnx_path, const std::string &engine_
   return outfile.good();
 }
 
-bool TensorRTApi::createCudaGraph() {
+bool TensorRt::createCudaGraph() {
   CudaDeviceGuard device_guard(device_id_);
   auto graph_stream = makeCudaStream();
 
@@ -293,7 +307,7 @@ bool TensorRTApi::createCudaGraph() {
   return true;
 }
 
-void TensorRTApi::runInference() {
+void TensorRt::runInference() {
   CudaDeviceGuard device_guard(device_id_);
   if (cuda_instance_) {
     STEPIT_CUDA_CALL(cudaGraphLaunch, cuda_instance_.get(), cuda_stream_.get());
@@ -302,36 +316,37 @@ void TensorRTApi::runInference() {
   }
   for (const auto &pair : recur_param_indices_) {
     STEPIT_CUDA_CALL(cudaMemcpyAsync, inputs_[pair.first].get(), outputs_[pair.second].get(),
-                     tensorBytes(in_sizes_[pair.first]), cudaMemcpyDeviceToDevice, cuda_stream_.get());
-  }
-}
-
-void TensorRTApi::clearState() {
-  CudaDeviceGuard device_guard(device_id_);
-  for (const auto &pair : recur_param_indices_) {
-    STEPIT_CUDA_CALL(cudaMemsetAsync, inputs_[pair.first].get(), 0, tensorBytes(in_sizes_[pair.first]),
+                     tensorBytes(in_sizes_[pair.first], in_dtypes_[pair.first]), cudaMemcpyDeviceToDevice,
                      cuda_stream_.get());
   }
 }
 
-void TensorRTApi::synchronize() {
+void TensorRt::clearState() {
+  CudaDeviceGuard device_guard(device_id_);
+  for (const auto &pair : recur_param_indices_) {
+    STEPIT_CUDA_CALL(cudaMemsetAsync, inputs_[pair.first].get(), 0,
+                     tensorBytes(in_sizes_[pair.first], in_dtypes_[pair.first]), cuda_stream_.get());
+  }
+}
+
+void TensorRt::synchronize() {
   CudaDeviceGuard device_guard(device_id_);
   STEPIT_CUDA_CALL(cudaStreamSynchronize, cuda_stream_.get());
 }
 
-void TensorRTApi::setInput(std::size_t idx, float *data) {
+void TensorRt::setInput(std::size_t idx, const void *data) {
   CudaDeviceGuard device_guard(device_id_);
-  STEPIT_CUDA_CALL(cudaMemcpyAsync, inputs_[idx].get(), data, tensorBytes(in_sizes_[idx]), cudaMemcpyHostToDevice,
-                   cuda_stream_.get());
+  STEPIT_CUDA_CALL(cudaMemcpyAsync, inputs_[idx].get(), data, tensorBytes(in_sizes_[idx], in_dtypes_[idx]),
+                   cudaMemcpyHostToDevice, cuda_stream_.get());
 }
 
-const float *TensorRTApi::getOutput(std::size_t idx) {
+const void *TensorRt::getOutput(std::size_t idx) {
   CudaDeviceGuard device_guard(device_id_);
-  STEPIT_CUDA_CALL(cudaMemcpyAsync, out_data_[idx].get(), outputs_[idx].get(), tensorBytes(out_sizes_[idx]),
-                   cudaMemcpyDeviceToHost, cuda_stream_.get());
+  STEPIT_CUDA_CALL(cudaMemcpyAsync, out_data_[idx].get(), outputs_[idx].get(),
+                   tensorBytes(out_sizes_[idx], out_dtypes_[idx]), cudaMemcpyDeviceToHost, cuda_stream_.get());
   synchronize();
   return out_data_[idx].get();
 }
 
-STEPIT_REGISTER_NNRTAPI(tensorrt, kDefPriority, NnrtApi::make<TensorRTApi>);
+STEPIT_REGISTER_NNRT(tensorrt, kDefPriority, Nnrt::make<TensorRt>);
 }  // namespace stepit

@@ -9,7 +9,7 @@ in the system's library search path (e.g. via `LD_LIBRARY_PATH`).
 
 ### Provided Factories
 
-- `stepit::NnrtApi`: `tensorrt`
+- `stepit::Nnrt`: `tensorrt`
 
 
 ### Tips: Optimize Performance on Jetson Platforms

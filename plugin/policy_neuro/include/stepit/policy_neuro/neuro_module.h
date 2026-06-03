@@ -25,7 +25,7 @@ class NeuroModule : public Module {
   );
   static void printNodeFields(const std::vector<std::string> &node_names, const std::vector<FieldIdVec> &field_ids);
 
-  NnrtApi::Ptr nn_;
+  Nnrt::Ptr nn_;
 
   std::string nnrt_factory_;
   std::string model_path_;

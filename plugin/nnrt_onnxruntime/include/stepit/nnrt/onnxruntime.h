@@ -1,6 +1,7 @@
 #ifndef STEPIT_NNRT_ONNXRUNTIME_H_
 #define STEPIT_NNRT_ONNXRUNTIME_H_
 
+#include <cstdint>
 #include <memory>
 #include <string>
 #include <vector>
@@ -10,38 +11,32 @@
 #include <stepit/nnrt/nnrt.h>
 
 namespace stepit {
-class OnnxrtApi : public NnrtApi {
+class OnnxRt : public Nnrt {
  public:
-  explicit OnnxrtApi(const std::string &path, const yml::Node &config);
-  ~OnnxrtApi() override = default;
+  explicit OnnxRt(const std::string &path, const yml::Node &config);
+  ~OnnxRt() override = default;
 
   void runInference() override;
   void clearState() override;
 
-  using NnrtApi::setInput;
-  void setInput(std::size_t idx, float *data) override;
-  using NnrtApi::getOutput;
-  const float *getOutput(std::size_t idx) override;
+  using Nnrt::setInput;
+  void setInput(std::size_t idx, const void *data) override;
+  using Nnrt::getOutput;
+  const void *getOutput(std::size_t idx) override;
 
  private:
-  template <typename T>
-  Ort::Value createTensor(T *data, size_t size, const std::vector<int64_t> &shape) const;
-  static std::vector<int64_t> getShapeFromTypeInfo(const Ort::TypeInfo &type_info);
+  static DataType mapOnnxDtype(ONNXTensorElementDataType onnx_type);
+  Ort::Value createTensor(void *data, std::size_t byte_size, const std::vector<int64_t> &shape, DataType dtype);
 
   Ort::Env env_;
   Ort::AllocatorWithDefaultOptions allocator_;
   Ort::MemoryInfo memory_info_{nullptr};
   Ort::RunOptions run_options_{nullptr};
   std::unique_ptr<Ort::Session> core_{nullptr};
-  std::vector<std::vector<float>> in_data_, out_data_;
+  std::vector<std::vector<uint8_t>> in_data_, out_data_;
   std::vector<Ort::Value> in_tensors_, out_tensors_;
   std::unique_ptr<Ort::IoBinding> io_binding_{nullptr};
 };
-
-template <typename T>
-Ort::Value OnnxrtApi::createTensor(T *data, size_t size, const std::vector<int64_t> &shape) const {
-  return Ort::Value::CreateTensor<T>(memory_info_, data, size, shape.data(), shape.size());
-}
 }  // namespace stepit
 
 #endif  // STEPIT_NNRT_ONNXRUNTIME_H_

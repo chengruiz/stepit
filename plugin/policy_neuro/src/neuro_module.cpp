@@ -15,11 +15,14 @@ NeuroModule::NeuroModule(const NeuroPolicySpec &policy_spec, const ModuleSpec &m
 
   std::string displayed_name = run_name_.empty() ? name_ : fmt::format("{} ({})", name_, run_name_);
   displayFormattedBanner(60, kGreen, "NeuroModule {}", displayed_name);
-  nn_ = NnrtApi::make(nnrt_factory_, model_path_, config_);
+  nn_ = Nnrt::make(nnrt_factory_, model_path_, config_);
   if (STEPIT_VERBOSITY >= kInfo) nn_->printInfo();
 
   for (const auto &input_name : nn_->getInputNames()) {
     if (not nn_->isInputRecurrent(input_name)) {
+      STEPIT_ASSERT(nn_->getInputDtype(input_name) == DataType::kFloat32,
+                    "NeuroModule requires float32 inputs, but input '{}' has dtype {}.", input_name,
+                    dataTypeName(nn_->getInputDtype(input_name)));
       input_names_.push_back(input_name);
       std::size_t input_size = nn_->getInputSize(input_name);
       input_dims_.push_back(input_size);
@@ -28,6 +31,9 @@ NeuroModule::NeuroModule(const NeuroPolicySpec &policy_spec, const ModuleSpec &m
   }
   for (const auto &output_name : nn_->getOutputNames()) {
     if (not nn_->isOutputRecurrent(output_name)) {
+      STEPIT_ASSERT(nn_->getOutputDtype(output_name) == DataType::kFloat32,
+                    "NeuroModule requires float32 outputs, but output '{}' has dtype {}.", output_name,
+                    dataTypeName(nn_->getOutputDtype(output_name)));
       output_names_.push_back(output_name);
       output_dims_.push_back(nn_->getOutputSize(output_name));
     }
@@ -63,7 +69,7 @@ bool NeuroModule::update(const LowState &, ControlRequests &, FieldMap &context)
   }
   nn_->runInference();
   for (std::size_t i{}; i < output_names_.size(); ++i) {
-    cmArrXf output{nn_->getOutput(output_names_[i]), output_dims_[i]};
+    cmArrXf output{nn_->getOutput<float>(output_names_[i]), output_dims_[i]};
     if (assert_all_finite_ and not output.allFinite()) {
       STEPIT_CRIT("Indices '{}' of output '{}' are not all-finite.", getNonFiniteIndices(output), output_names_[i]);
       return false;
