@@ -80,7 +80,7 @@ Read the corresponding `README.md` first if you use any of the plugins.
 - [`robot_unitree_aliengo`](plugin/robot_unitree): Controlling the Unitree Aliengo robot.
 - [`robot_unitree_go1`](plugin/robot_unitree): Controlling the Unitree Go1 robot.
 - [`robot_unitree_b1`](plugin/robot_unitree): Controlling the Unitree B1 robot.
-- [`robot_unitree2`](plugin/robot_unitree2): Controlling Unitree Go2, B2 and G1 robots, and with Unitree joysticks.
+- [`robot_unitree2`](plugin/robot_unitree2): Controlling Unitree Go2, B2, A2 and G1 robots, and with Unitree joysticks.
 - [`robot_unitree2_ros2`](plugin/robot_unitree2_ros2): Controlling Unitree robots with unitree_ros2.
 - [`ros_base`](plugin/ros_base): ROS extensions, e.g. subscribing joysticks and publishing states.
 - [`ros2_base`](plugin/ros2_base): ROS2 extensions, e.g. subscribing joysticks and publishing states.

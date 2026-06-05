@@ -1,6 +1,6 @@
 # robot_unitree2
 
-StepIt plugin for controlling the Unitree Go2, B2 and G1 robots, and with the Unitree joysticks.
+StepIt plugin for controlling Unitree Go2, B2, A2, and G1 robots, and with the Unitree joysticks.
 
 ### Environment Variables
 
@@ -11,7 +11,7 @@ StepIt plugin for controlling the Unitree Go2, B2 and G1 robots, and with the Un
 ### Provided Factories
 
 - `stepit::RobotApi`:
-  - Quadrupeds: `b2`, `go2`, `go2w`
+  - Quadrupeds: `a2`, `b2`, `go2`, `go2w`
   - Humanoids: `g1` (29DoF), `g1_bfs` (29DoF)
 - `stepit::joystick::Joystick`:
     - `unitree2`: providing joystick input with the Unitree joystick. The `LAS` button is binded to the `L1` + `L2` buttons, and the `RAS` button is binded to the `R1` + `R2` buttons.
@@ -42,3 +42,7 @@ StepIt plugin for controlling the Unitree Go2, B2 and G1 robots, and with the Un
     ```shell
     export STEPIT_NETIF=lo
     ```
+
+- `a2` uses the Unitree A2 low-level DDS interface documented as `unitree_hg::msg::dds_::LowCmd_` and
+  `LowState_` on `rt/lowcmd` and `rt/lowstate`. Before low-level control, the built-in A2 motion service
+  `ai_sports` must be released with the motion switcher service or closed from the Unitree App.

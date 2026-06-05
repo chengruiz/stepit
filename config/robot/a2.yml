@@ -1,0 +1,37 @@
+name: "a2"
+joint_names:
+  - "FR_body"
+  - "FR_thigh"
+  - "FR_calf"
+  - "FL_body"
+  - "FL_thigh"
+  - "FL_calf"
+  - "RR_body"
+  - "RR_thigh"
+  - "RR_calf"
+  - "RL_body"
+  - "RL_thigh"
+  - "RL_calf"
+foot_names:
+  - "FR_foot"
+  - "FL_foot"
+  - "RR_foot"
+  - "RL_foot"
+comm_freq: 500
+kp: 150.0
+kd: 4.0
+standing_up_time: 2.0
+lying_down_time: 2.0
+standing_cfg: [
+  0.0, 0.6435, -1.287,
+  0.0, 0.6435, -1.287,
+  0.0, 0.6435, -1.287,
+  0.0, 0.6435, -1.287,
+]
+lying_cfg: [
+  0.0, 1.343, -2.696,
+  0.0, 1.343, -2.696,
+  0.0, 1.343, -2.696,
+  0.0, 1.343, -2.696,
+]
+auto_damped_mode: true
