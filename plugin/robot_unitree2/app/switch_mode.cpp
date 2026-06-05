@@ -23,7 +23,7 @@ void printUsage(const char *prog) {
   } while (0)
 
 int main(int argc, char **argv) {
-  using stepit::Unitree2ServiceClient;
+  using stepit::Unitree2MotionSwitcher;
   EXIT_IF(argc < 2);
 
   std::string cmd = argv[1];
@@ -34,35 +34,35 @@ int main(int argc, char **argv) {
     return 0;
   }
 
-  Unitree2ServiceClient::initialize();
+  Unitree2MotionSwitcher::initialize();
 
   if (cmd == "activate") {
     EXIT_IF(argc != 3);
-    Unitree2ServiceClient::activate(argv[2]);
+    Unitree2MotionSwitcher::activate(argv[2]);
     return 0;
   }
 
   if (cmd == "deactivate") {
     EXIT_IF(argc != 2);
-    Unitree2ServiceClient::deactivate();
+    Unitree2MotionSwitcher::deactivate();
     return 0;
   }
 
   if (cmd == "disable") {
     EXIT_IF(argc != 2);
-    Unitree2ServiceClient::disable();
+    Unitree2MotionSwitcher::disable();
     return 0;
   }
 
   if (cmd == "enable") {
     EXIT_IF(argc != 2);
-    Unitree2ServiceClient::enable();
+    Unitree2MotionSwitcher::enable();
     return 0;
   }
 
   if (cmd == "status") {
     EXIT_IF(argc != 2);
-    Unitree2ServiceClient::status();
+    Unitree2MotionSwitcher::status();
     return 0;
   }
 

@@ -1,4 +1,4 @@
-name: "aliengo_mujoco"
+name: "aliengo_sim"
 joint_names:
   - "FR_hip"
   - "FR_thigh"

@@ -6,22 +6,18 @@ set(UNITREE_SDK2_HOME ${STEPIT_HOME_DIRECTORY}/extern/robot_sdk/unitree_sdk2)
 stepit_add_plugin(${PROJECT_NAME})
 target_sources(${PROJECT_NAME}
     PRIVATE
-      src/aliengo_mujoco.cpp
-      src/b2.cpp
       src/common.cpp
       src/g1.cpp
-      src/go2.cpp
       src/joystick.cpp
+      src/quadruped.cpp
     PUBLIC
       FILE_SET HEADERS
       BASE_DIRS include
       FILES
-        include/stepit/robot/unitree2/aliengo_mujoco.h
-        include/stepit/robot/unitree2/b2.h
         include/stepit/robot/unitree2/common.h
         include/stepit/robot/unitree2/g1.h
-        include/stepit/robot/unitree2/go2.h
         include/stepit/robot/unitree2/joystick.h
+        include/stepit/robot/unitree2/quadruped.h
 )
 target_include_directories(${PROJECT_NAME} PUBLIC
     $<BUILD_INTERFACE:${UNITREE_SDK2_HOME}/include>

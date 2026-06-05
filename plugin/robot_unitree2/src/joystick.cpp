@@ -3,7 +3,7 @@
 namespace stepit {
 namespace joystick {
 Unitree2Joystick::Unitree2Joystick() {
-  Unitree2ServiceClient::initialize();
+  Unitree2Dds::initialize();
   sub_ = std::make_shared<u2_sdk::ChannelSubscriber<u2_msg::WirelessController_>>("rt/wirelesscontroller");
   sub_->InitChannel([this](const void *msg) { callback(static_cast<const u2_msg::WirelessController_ *>(msg)); }, 1);
 }

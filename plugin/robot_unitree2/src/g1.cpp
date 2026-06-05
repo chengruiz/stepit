@@ -23,7 +23,7 @@ G1Api::G1Api() : RobotApi(kRobotName), low_state_(getDoF(), getNumLegs()) {
 
 void G1Api::getControl(bool enable) {
   if (enable) {
-    Unitree2ServiceClient::initialize();
+    Unitree2Dds::initialize();
     low_cmd_pub_   = std::make_shared<u2_sdk::ChannelPublisher<hg_msg::LowCmd_>>("rt/lowcmd");
     low_state_sub_ = std::make_shared<u2_sdk::ChannelSubscriber<hg_msg::LowState_>>("rt/lowstate");
     torso_imu_sub_ = std::make_shared<u2_sdk::ChannelSubscriber<hg_msg::IMUState_>>("rt/secondary_imu");

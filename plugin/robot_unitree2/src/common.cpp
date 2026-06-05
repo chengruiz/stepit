@@ -101,12 +101,12 @@ uint32_t crc32core(const uint32_t *ptr, uint32_t len) {
   return crc32;
 }
 
-Unitree2ServiceClient &Unitree2ServiceClient::instance() {
-  static Unitree2ServiceClient instance;
+Unitree2Dds &Unitree2Dds::instance() {
+  static Unitree2Dds instance;
   return instance;
 }
 
-void Unitree2ServiceClient::initialize_() {
+void Unitree2Dds::initialize_() {
   if (initialized_) return;
   getenv("STEPIT_NETIF", network_interface_);
   getenv("STEPIT_UNITREE2_DOMAIN_ID", domain_id_);
@@ -114,36 +114,50 @@ void Unitree2ServiceClient::initialize_() {
   u2_sdk::ChannelFactory::Instance()->Init(static_cast<int32_t>(domain_id_), network_interface_);
   simulated_   = network_interface_ == "lo";
   initialized_ = true;
-
-  if (simulated_) {
-    disabled_ = true;
-  } else {
-    client_ = std::make_unique<u2_sdk::b2::MotionSwitcherClient>();
-    client_->SetTimeout(10.0F);
-    client_->Init();
-
-    std::string client_version = client_->GetApiVersion();
-    std::string server_version = client_->GetServerApiVersion();
-    if (client_version != server_version) {
-      STEPIT_WARN("Unitree: API version mismatch (client {}, server {}).", client_version, server_version);
-    }
-
-    int32_t ret = client_->GetSilent(disabled_);
-    STEPIT_ASSERT(ret == 0, "Unitree: GetSilent failed (error code: {}).", ret);
-    ret = client_->CheckMode(robot_type_, motion_type_);
-    STEPIT_ASSERT(ret == 0, "Unitree: CheckMode failed (error code: {}).", ret);
-  }
 }
 
-void Unitree2ServiceClient::status_() const {
-  STEPIT_ASSERT(initialized_, "Unitree: Service client is not initialized.");
-  if (simulated_) return;
+bool Unitree2Dds::isSimulated_() const {
+  STEPIT_ASSERT(initialized_, "Unitree: DDS is not initialized.");
+  return simulated_;
+}
+
+Unitree2MotionSwitcher &Unitree2MotionSwitcher::instance() {
+  static Unitree2MotionSwitcher instance;
+  return instance;
+}
+
+void Unitree2MotionSwitcher::initialize_() {
+  Unitree2Dds::initialize();
+  if (Unitree2Dds::isSimulated() or initialized_) return;
+
+  client_ = std::make_unique<u2_sdk::b2::MotionSwitcherClient>();
+  client_->SetTimeout(10.0F);
+  client_->Init();
+
+  std::string client_version = client_->GetApiVersion();
+  std::string server_version = client_->GetServerApiVersion();
+  if (client_version != server_version) {
+    STEPIT_WARN("Unitree: API version mismatch (client {}, server {}).", client_version, server_version);
+  }
+
+  int32_t ret = client_->GetSilent(disabled_);
+  STEPIT_ASSERT(ret == 0, "Unitree: GetSilent failed (error code: {}).", ret);
+  ret = client_->CheckMode(robot_type_, motion_type_);
+  STEPIT_ASSERT(ret == 0, "Unitree: CheckMode failed (error code: {}).", ret);
+  initialized_ = true;
+}
+
+void Unitree2MotionSwitcher::status_() {
+  initialize_();
+  if (Unitree2Dds::isSimulated()) return;
+
+  STEPIT_ASSERT(initialized_ and client_ != nullptr, "Unitree: Motion switcher client is not initialized.");
   STEPIT_INFO("Unitree: robot type: '{}', motion type: '{}'.", robot_type_, motion_type_);
 }
 
-void Unitree2ServiceClient::activate_(const std::string &mode) {
-  STEPIT_ASSERT(initialized_, "Unitree: Service client is not initialized.");
-  if (simulated_) return;
+void Unitree2MotionSwitcher::activate_(const std::string &mode) {
+  initialize_();
+  if (Unitree2Dds::isSimulated()) return;
   if (motion_type_ == mode) {
     STEPIT_LOG("Unitree: Locomotion mode is already '{}'.", mode);
     return;
@@ -155,9 +169,9 @@ void Unitree2ServiceClient::activate_(const std::string &mode) {
   STEPIT_LOG("Unitree: Locomotion mode is switched to '{}'.", motion_type_);
 }
 
-void Unitree2ServiceClient::deactivate_() {
-  STEPIT_ASSERT(initialized_, "Unitree: Service client is not initialized.");
-  if (simulated_) return;
+void Unitree2MotionSwitcher::deactivate_() {
+  initialize_();
+  if (Unitree2Dds::isSimulated()) return;
   if (motion_type_.empty()) {
     STEPIT_LOG("Unitree: Built-in locomotion is already deactivated.");
     return;
@@ -167,9 +181,10 @@ void Unitree2ServiceClient::deactivate_() {
   STEPIT_LOG("Unitree: Built-in locomotion is deactivated.");
 }
 
-void Unitree2ServiceClient::disable_() {
-  STEPIT_ASSERT(initialized_, "Unitree: Service client is not initialized.");
-  if (simulated_) return;
+void Unitree2MotionSwitcher::disable_() {
+  initialize_();
+  if (Unitree2Dds::isSimulated()) return;
+  deactivate_();
   if (disabled_) {
     STEPIT_LOG("Unitree: Built-in locomotion is already disabled.");
     return;
@@ -180,9 +195,10 @@ void Unitree2ServiceClient::disable_() {
   disabled_ = true;
 }
 
-void Unitree2ServiceClient::enable_() {
-  STEPIT_ASSERT(initialized_, "Unitree: Service client is not initialized.");
-  if (simulated_) return;
+void Unitree2MotionSwitcher::enable_() {
+  initialize_();
+  if (Unitree2Dds::isSimulated()) return;
+
   if (not disabled_) {
     STEPIT_LOG("Unitree: Built-in locomotion is already enabled.");
     return;

@@ -4,7 +4,6 @@
 
 #include <stepit/logging.h>
 
-#include <stepit/robot/unitree2/go2.h>
 #include <stepit/robot/unitree2_ros2/quadruped.h>
 
 namespace stepit {
