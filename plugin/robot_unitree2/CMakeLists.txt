@@ -48,9 +48,13 @@ install(TARGETS ${PROJECT_NAME}
     FILE_SET HEADERS DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
 )
 
-add_executable(unitree2_switch_mode app/switch_mode.cpp)
-target_link_libraries(unitree2_switch_mode PRIVATE ${PROJECT_NAME})
-install(TARGETS unitree2_switch_mode
+add_executable(unitree2_switch_motion app/switch_motion.cpp)
+target_link_libraries(unitree2_switch_motion PRIVATE ${PROJECT_NAME})
+
+add_executable(unitree2_switch_service app/switch_service.cpp)
+target_link_libraries(unitree2_switch_service PRIVATE ${PROJECT_NAME})
+
+install(TARGETS unitree2_switch_motion unitree2_switch_service
     RUNTIME DESTINATION ${STEPIT_BIN_DESTINATION}
 )
 

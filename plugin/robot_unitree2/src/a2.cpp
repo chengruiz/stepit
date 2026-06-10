@@ -23,8 +23,7 @@ A2Api::A2Api() : RobotApi(kRobotName), low_state_(getDoF(), getNumLegs()) {
 void A2Api::getControl(bool enable) {
   if (not enable) return;
 
-  Unitree2Dds::initialize();
-  Unitree2MotionSwitcher::deactivate();
+  Unitree2ServiceSwitcher::serviceSwitch("ai_sport", false);
 
   low_cmd_pub_   = std::make_shared<u2_sdk::ChannelPublisher<hg_msg::LowCmd_>>("rt/lowcmd");
   low_state_sub_ = std::make_shared<u2_sdk::ChannelSubscriber<hg_msg::LowState_>>("rt/lowstate");

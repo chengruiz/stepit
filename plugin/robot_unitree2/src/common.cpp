@@ -208,4 +208,44 @@ void Unitree2MotionSwitcher::enable_() {
   STEPIT_LOG("Unitree: Built-in locomotion is enabled.");
   disabled_ = false;
 }
+
+Unitree2ServiceSwitcher &Unitree2ServiceSwitcher::instance() {
+  static Unitree2ServiceSwitcher instance;
+  return instance;
+}
+
+void Unitree2ServiceSwitcher::initialize_() {
+  Unitree2Dds::initialize();
+  if (Unitree2Dds::isSimulated() or initialized_) return;
+
+  client_ = std::make_unique<u2_sdk::go2::RobotStateClient>();
+  client_->SetTimeout(10.0F);
+  client_->Init();
+
+  std::string client_version = client_->GetApiVersion();
+  std::string server_version = client_->GetServerApiVersion();
+  if (client_version != server_version) {
+    STEPIT_WARN("Unitree: API version mismatch (client {}, server {}).", client_version, server_version);
+  }
+
+  initialized_ = true;
+}
+
+void Unitree2ServiceSwitcher::serviceSwitch_(const std::string &name, bool enable) {
+  initialize_();
+  if (Unitree2Dds::isSimulated()) return;
+
+  STEPIT_ASSERT(initialized_ and client_ != nullptr, "Unitree: Service switcher client is not initialized.");
+
+  int32_t status = -1;
+  int32_t ret    = client_->ServiceSwitch(name, enable ? 1 : 0, status);
+  STEPIT_ASSERT(ret == 0, "Unitree: Failed to switch '{}' service to {} (error code: {}, status: {}).", name,
+                enable ? "on" : "off", ret, status);
+
+  int32_t expected_status = enable ? 0 : 1;
+  STEPIT_ASSERT(status == expected_status,
+                "Unitree: '{}' service status mismatch after ServiceSwitch (expected: {}, got: {}).", name,
+                expected_status, status);
+  STEPIT_LOG("Unitree: '{}' service is switched {}.", name, enable ? "on" : "off");
+}
 }  // namespace stepit

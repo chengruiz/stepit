@@ -18,15 +18,24 @@ StepIt plugin for controlling Unitree Go2, B2, A2, and G1 robots, and with the U
 
 ### Executables
 
-- `unitree2_switch_mode`: Switch or query the builtin Unitree2 locomotion state.
+- `unitree2_switch_motion`: Switch or query the builtin Unitree2 locomotion state.
 
     ```shell
-    unitree2_switch_mode help
-    unitree2_switch_mode status
-    unitree2_switch_mode activate <mode>
-    unitree2_switch_mode deactivate
-    unitree2_switch_mode disable
-    unitree2_switch_mode enable
+    unitree2_switch_motion help
+    unitree2_switch_motion status
+    unitree2_switch_motion activate <mode>
+    unitree2_switch_motion deactivate
+    unitree2_switch_motion disable
+    unitree2_switch_motion enable
+    ```
+
+- `unitree2_switch_service`: Switch Unitree service state.
+
+    ```shell
+    unitree2_switch_service help
+    unitree2_switch_service switch <service> off
+    unitree2_switch_service enable <service>
+    unitree2_switch_service disable <service>
     ```
 
 ### Notes
@@ -42,7 +51,3 @@ StepIt plugin for controlling Unitree Go2, B2, A2, and G1 robots, and with the U
     ```shell
     export STEPIT_NETIF=lo
     ```
-
-- `a2` uses the Unitree A2 low-level DDS interface documented as `unitree_hg::msg::dds_::LowCmd_` and
-  `LowState_` on `rt/lowcmd` and `rt/lowstate`. Before low-level control, the built-in A2 motion service
-  `ai_sports` must be released with the motion switcher service or closed from the Unitree App.

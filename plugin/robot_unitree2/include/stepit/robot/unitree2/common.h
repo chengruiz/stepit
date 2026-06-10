@@ -6,6 +6,7 @@
 #include <string>
 
 #include <unitree/robot/b2/motion_switcher/motion_switcher_client.hpp>
+#include <unitree/robot/go2/robot_state/robot_state_client.hpp>
 
 namespace u2_sdk = unitree::robot;
 
@@ -66,6 +67,23 @@ class Unitree2MotionSwitcher {
   bool disabled_{false};
   std::unique_ptr<u2_sdk::b2::MotionSwitcherClient> client_;
   std::string robot_type_, motion_type_;
+};
+
+class Unitree2ServiceSwitcher {
+ public:
+  Unitree2ServiceSwitcher(const Unitree2ServiceSwitcher &)            = delete;
+  Unitree2ServiceSwitcher &operator=(const Unitree2ServiceSwitcher &) = delete;
+  static void initialize() { instance().initialize_(); }
+  static void serviceSwitch(const std::string &name, bool enable) { instance().serviceSwitch_(name, enable); }
+
+ private:
+  Unitree2ServiceSwitcher() = default;
+  void initialize_();
+  void serviceSwitch_(const std::string &name, bool enable);
+  static Unitree2ServiceSwitcher &instance();
+
+  bool initialized_{false};
+  std::unique_ptr<u2_sdk::go2::RobotStateClient> client_;
 };
 }  // namespace stepit
 
