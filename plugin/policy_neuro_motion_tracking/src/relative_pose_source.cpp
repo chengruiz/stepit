@@ -90,10 +90,14 @@ MotionAlignment::MotionAlignment(const NeuroPolicySpec &policy_spec, const Modul
   current_ori_name_ = config_["current_ori_name"].as<std::string>("base_global_ori");
   target_pos_name_  = config_["target_pos_name"].as<std::string>("base_target_pos");
   target_ori_name_  = config_["target_ori_name"].as<std::string>("base_target_ori");
+  alignment_trigger_name_ = config_["alignment_trigger_name"].as<std::string>(alignment_trigger_name_);
 
   current_ori_id_        = registerRequirement(current_ori_name_, 4);
   target_ori_id_         = registerRequirement(target_ori_name_);
   motion_frame_index_id_ = registerRequirement("motion_frame_index", 1);
+  if (not alignment_trigger_name_.empty()) {
+    alignment_trigger_id_ = registerField(alignment_trigger_name_, 1);
+  }
   aligned_target_ori_id_ = registerProvision("aligned_target_ori", 0);
 
   if (not target_pos_name_.empty()) {
@@ -141,9 +145,14 @@ bool MotionAlignment::update(const LowState &, ControlRequests &, FieldMap &cont
   const auto &target_ori = context.at(target_ori_id_);
 
   Vec3f current_pos = current_pos_id_ == kInvalidFieldId ? Vec3f::Zero() : context.at(current_pos_id_);
-  ArrXf target_pos  = target_pos_id_ == kInvalidFieldId ? ArrXf::Zero(target_ori.size()) : context.at(target_pos_id_);
+  ArrXf target_pos  = target_pos_id_ == kInvalidFieldId ? ArrXf::Zero(static_cast<Eigen::Index>(3 * num_frames_))
+                                                        : context.at(target_pos_id_);
 
-  if (static_cast<std::size_t>(context.at(motion_frame_index_id_)(0)) == 0) {
+  const bool motion_restarted = static_cast<std::size_t>(context.at(motion_frame_index_id_)(0)) == 0;
+  const auto alignment_trigger = context.find(alignment_trigger_id_);
+  const bool alignment_triggered = alignment_trigger != context.end() and alignment_trigger->second.size() > 0 and
+                                   alignment_trigger->second(0) > 0.5F;
+  if (motion_restarted or alignment_triggered) {
     Quatf reference_ori(target_ori.segment(4 * resolved_reference_index_, 4));
     Quatf current_yaw   = Quatf::fromYaw(current_ori.eulerAngles().z());
     Quatf reference_yaw = Quatf::fromYaw(reference_ori.eulerAngles().z());

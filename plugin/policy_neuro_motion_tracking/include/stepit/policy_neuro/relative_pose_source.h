@@ -51,9 +51,11 @@ class MotionAlignment : public Module {
   std::string current_ori_name_;
   std::string target_pos_name_;
   std::string target_ori_name_;
+  std::string alignment_trigger_name_{"motion_alignment_reset_event"};
   FieldId current_pos_id_{};
   FieldId current_ori_id_{};
   FieldId motion_frame_index_id_{};
+  FieldId alignment_trigger_id_{kInvalidFieldId};
   FieldId target_pos_id_{};
   FieldId target_ori_id_{};
   FieldId aligned_target_pos_id_{};

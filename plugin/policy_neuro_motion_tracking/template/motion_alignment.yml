@@ -10,3 +10,5 @@ target_pos_name: base_target_pos   # [Optional] String, the name of the target p
 
 reference_index: 0                 # [Optional] Int, target frame index used to initialize alignment
                                    #   Negative values are allowed, e.g. -1 means the last frame
+
+alignment_trigger_name: "motion_alignment_reset_event"  # [Optional] String, one-frame event field that reinitializes alignment
