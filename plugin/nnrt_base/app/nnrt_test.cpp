@@ -25,6 +25,8 @@ int main(int argc, char *argv[]) {
           "YAML configuration file for the model")
       ("verbosity,v", po::value<int>(),
           "Verbosity level (0-3)")
+      ("speed-only", po::bool_switch()->default_value(false),
+          "Only run speed test; skip consistency/output test")
       ("speed-iterations", po::value<int>()->default_value(1000),
           "Number of measured speed-test inference iterations")
       ("speed-warmup", po::value<int>()->default_value(10),
@@ -57,6 +59,20 @@ int main(int argc, char *argv[]) {
     STEPIT_SET_VERBOSITY(static_cast<VerbosityLevel>(arg_map["verbosity"].as<int>()));
   }
 
+  const bool speed_only     = arg_map["speed-only"].as<bool>();
+  const int speed_iterations = arg_map["speed-iterations"].as<int>();
+  const int speed_warmup     = arg_map["speed-warmup"].as<int>();
+  if (speed_iterations <= 0) {
+    fmt::print(std::cerr, "{} Invalid speed-iterations '{}'. Expected a positive integer.\n", kErrorPrefix,
+               speed_iterations);
+    return -1;
+  }
+  if (speed_warmup < 0) {
+    fmt::print(std::cerr, "{} Invalid speed-warmup '{}'. Expected a non-negative integer.\n", kErrorPrefix,
+               speed_warmup);
+    return -1;
+  }
+
   PluginManager plugin_manager(plugin_args);
 
   auto factory      = arg_map["factory"].as<std::string>();
@@ -72,54 +88,44 @@ int main(int argc, char *argv[]) {
   }
 
   auto model1 = Nnrt::make(factory, path, config);
-  auto model2 = Nnrt::make(factory, path, config);
   model1->printInfo();
   model1->clearState();
-  model2->clearState();
 
-  displayFormattedBanner(60, nullptr, "Inference test");
-  for (std::size_t step{}; step < 3; ++step) {
-    fmt::print("Step {} (input {}):\n", step, 0.01F * step);
-    // Set inputs
-    std::vector<std::vector<float>> inputs;
-    inputs.resize(model1->getNumInputs());
-    for (std::size_t i{}; i < model1->getNumInputs(); ++i) {
-      if (not model1->isInputRecurrent(i)) {
-        inputs[i] = std::vector<float>(model1->getInputSize(i), 0.01F * static_cast<float>(step));
-        model1->setInput(i, inputs[i].data());
-        model2->setInput(i, inputs[i].data());
+  if (not speed_only) {
+    auto model2 = Nnrt::make(factory, path, config);
+    model2->clearState();
+
+    displayFormattedBanner(60, nullptr, "Inference test");
+    for (std::size_t step{}; step < 3; ++step) {
+      fmt::print("Step {} (input {}):\n", step, 0.01F * step);
+      // Set inputs
+      std::vector<std::vector<float>> inputs;
+      inputs.resize(model1->getNumInputs());
+      for (std::size_t i{}; i < model1->getNumInputs(); ++i) {
+        if (not model1->isInputRecurrent(i)) {
+          inputs[i] = std::vector<float>(model1->getInputSize(i), 0.01F * static_cast<float>(step));
+          model1->setInput(i, inputs[i].data());
+          model2->setInput(i, inputs[i].data());
+        }
+      }
+
+      // Run inference
+      model1->runInference();
+      model2->runInference();
+
+      // Check outputs
+      for (std::size_t i{}; i < model1->getNumOutputs(); ++i) {
+        auto output1 = cmArrXf(model1->getOutput<float>(i), static_cast<Eigen::Index>(model1->getOutputSize(i)));
+        auto output2 = cmArrXf(model2->getOutput<float>(i), static_cast<Eigen::Index>(model2->getOutputSize(i)));
+        if (not output1.isApprox(output2)) {
+          std::cerr << fmt::format("{}ERROR{}: Output '{}' is not consistent.", kRed, kClear, model1->getOutputName(i));
+          return -1;
+        }
+        if (not model1->isOutputRecurrent(i)) {
+          std::cout << fmt::format("Output '{}':", model1->getOutputName(i)) << output1.transpose() << std::endl;
+        }
       }
     }
-
-    // Run inference
-    model1->runInference();
-    model2->runInference();
-
-    // Check outputs
-    for (std::size_t i{}; i < model1->getNumOutputs(); ++i) {
-      auto output1 = cmArrXf(model1->getOutput<float>(i), static_cast<Eigen::Index>(model1->getOutputSize(i)));
-      auto output2 = cmArrXf(model2->getOutput<float>(i), static_cast<Eigen::Index>(model2->getOutputSize(i)));
-      if (not output1.isApprox(output2)) {
-        std::cerr << fmt::format("{}ERROR{}: Output '{}' is not consistent.", kRed, kClear, model1->getOutputName(i));
-        return -1;
-      }
-      if (not model1->isOutputRecurrent(i)) {
-        std::cout << fmt::format("Output '{}':", model1->getOutputName(i)) << output1.transpose() << std::endl;
-      }
-    }
-  }
-
-  int speed_iterations = arg_map["speed-iterations"].as<int>();
-  int speed_warmup     = arg_map["speed-warmup"].as<int>();
-  if (speed_iterations <= 0) {
-    fmt::print(std::cerr, "{} Invalid speed-iterations '{}'. Expected a positive integer.\n", kErrorPrefix,
-               speed_iterations);
-    return -1;
-  }
-  if (speed_warmup < 0) {
-    fmt::print(std::cerr, "{} Invalid speed-warmup '{}'. Expected a non-negative integer.\n", kErrorPrefix,
-               speed_warmup);
-    return -1;
   }
 
   std::vector<std::vector<float>> inputs;
