@@ -1,6 +1,8 @@
 #include <chrono>
+#include <cstdint>
 #include <cstring>
 #include <iostream>
+#include <vector>
 
 #include <boost/program_options.hpp>
 #include <fmt/core.h>
@@ -96,16 +98,34 @@ int main(int argc, char *argv[]) {
     model2->clearState();
 
     displayFormattedBanner(60, nullptr, "Inference test");
-    for (std::size_t step{}; step < 3; ++step) {
-      fmt::print("Step {} (input {}):\n", step, 0.01F * step);
+    for (std::size_t step{1}; step <= 3; ++step) {
+      fmt::print("Step {}:\n", step);
       // Set inputs
-      std::vector<std::vector<float>> inputs;
-      inputs.resize(model1->getNumInputs());
+      std::vector<std::vector<float>> f32_inputs(model1->getNumInputs());
+      std::vector<std::vector<int32_t>> i32_inputs(model1->getNumInputs());
+      std::vector<std::vector<int64_t>> i64_inputs(model1->getNumInputs());
+      std::vector<std::vector<std::uint8_t>> bool_inputs(model1->getNumInputs());
       for (std::size_t i{}; i < model1->getNumInputs(); ++i) {
         if (not model1->isInputRecurrent(i)) {
-          inputs[i] = std::vector<float>(model1->getInputSize(i), 0.01F * static_cast<float>(step));
-          model1->setInput(i, inputs[i].data());
-          model2->setInput(i, inputs[i].data());
+          const auto dtype = model1->getInputDtype(i);
+          const auto size  = model1->getInputSize(i);
+          if (dtype == DataType::kFloat32) {
+            f32_inputs[i].assign(size, 0.01F * static_cast<float>(step));
+            model1->setInput(i, f32_inputs[i].data());
+            model2->setInput(i, f32_inputs[i].data());
+          } else if (dtype == DataType::kInt32) {
+            i32_inputs[i].assign(size, static_cast<int32_t>(step));
+            model1->setInput(i, i32_inputs[i].data());
+            model2->setInput(i, i32_inputs[i].data());
+          } else if (dtype == DataType::kInt64) {
+            i64_inputs[i].assign(size, static_cast<int64_t>(step));
+            model1->setInput(i, i64_inputs[i].data());
+            model2->setInput(i, i64_inputs[i].data());
+          } else if (dtype == DataType::kBool) {
+            bool_inputs[i].assign(size, static_cast<std::uint8_t>(step % 2 == 1));
+            model1->setInput(i, static_cast<const void *>(bool_inputs[i].data()));
+            model2->setInput(i, static_cast<const void *>(bool_inputs[i].data()));
+          }
         }
       }
 
@@ -128,12 +148,29 @@ int main(int argc, char *argv[]) {
     }
   }
 
-  std::vector<std::vector<float>> inputs;
-  inputs.resize(model1->getNumInputs());
+  std::vector<const void *> inputs(model1->getNumInputs());
+  std::vector<std::vector<float>> f32_inputs(model1->getNumInputs());
+  std::vector<std::vector<int32_t>> i32_inputs(model1->getNumInputs());
+  std::vector<std::vector<int64_t>> i64_inputs(model1->getNumInputs());
+  std::vector<std::vector<std::uint8_t>> bool_inputs(model1->getNumInputs());
   for (std::size_t i{}; i < model1->getNumInputs(); ++i) {
     if (not model1->isInputRecurrent(i)) {
-      inputs[i] = std::vector<float>(model1->getInputSize(i), 0.0F);
-      model1->setInput(i, inputs[i].data());
+      const auto dtype = model1->getInputDtype(i);
+      const auto size  = model1->getInputSize(i);
+      if (dtype == DataType::kFloat32) {
+        f32_inputs[i].assign(size, 0.0F);
+        inputs[i] = f32_inputs[i].data();
+      } else if (dtype == DataType::kInt32) {
+        i32_inputs[i].assign(size, 0);
+        inputs[i] = i32_inputs[i].data();
+      } else if (dtype == DataType::kInt64) {
+        i64_inputs[i].assign(size, 0);
+        inputs[i] = i64_inputs[i].data();
+      } else if (dtype == DataType::kBool) {
+        bool_inputs[i].assign(size, 0);
+        inputs[i] = bool_inputs[i].data();
+      }
+      model1->setInput(i, inputs[i]);
     }
   }
 
@@ -145,7 +182,7 @@ int main(int argc, char *argv[]) {
   auto start_time = std::chrono::steady_clock::now();
   for (int step{}; step < speed_iterations; ++step) {
     for (std::size_t i{}; i < model1->getNumInputs(); ++i) {
-      if (not model1->isInputRecurrent(i)) model1->setInput(i, inputs[i].data());
+      if (not model1->isInputRecurrent(i)) model1->setInput(i, inputs[i]);
     }
     model1->runInference();
     for (std::size_t i{}; i < model1->getNumOutputs(); ++i) model1->getOutput(i);
