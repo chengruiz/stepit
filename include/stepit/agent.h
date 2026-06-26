@@ -14,7 +14,7 @@ namespace stepit {
 class Agent final {
  public:
   explicit Agent(const std::string &robot_factory, const std::vector<std::string> &control_factories);
-  ~Agent() { shutdown(); }
+  ~Agent();
 
   void addPolicy(const std::string &policy_factory, const std::string &home_dir);
   int stepit();

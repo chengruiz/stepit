@@ -9,6 +9,7 @@
 #include <sstream>
 #include <string>
 #include <utility>
+#include <vector>
 
 #include <stepit/logging.h>
 #include <stepit/utils.h>
@@ -48,6 +49,7 @@ class Registry {
 
   std::unique_ptr<T> make(std::string name, Args... args);
   std::string entryListString() const;
+  std::vector<std::string> names() const;
   Registration createRegistration(std::string name, int priority, Factory factory) {
     return {this, std::move(name), priority, std::move(factory)};
   }
@@ -181,6 +183,16 @@ std::string Registry<T, Args...>::entryListString() const {
     }
   }
   return oss.str();
+}
+
+template <typename T, typename... Args>
+std::vector<std::string> Registry<T, Args...>::names() const {
+  std::vector<std::string> names;
+  std::lock_guard<std::recursive_mutex> _(mutex_);
+  for (const auto &entry : entries_) {
+    if (std::find(names.begin(), names.end(), entry.name) == names.end()) names.push_back(entry.name);
+  }
+  return names;
 }
 
 template <typename T, typename... Args>
