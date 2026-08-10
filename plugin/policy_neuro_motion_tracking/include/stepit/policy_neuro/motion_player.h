@@ -39,6 +39,7 @@ class MotionPlayer : public Module {
     std::string key;
     std::string type;
     bool differentiate{false};
+    bool zero_at_end{false};
     yml::Indices indices;
     std::vector<std::int64_t> offsets;
 

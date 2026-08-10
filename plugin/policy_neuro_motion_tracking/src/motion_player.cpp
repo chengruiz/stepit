@@ -31,6 +31,7 @@ MotionPlayer::MotionPlayer(const NeuroPolicySpec &policy_spec, const ModuleSpec 
     node["key"].to(field_spec.key);
     field_spec.type          = node["type"].as<std::string>("numeric");
     field_spec.differentiate = node["differentiate"].as<bool>(false);
+    field_spec.zero_at_end   = node["zero_at_end"].as<bool>(false);
     field_spec.indices       = node.as<yml::Indices>();
     field_spec.field_size    = node["size"].as<std::size_t>(0);
     node["offsets"].to(field_spec.offsets, true);
@@ -93,6 +94,7 @@ MotionPlayer::MotionPlayer(const NeuroPolicySpec &policy_spec, const ModuleSpec 
       } else if (field_spec.field_size != field_spec.frame_size * field_spec.offsets.size()) {
         STEPIT_THROW("Inconsistent field size for field '{}' (key '{}').", field_spec.name, field_spec.key);
       }
+      if (field_spec.zero_at_end) field_frames.back().setZero();
       motion.fields.push_back(field_frames);
     }
     STEPIT_DBUG("Loaded motion with {} frames from '{}'.", motion.num_frames, motion_clip.path());
