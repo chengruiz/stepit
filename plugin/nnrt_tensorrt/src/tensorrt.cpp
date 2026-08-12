@@ -167,7 +167,7 @@ TensorRt::TensorRt(const std::string &path, const yml::Node &config)
 
   if (force_rebuild_ or not std::ifstream(engine_path_).good()) {
     STEPIT_ASSERT(build(path_, engine_path_), "Failed to build TensorRT engine!");
-    STEPIT_LOGNT("Write engine to {}.", engine_path_);
+    STEPIT_LOGNT("Wrote engine to '{}'.", engine_path_);
   }
 
   std::ifstream file(engine_path_, std::ios::binary | std::ios::ate);
