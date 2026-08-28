@@ -22,6 +22,8 @@ DataType TorchJit::mapTorchDtype(torch::ScalarType scalar_type) {
 
 torch::ScalarType TorchJit::toTorchDtype(DataType dtype) {
   switch (dtype) {
+    case DataType::kUndefined:
+      STEPIT_THROW("Cannot create a Torch tensor with undefined data type.");
     case DataType::kFloat32:
       return torch::kFloat32;
     case DataType::kInt32:
@@ -31,7 +33,7 @@ torch::ScalarType TorchJit::toTorchDtype(DataType dtype) {
     case DataType::kBool:
       return torch::kBool;
   }
-  return torch::kFloat32;
+  STEPIT_THROW("Unsupported StepIt data type.");
 }
 
 TorchJit::TorchJit(const std::string &path, const yml::Node &config)
@@ -61,6 +63,9 @@ void TorchJit::runInference() {
     int64_t out_size = out_tensors[i].numel();
     STEPIT_ASSERT(out_size == out_sizes_[i], "TorchJit output '{}' size mismatch: expected {}, got {}.", out_names_[i],
                   out_sizes_[i], out_size);
+    const DataType out_dtype = mapTorchDtype(out_tensors[i].scalar_type());
+    STEPIT_ASSERT(out_dtype == out_dtypes_[i], "TorchJit output '{}' dtype mismatch: expected {}, got {}.",
+                  out_names_[i], dataTypeName(out_dtypes_[i]), dataTypeName(out_dtype));
     std::size_t bytes = static_cast<std::size_t>(out_size) * dataTypeSize(out_dtypes_[i]);
     std::memcpy(out_data_[i].data(), out_tensors[i].data_ptr(), bytes);
   }

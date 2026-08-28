@@ -91,6 +91,8 @@ DataType OnnxRt::mapOnnxDtype(ONNXTensorElementDataType onnx_type) {
 
 Ort::Value OnnxRt::createTensor(void *data, std::size_t byte_size, const std::vector<int64_t> &shape, DataType dtype) {
   switch (dtype) {
+    case DataType::kUndefined:
+      STEPIT_THROW("Cannot create an ONNX tensor with undefined data type.");
     case DataType::kFloat32:
       return Ort::Value::CreateTensor<float>(memory_info_, static_cast<float *>(data), byte_size / sizeof(float),
                                              shape.data(), shape.size());
