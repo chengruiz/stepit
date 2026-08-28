@@ -26,9 +26,9 @@ OnnxRt::OnnxRt(const std::string &path, const yml::Node &config) : Nnrt(addExten
     auto name             = core_->GetInputNameAllocated(i, allocator_);
     std::size_t byte_size = static_cast<std::size_t>(size) * dataTypeSize(dtype);
 
-    addInput(name.get(), std::move(shape), size, dtype);
+    addInput(name.get(), std::move(shape), dtype, size);
     in_data_.emplace_back(byte_size, 0);
-    in_tensors_.push_back(createTensor(in_data_[i].data(), byte_size, in_shapes_[i], dtype));
+    in_tensors_.push_back(createTensor(in_data_[i].data(), dtype, byte_size, in_shapes_[i]));
     io_binding_->BindInput(in_names_[i].c_str(), in_tensors_[i]);
   }
 
@@ -44,9 +44,9 @@ OnnxRt::OnnxRt(const std::string &path, const yml::Node &config) : Nnrt(addExten
     auto name             = core_->GetOutputNameAllocated(i, allocator_);
     std::size_t byte_size = static_cast<std::size_t>(size) * dataTypeSize(dtype);
 
-    addOutput(name.get(), std::move(shape), size, dtype);
+    addOutput(name.get(), std::move(shape), dtype, size);
     out_data_.emplace_back(byte_size, 0);
-    out_tensors_.push_back(createTensor(out_data_[i].data(), byte_size, out_shapes_[i], dtype));
+    out_tensors_.push_back(createTensor(out_data_[i].data(), dtype, byte_size, out_shapes_[i]));
     io_binding_->BindOutput(out_names_[i].c_str(), out_tensors_[i]);
   }
 
@@ -89,7 +89,7 @@ DataType OnnxRt::mapOnnxDtype(ONNXTensorElementDataType onnx_type) {
   }
 }
 
-Ort::Value OnnxRt::createTensor(void *data, std::size_t byte_size, const std::vector<int64_t> &shape, DataType dtype) {
+Ort::Value OnnxRt::createTensor(void *data, DataType dtype, std::size_t byte_size, const std::vector<int64_t> &shape) {
   switch (dtype) {
     case DataType::kUndefined:
       STEPIT_THROW("Cannot create an ONNX tensor with undefined data type.");

@@ -79,10 +79,10 @@ class Publisher : public Interface<Publisher> {
    *
    * @param name Array channel name.
    * @param data Address of the first scalar, or null when size is zero.
-   * @param size Number of scalar elements.
    * @param dtype Scalar data type.
+   * @param size Number of scalar elements.
    */
-  virtual void publishArray(const std::string &name, const void *data, std::size_t size, DataType dtype) {}
+  virtual void publishArray(const std::string &name, const void *data, DataType dtype, std::size_t size) {}
 
  protected:
   mutable std::mutex status_mutex_;
@@ -136,11 +136,11 @@ inline void publishLowLevel(const RobotSpec &spec, const LowState &low_state, co
 }
 
 /** Publishes a runtime-typed array if array publishing is enabled. */
-inline void publishArray(const std::string &name, const void *data, std::size_t size, DataType dtype) {
+inline void publishArray(const std::string &name, const void *data, DataType dtype, std::size_t size) {
   if (g_filter.publish_array) {
     STEPIT_ASSERT(data != nullptr or size == 0, "Cannot publish non-empty array '{}' from a null pointer.", name);
     STEPIT_ASSERT(dataTypeSize(dtype) > 0, "Cannot publish array '{}' with invalid or undefined data type.", name);
-    publisher().publishArray(name, data, size, dtype);
+    publisher().publishArray(name, data, dtype, size);
   }
 }
 

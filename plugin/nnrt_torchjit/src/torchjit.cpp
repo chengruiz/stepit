@@ -161,7 +161,7 @@ void TorchJit::initInputSpec() {
       else
         STEPIT_THROW("Unknown dtype string '{}' in 'input_dtypes'.", s);
     }
-    addInput("input" + std::to_string(i), std::move(shapes[i]), in_size, dtype);
+    addInput("input" + std::to_string(i), std::move(shapes[i]), dtype, in_size);
     in_data_.emplace_back(static_cast<std::size_t>(in_size) * dataTypeSize(dtype), 0);
   }
 }
@@ -189,7 +189,7 @@ void TorchJit::initOutputSpec() {
     auto size         = static_cast<int64_t>(out_tensors[i].numel());
     std::size_t bytes = static_cast<std::size_t>(size) * dataTypeSize(dtype);
 
-    addOutput("output" + std::to_string(i), std::move(shape), size, dtype);
+    addOutput("output" + std::to_string(i), std::move(shape), dtype, size);
     out_data_.emplace_back(bytes, 0);
     std::memcpy(out_data_[i].data(), out_tensors[i].data_ptr(), bytes);
   }

@@ -87,14 +87,14 @@ class Nnrt : public Interface<Nnrt, const std::string & /* path */, const yml::N
   const auto &getRecurrentParamIndices() const { return recur_param_indices_; }
 
  protected:
-  void addInput(std::string name, std::vector<int64_t> shape, int64_t size, DataType dtype) {
+  void addInput(std::string name, std::vector<int64_t> shape, DataType dtype, int64_t size) {
     STEPIT_ASSERT(dataTypeSize(dtype) > 0, "NNRT input '{}' has invalid or undefined data type.", name);
     in_names_.emplace_back(std::move(name));
     in_shapes_.emplace_back(std::move(shape));
     in_sizes_.push_back(size);
     in_dtypes_.push_back(dtype);
   }
-  void addOutput(std::string name, std::vector<int64_t> shape, int64_t size, DataType dtype) {
+  void addOutput(std::string name, std::vector<int64_t> shape, DataType dtype, int64_t size) {
     STEPIT_ASSERT(dataTypeSize(dtype) > 0, "NNRT output '{}' has invalid or undefined data type.", name);
     out_names_.emplace_back(std::move(name));
     out_shapes_.emplace_back(std::move(shape));

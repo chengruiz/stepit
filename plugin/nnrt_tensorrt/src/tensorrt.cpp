@@ -26,7 +26,7 @@
 
 namespace stepit {
 namespace {
-std::size_t tensorBytes(std::int64_t elements, DataType dtype) {
+std::size_t tensorBytes(DataType dtype, std::int64_t elements) {
   return static_cast<std::size_t>(elements) * dataTypeSize(dtype);
 }
 
@@ -197,15 +197,15 @@ TensorRt::TensorRt(const std::string &path, const yml::Node &config)
                   dimsToString(dims));
     auto size  = std::accumulate(dims.d, dims.d + dims.nbDims, 1, std::multiplies<>());
     auto dtype = mapTrtDtype(engine_->getTensorDataType(name));
-    auto bytes = tensorBytes(size, dtype);
+    auto bytes = tensorBytes(dtype, size);
 
     if (engine_->getTensorIOMode(name) == nvinfer1::TensorIOMode::kINPUT) {
-      addInput(name, {dims.d, dims.d + dims.nbDims}, size, dtype);
+      addInput(name, {dims.d, dims.d + dims.nbDims}, dtype, size);
       inputs_.emplace_back(makeCudaDeviceMemory(bytes));
       ++num_in_;
       STEPIT_ASSERT(context_->setTensorAddress(name, inputs_.back().get()), "Failed to set tensor address!");
     } else {
-      addOutput(name, {dims.d, dims.d + dims.nbDims}, size, dtype);
+      addOutput(name, {dims.d, dims.d + dims.nbDims}, dtype, size);
       out_data_.emplace_back(makeCudaHostMemory(bytes));
       outputs_.emplace_back(makeCudaDeviceMemory(bytes));
       ++num_out_;
@@ -318,7 +318,7 @@ void TensorRt::runInference() {
   }
   for (const auto &pair : recur_param_indices_) {
     STEPIT_CUDA_CALL(cudaMemcpyAsync, inputs_[pair.first].get(), outputs_[pair.second].get(),
-                     tensorBytes(in_sizes_[pair.first], in_dtypes_[pair.first]), cudaMemcpyDeviceToDevice,
+                     tensorBytes(in_dtypes_[pair.first], in_sizes_[pair.first]), cudaMemcpyDeviceToDevice,
                      cuda_stream_.get());
   }
 }
@@ -327,7 +327,7 @@ void TensorRt::clearState() {
   CudaDeviceGuard device_guard(device_id_);
   for (const auto &pair : recur_param_indices_) {
     STEPIT_CUDA_CALL(cudaMemsetAsync, inputs_[pair.first].get(), 0,
-                     tensorBytes(in_sizes_[pair.first], in_dtypes_[pair.first]), cuda_stream_.get());
+                     tensorBytes(in_dtypes_[pair.first], in_sizes_[pair.first]), cuda_stream_.get());
   }
 }
 
@@ -338,14 +338,14 @@ void TensorRt::synchronize() {
 
 void TensorRt::setInput(std::size_t idx, const void *data) {
   CudaDeviceGuard device_guard(device_id_);
-  STEPIT_CUDA_CALL(cudaMemcpyAsync, inputs_[idx].get(), data, tensorBytes(in_sizes_[idx], in_dtypes_[idx]),
+  STEPIT_CUDA_CALL(cudaMemcpyAsync, inputs_[idx].get(), data, tensorBytes(in_dtypes_[idx], in_sizes_[idx]),
                    cudaMemcpyHostToDevice, cuda_stream_.get());
 }
 
 const void *TensorRt::getOutput(std::size_t idx) {
   CudaDeviceGuard device_guard(device_id_);
   STEPIT_CUDA_CALL(cudaMemcpyAsync, out_data_[idx].get(), outputs_[idx].get(),
-                   tensorBytes(out_sizes_[idx], out_dtypes_[idx]), cudaMemcpyDeviceToHost, cuda_stream_.get());
+                   tensorBytes(out_dtypes_[idx], out_sizes_[idx]), cudaMemcpyDeviceToHost, cuda_stream_.get());
   synchronize();
   return out_data_[idx].get();
 }

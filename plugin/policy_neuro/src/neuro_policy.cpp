@@ -158,8 +158,8 @@ void NeuroPolicy::postAct() {
   if (publish_fields_) {
     for (const auto &it : context_) {
       if (published_fields_.empty() or published_fields_.find(it.first) != published_fields_.end()) {
-        publisher::publishArray("field/" + getFieldName(it.first), it.second.data(),
-                                static_cast<std::size_t>(it.second.size()), DataType::kFloat32);
+        publisher::publishArray("field/" + getFieldName(it.first), it.second.data(), DataType::kFloat32,
+                                static_cast<std::size_t>(it.second.size()));
       }
     }
   }

@@ -26,7 +26,7 @@ class OnnxRt : public Nnrt {
 
  private:
   static DataType mapOnnxDtype(ONNXTensorElementDataType onnx_type);
-  Ort::Value createTensor(void *data, std::size_t byte_size, const std::vector<int64_t> &shape, DataType dtype);
+  Ort::Value createTensor(void *data, DataType dtype, std::size_t byte_size, const std::vector<int64_t> &shape);
 
   Ort::Env env_;
   Ort::AllocatorWithDefaultOptions allocator_;

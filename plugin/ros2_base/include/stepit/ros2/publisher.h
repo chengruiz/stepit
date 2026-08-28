@@ -23,13 +23,13 @@ class Ros2Publisher : public Publisher {
   Ros2Publisher();
   void publishStatus() override;
   void publishLowLevel(const RobotSpec &spec, const LowState &state, const LowCmd &cmd) override;
-  void publishArray(const std::string &name, const void *data, std::size_t size, DataType dtype) override;
+  void publishArray(const std::string &name, const void *data, DataType dtype, std::size_t size) override;
 
  private:
   class ArrayPublisher {
    public:
     ArrayPublisher(std::string name, DataType dtype);
-    void publish(const void *data, std::size_t size, DataType dtype);
+    void publish(const void *data, DataType dtype, std::size_t size);
 
    private:
     template <typename Message, typename Scalar>

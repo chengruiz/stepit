@@ -38,7 +38,7 @@ Ros2Publisher::ArrayPublisher::PublisherVariant Ros2Publisher::ArrayPublisher::m
 Ros2Publisher::ArrayPublisher::ArrayPublisher(std::string name, DataType dtype)
     : name_(std::move(name)), dtype_(dtype), publisher_(makePublisher(getNode(), name_, dtype_)) {}
 
-void Ros2Publisher::ArrayPublisher::publish(const void *data, std::size_t size, DataType dtype) {
+void Ros2Publisher::ArrayPublisher::publish(const void *data, DataType dtype, std::size_t size) {
   STEPIT_ASSERT(data != nullptr or size == 0, "Cannot publish non-empty array '{}' from a null pointer.", name_);
   STEPIT_ASSERT(dtype == dtype_, "Array channel '{}' is already registered as {}, cannot publish {}.", name_,
                 dataTypeName(dtype_), dataTypeName(dtype));
@@ -128,9 +128,9 @@ void Ros2Publisher::publishLowLevel(const RobotSpec &spec, const LowState &state
   joint_pub_->publish(joint_msg_);
 }
 
-void Ros2Publisher::publishArray(const std::string &name, const void *data, std::size_t size, DataType dtype) {
+void Ros2Publisher::publishArray(const std::string &name, const void *data, DataType dtype, std::size_t size) {
   STEPIT_ASSERT(data != nullptr or size == 0, "Cannot publish non-empty array '{}' from a null pointer.", name);
-  array_publishers_.try_emplace(name, name, dtype).first->second.publish(data, size, dtype);
+  array_publishers_.try_emplace(name, name, dtype).first->second.publish(data, dtype, size);
 }
 
 STEPIT_REGISTER_PUBLISHER(ros2, kDefPriority, Publisher::make<Ros2Publisher>);
