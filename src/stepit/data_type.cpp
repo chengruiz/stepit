@@ -8,13 +8,13 @@ std::size_t dataTypeSize(DataType dtype) {
     case DataType::kUndefined:
       return 0;
     case DataType::kFloat32:
-      return 4;
+      return sizeof(float);
     case DataType::kInt32:
-      return 4;
+      return sizeof(std::int32_t);
     case DataType::kInt64:
-      return 8;
+      return sizeof(std::int64_t);
     case DataType::kBool:
-      return 1;
+      return sizeof(bool);
   }
   return 0;
 }
