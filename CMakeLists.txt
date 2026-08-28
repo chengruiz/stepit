@@ -15,7 +15,8 @@ endif ()
 set(CMAKE_POLICY_DEFAULT_CMP0069 NEW)
 set(CMAKE_POLICY_DEFAULT_CMP0077 NEW)
 
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g3")
 set(CMAKE_CXX_FLAGS_RELEASE "-O3")
 if (CMAKE_BUILD_TYPE STREQUAL "Release")
@@ -63,6 +64,7 @@ add_library(stepit_core SHARED
     src/stepit/spin.cpp
     src/stepit/utils.cpp
 )
+target_compile_features(stepit_core PUBLIC cxx_std_17)
 target_compile_definitions(stepit_core PRIVATE STEPIT_CONFIG_DIR="${STEPIT_HOME_DIRECTORY}/config")
 target_compile_definitions(stepit_core PUBLIC FMT_HEADER_ONLY=1)
 target_compile_options(stepit_core PRIVATE -Wall -Wextra -Wpedantic -Wno-unused-parameter)
