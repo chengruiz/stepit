@@ -1,7 +1,69 @@
+#include <algorithm>
+#include <utility>
+
+#include <std_msgs/Float32MultiArray.h>
+#include <std_msgs/Int32MultiArray.h>
+#include <std_msgs/Int64MultiArray.h>
+#include <std_msgs/UInt8MultiArray.h>
+
 #include <stepit/ros/node_handle.h>
 #include <stepit/ros/publisher.h>
 
 namespace stepit {
+RosPublisher::ArrayPublisher::ArrayPublisher(std::string name, DataType dtype)
+    : name_(std::move(name)), dtype_(dtype) {
+  switch (dtype_) {
+    case DataType::kUndefined:
+      STEPIT_THROW("Cannot create array channel '{}' with undefined data type.", name_);
+    case DataType::kFloat32:
+      publisher_ = getNodeHandle().advertise<std_msgs::Float32MultiArray>(name_, 1);
+      break;
+    case DataType::kInt32:
+      publisher_ = getNodeHandle().advertise<std_msgs::Int32MultiArray>(name_, 1);
+      break;
+    case DataType::kInt64:
+      publisher_ = getNodeHandle().advertise<std_msgs::Int64MultiArray>(name_, 1);
+      break;
+    case DataType::kBool:
+      publisher_ = getNodeHandle().advertise<std_msgs::UInt8MultiArray>(name_, 1);
+      break;
+    default:
+      STEPIT_THROW("Unsupported data type '{}' for array channel '{}'.", dataTypeName(dtype_), name_);
+  }
+}
+
+template <typename Message, typename Scalar>
+void RosPublisher::ArrayPublisher::publishMessage(const void *data, std::size_t size) {
+  Message msg;
+  msg.data.resize(size);
+  if (size > 0) std::copy_n(static_cast<const Scalar *>(data), size, msg.data.begin());
+  publisher_.publish(msg);
+}
+
+void RosPublisher::ArrayPublisher::publish(const void *data, std::size_t size, DataType dtype) {
+  STEPIT_ASSERT(data != nullptr or size == 0, "Cannot publish non-empty array '{}' from a null pointer.", name_);
+  STEPIT_ASSERT(dtype == dtype_, "Array channel '{}' is already registered as {}, cannot publish {}.", name_,
+                dataTypeName(dtype_), dataTypeName(dtype));
+  switch (dtype_) {
+    case DataType::kUndefined:
+      STEPIT_THROW("Cannot publish array channel '{}' with undefined data type.", name_);
+    case DataType::kFloat32:
+      publishMessage<std_msgs::Float32MultiArray, float>(data, size);
+      break;
+    case DataType::kInt32:
+      publishMessage<std_msgs::Int32MultiArray, std::int32_t>(data, size);
+      break;
+    case DataType::kInt64:
+      publishMessage<std_msgs::Int64MultiArray, std::int64_t>(data, size);
+      break;
+    case DataType::kBool:
+      publishMessage<std_msgs::UInt8MultiArray, std::uint8_t>(data, size);
+      break;
+    default:
+      STEPIT_THROW("Unsupported data type '{}' for array channel '{}'.", dataTypeName(dtype_), name_);
+  }
+}
+
 RosPublisher::RosPublisher() {
   if (publisher::g_filter.publish_status) {
     status_pub_ = getNodeHandle().advertise<diagnostic_msgs::DiagnosticStatus>("status", 1);
@@ -83,16 +145,9 @@ void RosPublisher::publishLowLevel(const RobotSpec &spec, const LowState &state,
   joint_pub_.publish(joint_msg_);
 }
 
-void RosPublisher::publishArray(const std::string &name, cArrXf vec) {
-  auto channel = pub_map_.find(name);
-  if (channel == pub_map_.end()) {
-    pub_map_[name] = getNodeHandle().advertise<std_msgs::Float32MultiArray>(name, 1);
-    channel        = pub_map_.find(name);
-  }
-  std_msgs::Float32MultiArray msg;
-  msg.data.resize(vec.size());
-  std::copy(vec.data(), vec.data() + vec.size(), msg.data.data());
-  channel->second.publish(msg);
+void RosPublisher::publishArray(const std::string &name, const void *data, std::size_t size, DataType dtype) {
+  STEPIT_ASSERT(data != nullptr or size == 0, "Cannot publish non-empty array '{}' from a null pointer.", name);
+  array_publishers_.try_emplace(name, name, dtype).first->second.publish(data, size, dtype);
 }
 
 STEPIT_REGISTER_PUBLISHER(ros, kDefPriority, Publisher::make<RosPublisher>);

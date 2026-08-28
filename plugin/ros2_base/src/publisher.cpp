@@ -1,8 +1,50 @@
 #include <algorithm>
+#include <utility>
+
 #include <stepit/ros2/node.h>
 #include <stepit/ros2/publisher.h>
 
 namespace stepit {
+template <typename Message, typename Scalar>
+Ros2Publisher::ArrayPublisher::TypedPublisher<Message, Scalar>::TypedPublisher(
+    const rclcpp::Node::SharedPtr &node, const std::string &name)
+    : publisher_(node->create_publisher<Message>(name, 1)) {}
+
+template <typename Message, typename Scalar>
+void Ros2Publisher::ArrayPublisher::TypedPublisher<Message, Scalar>::publish(const void *data, std::size_t size) {
+  Message msg;
+  msg.data.resize(size);
+  if (size > 0) std::copy_n(static_cast<const Scalar *>(data), size, msg.data.begin());
+  publisher_->publish(msg);
+}
+
+Ros2Publisher::ArrayPublisher::PublisherVariant Ros2Publisher::ArrayPublisher::makePublisher(
+    const rclcpp::Node::SharedPtr &node, const std::string &name, DataType dtype) {
+  switch (dtype) {
+    case DataType::kUndefined:
+      STEPIT_THROW("Cannot create array channel '{}' with undefined data type.", name);
+    case DataType::kFloat32:
+      return Float32Publisher(node, name);
+    case DataType::kInt32:
+      return Int32Publisher(node, name);
+    case DataType::kInt64:
+      return Int64Publisher(node, name);
+    case DataType::kBool:
+      return BoolPublisher(node, name);
+  }
+  STEPIT_THROW("Unsupported data type '{}' for array channel '{}'.", dataTypeName(dtype), name);
+}
+
+Ros2Publisher::ArrayPublisher::ArrayPublisher(std::string name, DataType dtype)
+    : name_(std::move(name)), dtype_(dtype), publisher_(makePublisher(getNode(), name_, dtype_)) {}
+
+void Ros2Publisher::ArrayPublisher::publish(const void *data, std::size_t size, DataType dtype) {
+  STEPIT_ASSERT(data != nullptr or size == 0, "Cannot publish non-empty array '{}' from a null pointer.", name_);
+  STEPIT_ASSERT(dtype == dtype_, "Array channel '{}' is already registered as {}, cannot publish {}.", name_,
+                dataTypeName(dtype_), dataTypeName(dtype));
+  std::visit([data, size](auto &publisher) { publisher.publish(data, size); }, publisher_);
+}
+
 Ros2Publisher::Ros2Publisher() {
   auto node = getNode();
   if (publisher::g_filter.publish_status) {
@@ -86,16 +128,9 @@ void Ros2Publisher::publishLowLevel(const RobotSpec &spec, const LowState &state
   joint_pub_->publish(joint_msg_);
 }
 
-void Ros2Publisher::publishArray(const std::string &name, cArrXf vec) {
-  auto channel = pub_map_.find(name);
-  if (channel == pub_map_.end()) {
-    pub_map_[name] = getNode()->create_publisher<std_msgs::msg::Float32MultiArray>(name, 1);
-    channel        = pub_map_.find(name);
-  }
-  std_msgs::msg::Float32MultiArray msg;
-  msg.data.resize(vec.size());
-  std::copy_n(vec.data(), vec.size(), msg.data.begin());
-  channel->second->publish(msg);
+void Ros2Publisher::publishArray(const std::string &name, const void *data, std::size_t size, DataType dtype) {
+  STEPIT_ASSERT(data != nullptr or size == 0, "Cannot publish non-empty array '{}' from a null pointer.", name);
+  array_publishers_.try_emplace(name, name, dtype).first->second.publish(data, size, dtype);
 }
 
 STEPIT_REGISTER_PUBLISHER(ros2, kDefPriority, Publisher::make<Ros2Publisher>);

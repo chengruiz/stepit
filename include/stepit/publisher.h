@@ -1,10 +1,12 @@
 #ifndef STEPIT_PUBLISHER_H_
 #define STEPIT_PUBLISHER_H_
 
+#include <cstddef>
 #include <map>
 #include <memory>
 #include <string>
 
+#include <stepit/data_type.h>
 #include <stepit/registry.h>
 #include <stepit/robot.h>
 
@@ -70,12 +72,17 @@ class Publisher : public Interface<Publisher> {
   virtual void publishLowLevel(const RobotSpec &spec, const LowState &state, const LowCmd &cmd) {}
 
   /**
-   * Publishes a named numeric array.
+   * Publishes a named runtime-typed array.
+   *
+   * The pointed-to data is borrowed only for the duration of this call.
+   * Implementations must copy it before returning.
    *
    * @param name Array channel name.
-   * @param arr Array view to publish.
+   * @param data Address of the first scalar, or null when size is zero.
+   * @param size Number of scalar elements.
+   * @param dtype Scalar data type.
    */
-  virtual void publishArray(const std::string &name, cArrXf arr) {}
+  virtual void publishArray(const std::string &name, const void *data, std::size_t size, DataType dtype) {}
 
  protected:
   mutable std::mutex status_mutex_;
@@ -128,9 +135,13 @@ inline void publishLowLevel(const RobotSpec &spec, const LowState &low_state, co
   if (g_filter.publish_low_level) publisher().publishLowLevel(spec, low_state, low_cmd);
 }
 
-/** Publishes an array if array publishing is enabled. */
-inline void publishArray(const std::string &name, cArrXf arr) {
-  if (g_filter.publish_array) publisher().publishArray(name, arr);
+/** Publishes a runtime-typed array if array publishing is enabled. */
+inline void publishArray(const std::string &name, const void *data, std::size_t size, DataType dtype) {
+  if (g_filter.publish_array) {
+    STEPIT_ASSERT(data != nullptr or size == 0, "Cannot publish non-empty array '{}' from a null pointer.", name);
+    STEPIT_ASSERT(dataTypeSize(dtype) > 0, "Cannot publish array '{}' with invalid or undefined data type.", name);
+    publisher().publishArray(name, data, size, dtype);
+  }
 }
 
 /**
