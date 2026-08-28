@@ -9,10 +9,10 @@ RelativeOriSource::RelativeOriSource(const NeuroPolicySpec &policy_spec, const M
   target_ori_name_  = config_["target_ori_name"].as<std::string>("base_target_ori");
   rot6d_order_      = config_["rotation_6d_order"].as(Rotation6dOrder::kRowMajor);
 
-  current_ori_id_     = registerRequirement(current_ori_name_, 4);
-  target_ori_id_      = registerRequirement(target_ori_name_);
-  relative_ori_id_    = registerProvision("relative_ori", 0);
-  relative_ori_6d_id_ = registerProvision("relative_ori_6d", 0);
+  current_ori_id_     = registerRequirement(current_ori_name_, DataType::kFloat32, 4);
+  target_ori_id_      = registerRequirement(target_ori_name_, DataType::kFloat32);
+  relative_ori_id_    = registerProvision("relative_ori", DataType::kFloat32);
+  relative_ori_6d_id_ = registerProvision("relative_ori_6d", DataType::kFloat32);
 }
 
 void RelativeOriSource::init() {
@@ -20,8 +20,8 @@ void RelativeOriSource::init() {
   STEPIT_ASSERT(target_ori_size > 0 and target_ori_size % 4 == 0, "Field '{}' must have size 4 * N, but got {}.",
                 target_ori_name_, target_ori_size);
   num_frames_ = target_ori_size / 4;
-  setFieldSize(relative_ori_id_, static_cast<FieldSize>(4 * num_frames_));
-  setFieldSize(relative_ori_6d_id_, static_cast<FieldSize>(6 * num_frames_));
+  setFieldSpec(relative_ori_id_, FieldSpec{DataType::kFloat32, static_cast<FieldSize>(4 * num_frames_)});
+  setFieldSpec(relative_ori_6d_id_, FieldSpec{DataType::kFloat32, static_cast<FieldSize>(6 * num_frames_)});
 }
 
 bool RelativeOriSource::update(const LowState &, ControlRequests &, FieldMap &context) {
@@ -49,10 +49,10 @@ RelativePosSource::RelativePosSource(const NeuroPolicySpec &policy_spec, const M
   current_ori_name_ = config_["current_ori_name"].as<std::string>("base_global_ori");
   target_pos_name_  = config_["target_pos_name"].as<std::string>("base_target_pos");
 
-  current_pos_id_  = registerRequirement(current_pos_name_, 3);
-  current_ori_id_  = registerRequirement(current_ori_name_, 4);
-  target_pos_id_   = registerRequirement(target_pos_name_);
-  relative_pos_id_ = registerProvision("relative_pos", 0);
+  current_pos_id_  = registerRequirement(current_pos_name_, DataType::kFloat32, 3);
+  current_ori_id_  = registerRequirement(current_ori_name_, DataType::kFloat32, 4);
+  target_pos_id_   = registerRequirement(target_pos_name_, DataType::kFloat32);
+  relative_pos_id_ = registerProvision("relative_pos", DataType::kFloat32);
 }
 
 void RelativePosSource::init() {
@@ -60,7 +60,7 @@ void RelativePosSource::init() {
   STEPIT_ASSERT(target_pos_size > 0 and target_pos_size % 3 == 0, "Field '{}' must have size 3 * N, but got {}.",
                 target_pos_name_, target_pos_size);
   num_frames_ = target_pos_size / 3;
-  setFieldSize(relative_pos_id_, static_cast<FieldSize>(3 * num_frames_));
+  setFieldSpec(relative_pos_id_, FieldSpec{DataType::kFloat32, static_cast<FieldSize>(3 * num_frames_)});
 }
 
 bool RelativePosSource::update(const LowState &, ControlRequests &, FieldMap &context) {
@@ -92,22 +92,22 @@ MotionAlignment::MotionAlignment(const NeuroPolicySpec &policy_spec, const Modul
   target_ori_name_  = config_["target_ori_name"].as<std::string>("base_target_ori");
   alignment_trigger_name_ = config_["alignment_trigger_name"].as<std::string>(alignment_trigger_name_);
 
-  current_ori_id_        = registerRequirement(current_ori_name_, 4);
-  target_ori_id_         = registerRequirement(target_ori_name_);
-  motion_frame_index_id_ = registerRequirement("motion_frame_index", 1);
+  current_ori_id_        = registerRequirement(current_ori_name_, DataType::kFloat32, 4);
+  target_ori_id_         = registerRequirement(target_ori_name_, DataType::kFloat32);
+  motion_frame_index_id_ = registerRequirement("motion_frame_index", DataType::kFloat32, 1);
   if (not alignment_trigger_name_.empty()) {
-    alignment_trigger_id_ = registerField(alignment_trigger_name_, 1);
+    alignment_trigger_id_ = registerField(alignment_trigger_name_, DataType::kFloat32, 1);
   }
-  aligned_target_ori_id_ = registerProvision("aligned_target_ori", 0);
+  aligned_target_ori_id_ = registerProvision("aligned_target_ori", DataType::kFloat32);
 
   if (not target_pos_name_.empty()) {
-    current_pos_id_ = registerRequirement(current_pos_name_, 3);
-    target_pos_id_  = registerRequirement(target_pos_name_);
+    current_pos_id_ = registerRequirement(current_pos_name_, DataType::kFloat32, 3);
+    target_pos_id_  = registerRequirement(target_pos_name_, DataType::kFloat32);
   } else {
     current_pos_id_ = kInvalidFieldId;
     target_pos_id_  = kInvalidFieldId;
   }
-  aligned_target_pos_id_ = registerProvision("aligned_target_pos", 0);
+  aligned_target_pos_id_ = registerProvision("aligned_target_pos", DataType::kFloat32);
 }
 
 void MotionAlignment::init() {
@@ -120,7 +120,7 @@ void MotionAlignment::init() {
                 -static_cast<int>(num_frames_), static_cast<int>(num_frames_));
   resolved_reference_index_ = reference_index_ >= 0 ? static_cast<std::size_t>(reference_index_)
                                                     : num_frames_ + reference_index_;
-  setFieldSize(aligned_target_ori_id_, static_cast<FieldSize>(4 * num_frames_));
+  setFieldSpec(aligned_target_ori_id_, FieldSpec{DataType::kFloat32, static_cast<FieldSize>(4 * num_frames_)});
 
   if (target_pos_id_ != kInvalidFieldId) {
     auto target_pos_size = getFieldSize(target_pos_id_);
@@ -131,7 +131,7 @@ void MotionAlignment::init() {
                   "Field '{}' must have {} frames to match '{}', but got {} frames.", target_pos_name_, num_frames_,
                   target_ori_name_, target_pos_num_frames);
   }
-  setFieldSize(aligned_target_pos_id_, static_cast<FieldSize>(3 * num_frames_));
+  setFieldSpec(aligned_target_pos_id_, FieldSpec{DataType::kFloat32, static_cast<FieldSize>(3 * num_frames_)});
 }
 
 bool MotionAlignment::reset() {

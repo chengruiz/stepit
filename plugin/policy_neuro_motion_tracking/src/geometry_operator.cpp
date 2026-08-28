@@ -4,9 +4,9 @@ namespace stepit {
 namespace field {
 QuatRotateOperator::QuatRotateOperator(const yml::Node &config) {
   config.assertHasValue("source", "quaternion", "target");
-  source_id_ = registerRequirement(config["source"].as<std::string>());
-  quat_id_   = registerRequirement(config["quaternion"].as<std::string>());
-  target_id_ = registerProvision(config["target"].as<std::string>(), 0);
+  source_id_ = registerRequirement(config["source"].as<std::string>(), DataType::kFloat32);
+  quat_id_   = registerRequirement(config["quaternion"].as<std::string>(), DataType::kFloat32);
+  target_id_ = registerProvision(config["target"].as<std::string>(), DataType::kFloat32);
   inverse_   = config["inverse"].as<bool>(false);
 
   try {
@@ -30,7 +30,7 @@ void QuatRotateOperator::init() {
                 "Quaternion field '{}' must contain 1 quaternion or match vector count {}.", getFieldName(quat_id_),
                 num_vectors_);
 
-  setFieldSize(target_id_, source_size);
+  setFieldSpec(target_id_, FieldSpec{DataType::kFloat32, source_size});
   buffer_.resize(source_size);
 }
 
@@ -51,10 +51,10 @@ bool QuatRotateOperator::update(FieldMap &context) {
 
 QuatRotateBetweenOperator::QuatRotateBetweenOperator(const yml::Node &config) {
   config.assertHasValue("source", "from_quaternion", "to_quaternion", "target");
-  source_id_    = registerRequirement(config["source"].as<std::string>());
-  from_quat_id_ = registerRequirement(config["from_quaternion"].as<std::string>());
-  to_quat_id_   = registerRequirement(config["to_quaternion"].as<std::string>());
-  target_id_    = registerProvision(config["target"].as<std::string>(), 0);
+  source_id_    = registerRequirement(config["source"].as<std::string>(), DataType::kFloat32);
+  from_quat_id_ = registerRequirement(config["from_quaternion"].as<std::string>(), DataType::kFloat32);
+  to_quat_id_   = registerRequirement(config["to_quaternion"].as<std::string>(), DataType::kFloat32);
+  target_id_    = registerProvision(config["target"].as<std::string>(), DataType::kFloat32);
 
   try {
     init();
@@ -84,7 +84,7 @@ void QuatRotateBetweenOperator::init() {
                 "Quaternion field '{}' must contain 1 quaternion or match vector count {}.", getFieldName(to_quat_id_),
                 num_vectors_);
 
-  setFieldSize(target_id_, source_size);
+  setFieldSpec(target_id_, FieldSpec{DataType::kFloat32, source_size});
   buffer_.resize(source_size);
 }
 
@@ -108,8 +108,8 @@ bool QuatRotateBetweenOperator::update(FieldMap &context) {
 
 QuatInverseOperator::QuatInverseOperator(const yml::Node &config) {
   config.assertHasValue("source", "target");
-  source_id_ = registerRequirement(config["source"].as<std::string>());
-  target_id_ = registerProvision(config["target"].as<std::string>(), 0);
+  source_id_ = registerRequirement(config["source"].as<std::string>(), DataType::kFloat32);
+  target_id_ = registerProvision(config["target"].as<std::string>(), DataType::kFloat32);
 
   try {
     init();
@@ -122,7 +122,7 @@ void QuatInverseOperator::init() {
   STEPIT_ASSERT(source_size > 0 and source_size % 4 == 0, "Field '{}' must have size 4 * N, but got {}.",
                 getFieldName(source_id_), source_size);
   num_quats_ = source_size / 4;
-  setFieldSize(target_id_, source_size);
+  setFieldSpec(target_id_, FieldSpec{DataType::kFloat32, source_size});
   buffer_.resize(source_size);
 }
 
@@ -138,8 +138,8 @@ bool QuatInverseOperator::update(FieldMap &context) {
 
 QuatToEulerOperator::QuatToEulerOperator(const yml::Node &config) {
   config.assertHasValue("source", "target");
-  source_id_ = registerRequirement(config["source"].as<std::string>());
-  target_id_ = registerProvision(config["target"].as<std::string>(), 0);
+  source_id_ = registerRequirement(config["source"].as<std::string>(), DataType::kFloat32);
+  target_id_ = registerProvision(config["target"].as<std::string>(), DataType::kFloat32);
 
   try {
     init();
@@ -152,7 +152,7 @@ void QuatToEulerOperator::init() {
   STEPIT_ASSERT(source_size > 0 and source_size % 4 == 0, "Field '{}' must have size 4 * N, but got {}.",
                 getFieldName(source_id_), source_size);
   num_quats_ = source_size / 4;
-  setFieldSize(target_id_, static_cast<FieldSize>(3 * num_quats_));
+  setFieldSpec(target_id_, FieldSpec{DataType::kFloat32, static_cast<FieldSize>(3 * num_quats_)});
   buffer_.resize(getFieldSize(target_id_));
 }
 
@@ -168,8 +168,8 @@ bool QuatToEulerOperator::update(FieldMap &context) {
 
 EulerToQuatOperator::EulerToQuatOperator(const yml::Node &config) {
   config.assertHasValue("source", "target");
-  source_id_ = registerRequirement(config["source"].as<std::string>());
-  target_id_ = registerProvision(config["target"].as<std::string>(), 0);
+  source_id_ = registerRequirement(config["source"].as<std::string>(), DataType::kFloat32);
+  target_id_ = registerProvision(config["target"].as<std::string>(), DataType::kFloat32);
 
   try {
     init();
@@ -182,7 +182,7 @@ void EulerToQuatOperator::init() {
   STEPIT_ASSERT(source_size > 0 and source_size % 3 == 0, "Field '{}' must have size 3 * N, but got {}.",
                 getFieldName(source_id_), source_size);
   num_rpys_ = source_size / 3;
-  setFieldSize(target_id_, static_cast<FieldSize>(4 * num_rpys_));
+  setFieldSpec(target_id_, FieldSpec{DataType::kFloat32, static_cast<FieldSize>(4 * num_rpys_)});
   buffer_.resize(getFieldSize(target_id_));
 }
 
@@ -198,8 +198,8 @@ bool EulerToQuatOperator::update(FieldMap &context) {
 
 QuatToAngleAxisOperator::QuatToAngleAxisOperator(const yml::Node &config) {
   config.assertHasValue("source", "target");
-  source_id_ = registerRequirement(config["source"].as<std::string>());
-  target_id_ = registerProvision(config["target"].as<std::string>(), 0);
+  source_id_ = registerRequirement(config["source"].as<std::string>(), DataType::kFloat32);
+  target_id_ = registerProvision(config["target"].as<std::string>(), DataType::kFloat32);
 
   try {
     init();
@@ -212,7 +212,7 @@ void QuatToAngleAxisOperator::init() {
   STEPIT_ASSERT(source_size > 0 and source_size % 4 == 0, "Field '{}' must have size 4 * N, but got {}.",
                 getFieldName(source_id_), source_size);
   num_quats_ = source_size / 4;
-  setFieldSize(target_id_, static_cast<FieldSize>(3 * num_quats_));
+  setFieldSpec(target_id_, FieldSpec{DataType::kFloat32, static_cast<FieldSize>(3 * num_quats_)});
   buffer_.resize(getFieldSize(target_id_));
 }
 
@@ -228,8 +228,8 @@ bool QuatToAngleAxisOperator::update(FieldMap &context) {
 
 QuatToRotation6dOperator::QuatToRotation6dOperator(const yml::Node &config) {
   config.assertHasValue("source", "target");
-  source_id_ = registerRequirement(config["source"].as<std::string>());
-  target_id_ = registerProvision(config["target"].as<std::string>(), 0);
+  source_id_ = registerRequirement(config["source"].as<std::string>(), DataType::kFloat32);
+  target_id_ = registerProvision(config["target"].as<std::string>(), DataType::kFloat32);
   order_     = config["rotation_6d_order"].as(Rotation6dOrder::kRowMajor);
 
   try {
@@ -243,7 +243,7 @@ void QuatToRotation6dOperator::init() {
   STEPIT_ASSERT(source_size > 0 and source_size % 4 == 0, "Field '{}' must have size 4 * N, but got {}.",
                 getFieldName(source_id_), source_size);
   num_quats_ = source_size / 4;
-  setFieldSize(target_id_, static_cast<FieldSize>(6 * num_quats_));
+  setFieldSpec(target_id_, FieldSpec{DataType::kFloat32, static_cast<FieldSize>(6 * num_quats_)});
   buffer_.resize(getFieldSize(target_id_));
 }
 

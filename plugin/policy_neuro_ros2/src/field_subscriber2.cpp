@@ -12,7 +12,7 @@ FieldSubscriber2::FieldSubscriber2(const NeuroPolicySpec &policy_spec, const Mod
     field_node.second["topic"].to(field.topic);
     field_node.second["size"].to(field.size);
     field_node.second["timeout_threshold"].to(field.timeout_threshold, true);
-    field.id   = registerProvision(field.name, field.size);
+    field.id   = registerProvision(field.name, DataType::kFloat32, field.size);
     field.data = VecXf::Zero(static_cast<Eigen::Index>(field.size));
 
     std::size_t index = fields_.size();

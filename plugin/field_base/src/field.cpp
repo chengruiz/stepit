@@ -2,8 +2,8 @@
 
 namespace stepit {
 namespace field {
-FieldId Node::registerRequirement(const std::string &field_name, FieldSize field_size) {
-  return registerRequirement(registerField(field_name, field_size));
+FieldId Node::registerRequirement(const std::string &field_name, DataType dtype, FieldSize field_size) {
+  return registerRequirement(registerField(field_name, dtype, field_size));
 }
 
 FieldId Node::registerRequirement(FieldId field_id) {
@@ -14,8 +14,8 @@ FieldId Node::registerRequirement(FieldId field_id) {
   return field_id;
 }
 
-FieldId Node::registerProvision(const std::string &field_name, FieldSize field_size) {
-  return registerProvision(registerField(field_name, field_size));
+FieldId Node::registerProvision(const std::string &field_name, DataType dtype, FieldSize field_size) {
+  return registerProvision(registerField(field_name, dtype, field_size));
 }
 
 FieldId Node::registerProvision(FieldId field_id) {
@@ -31,27 +31,40 @@ ConflictingFieldSizeError::ConflictingFieldSizeError(FieldId field_id, FieldSize
           "Attempting to register size of field '{}' to {}, which conflicts with the previously registered size ({}).",
           getFieldName(field_id), new_size, getFieldSize(field_id))) {}
 
+ConflictingFieldDataTypeError::ConflictingFieldDataTypeError(FieldId field_id, DataType new_dtype)
+    : std::runtime_error(fmt::format(
+          "Attempting to register data type of field '{}' to {}, which conflicts with the previously registered type "
+          "({}).",
+          getFieldName(field_id), dataTypeName(new_dtype), dataTypeName(getFieldDataType(field_id)))) {}
+
+UndefinedFieldSizeError::UndefinedFieldSizeError(FieldId field_id)
+    : UndefinedFieldSpecError(fmt::format("Size of field '{}' is undefined.", getFieldName(field_id))) {}
+
+UndefinedFieldDataTypeError::UndefinedFieldDataTypeError(FieldId field_id)
+    : UndefinedFieldSpecError(fmt::format("Data type of field '{}' is undefined.", getFieldName(field_id))) {}
+
 InvalidFieldIdError::InvalidFieldIdError(FieldId field_id)
     : std::runtime_error(fmt::format("Invalid field ID {}, which exceeds the number of registered fields ({}).",
                                      field_id, getNumFields())) {}
 
-UndefinedFieldSizeError::UndefinedFieldSizeError(FieldId field_id)
-    : std::runtime_error(fmt::format("Size of field '{}' is undefined.", getFieldName(field_id))) {}
-
-FieldId FieldManager::registerField(const std::string &name, FieldSize size) {
+FieldId FieldManager::registerField(const std::string &name, DataType dtype, FieldSize size) {
   STEPIT_ASSERT(not name.empty(), "Field name should not be empty.");
+  STEPIT_ASSERT(dtype == DataType::kUndefined or dtype == DataType::kFloat32,
+                "Field '{}' has data type '{}', but the current Field storage only supports float32.", name,
+                dataTypeName(dtype));
+
   std::lock_guard<std::recursive_mutex> lock(mutex_);
   auto it = name_to_id_.find(name);
   if (it == name_to_id_.end()) {  // If not registered
     auto id           = next_id_++;
     name_to_id_[name] = id;
     id_to_name_.push_back(name);
-    id_to_size_.push_back(size);
+    id_to_spec_.push_back(FieldSpec{dtype, size});
     return id;
   }
 
   auto id = it->second;
-  if (size != 0) setFieldSize(id, size);
+  setFieldSpec(id, FieldSpec{dtype, size});
   return id;
 }
 
@@ -73,24 +86,56 @@ FieldId FieldManager::getNumFields() const {
   return next_id_;
 }
 
+FieldSpec FieldManager::getFieldSpec(FieldId id) const {
+  std::lock_guard<std::recursive_mutex> lock(mutex_);
+  if (id >= next_id_) throw InvalidFieldIdError(id);
+  const FieldSpec spec = id_to_spec_[id];
+  if (spec.size == 0) throw UndefinedFieldSizeError(id);
+  if (spec.dtype == DataType::kUndefined) throw UndefinedFieldDataTypeError(id);
+  return spec;
+}
+
 FieldSize FieldManager::getFieldSize(FieldId id) const {
   std::lock_guard<std::recursive_mutex> lock(mutex_);
   if (id >= next_id_) throw InvalidFieldIdError(id);
-  FieldSize size = id_to_size_[id];
+  FieldSize size = id_to_spec_[id].size;
   if (size == 0) throw UndefinedFieldSizeError(id);
   return size;
 }
 
-void FieldManager::setFieldSize(FieldId id, FieldSize size) {
+DataType FieldManager::getFieldDataType(FieldId id) const {
   std::lock_guard<std::recursive_mutex> lock(mutex_);
   if (id >= next_id_) throw InvalidFieldIdError(id);
-  auto registered_size = id_to_size_.at(id);
-  if (registered_size == 0) {  // If not registered
-    STEPIT_DBUGNT("Size of field '{}' set to {}.", getFieldName(id), size);
-    id_to_size_[id] = size;
-    return;
+  DataType dtype = id_to_spec_[id].dtype;
+  if (dtype == DataType::kUndefined) throw UndefinedFieldDataTypeError(id);
+  return dtype;
+}
+
+void FieldManager::setFieldSpec(FieldId id, const FieldSpec &spec) {
+  STEPIT_ASSERT(spec.dtype == DataType::kUndefined or spec.dtype == DataType::kFloat32,
+                "Cannot set field data type to '{}': the current Field storage only supports float32.",
+                dataTypeName(spec.dtype));
+
+  std::lock_guard<std::recursive_mutex> lock(mutex_);
+  if (id >= next_id_) throw InvalidFieldIdError(id);
+  auto &registered = id_to_spec_[id];
+
+  if (spec.size != 0 and registered.size != 0 and registered.size != spec.size) {
+    throw ConflictingFieldSizeError(id, spec.size);
   }
-  if (registered_size != size) throw ConflictingFieldSizeError(id, size);
+  if (spec.dtype != DataType::kUndefined and registered.dtype != DataType::kUndefined and
+      registered.dtype != spec.dtype) {
+    throw ConflictingFieldDataTypeError(id, spec.dtype);
+  }
+
+  if (spec.size != 0 and registered.size == 0) {
+    STEPIT_DBUGNT("Size of field '{}' set to {}.", getFieldName(id), spec.size);
+    registered.size = spec.size;
+  }
+  if (spec.dtype != DataType::kUndefined and registered.dtype == DataType::kUndefined) {
+    STEPIT_DBUGNT("Data type of field '{}' set to {}.", getFieldName(id), dataTypeName(spec.dtype));
+    registered.dtype = spec.dtype;
+  }
 }
 
 FieldManager &FieldManager::instance() {

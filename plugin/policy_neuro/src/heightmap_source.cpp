@@ -33,8 +33,8 @@ DummyHeightmapSource::DummyHeightmapSource(const NeuroPolicySpec &policy_spec, c
   elevation_.setZero(numHeightSamples());
   uncertainty_.setConstant(numHeightSamples(), max_uncertainty_);
 
-  heightmap_id_   = registerProvision("heightmap", numHeightSamples());
-  uncertainty_id_ = registerProvision("heightmap_uncertainty", numHeightSamples());
+  heightmap_id_   = registerProvision("heightmap", DataType::kFloat32, numHeightSamples());
+  uncertainty_id_ = registerProvision("heightmap_uncertainty", DataType::kFloat32, numHeightSamples());
 }
 
 bool DummyHeightmapSource::update(const LowState &low_state, ControlRequests &requests, FieldMap &context) {

@@ -71,7 +71,7 @@ void RedisFieldSubscriber::addField(const yml::Node &key_node, const yml::Node &
   STEPIT_ASSERT(field.size > 0, "Redis field '{}' must have a positive size, got {}.", field.name, field.size);
   if (field.json_field.empty()) field.json_field = field.name;
 
-  field.id   = registerProvision(field.name, field.size);
+  field.id   = registerProvision(field.name, DataType::kFloat32, field.size);
   field.data = VecXf::Zero(static_cast<Eigen::Index>(field.size));
   fields_.push_back(std::move(field));
 }

@@ -8,15 +8,15 @@ namespace field {
 AffineOperator::AffineOperator(const yml::Node &config) : node_(config) {
   if (config["field"].hasValue()) {
     auto field_name = config["field"].as<std::string>();
-    source_id_      = registerRequirement(field_name);
+    source_id_      = registerRequirement(field_name, DataType::kFloat32);
     target_id_      = source_id_;
   } else {
     config.require(config["source"].hasValue() and config["target"].hasValue(),
                    "Specify 'field' or both 'source' and 'target' for 'affine' operator");
     auto source_name = config["source"].as<std::string>();
     auto target_name = config["target"].as<std::string>();
-    source_id_       = registerRequirement(source_name);
-    target_id_       = registerProvision(target_name, 0);
+    source_id_       = registerRequirement(source_name, DataType::kFloat32);
+    target_id_       = registerProvision(target_name, DataType::kFloat32);
   }
 
   config.assertMutuallyExclusive({"scale", "std"});
@@ -30,7 +30,7 @@ AffineOperator::AffineOperator(const yml::Node &config) : node_(config) {
 void AffineOperator::init() {
   if (field_size_ > 0) return;
   field_size_ = getFieldSize(source_id_);
-  setFieldSize(target_id_, field_size_);
+  setFieldSpec(target_id_, FieldSpec{DataType::kFloat32, field_size_});
   scale_ = ArrXf::Ones(field_size_);
   bias_  = ArrXf::Zero(field_size_);
 
@@ -70,10 +70,10 @@ ConcatOperator::ConcatOperator(const yml::Node &config) {
   for (const auto &source_node : sources_node) {
     const auto source_name = source_node.as<std::string>();
     source_node.throwIf(source_name == target_name, "Concat target must not also be a source");
-    source_ids_.push_back(registerRequirement(source_name));
+    source_ids_.push_back(registerRequirement(source_name, DataType::kFloat32));
   }
   sources_node.require(not source_ids_.empty(), "'sources' must not be empty");
-  target_id_ = registerProvision(target_name, 0);
+  target_id_ = registerProvision(target_name, DataType::kFloat32);
 
   try {
     init();
@@ -86,7 +86,7 @@ void ConcatOperator::init() {
   for (auto source_id : source_ids_) {
     total_size += getFieldSize(source_id);
   }
-  setFieldSize(target_id_, total_size);
+  setFieldSpec(target_id_, FieldSpec{DataType::kFloat32, total_size});
   target_size_ = total_size;
   buffer_.resize(total_size);
 }
@@ -122,7 +122,7 @@ ConstOperator::ConstOperator(const yml::Node &config) {
     }
   }
 
-  target_id_ = registerProvision(target_name, size);
+  target_id_ = registerProvision(target_name, DataType::kFloat32, size);
 }
 
 bool ConstOperator::update(FieldMap &context) {
@@ -135,8 +135,8 @@ CopyOperator::CopyOperator(const yml::Node &config) {
   auto source_name = config["source"].as<std::string>();
   auto target_name = config["target"].as<std::string>();
   config.throwIf(source_name == target_name, "'source' and 'target' must not be the same");
-  source_id_ = registerRequirement(source_name);
-  target_id_ = registerProvision(target_name, 0);
+  source_id_ = registerRequirement(source_name, DataType::kFloat32);
+  target_id_ = registerProvision(target_name, DataType::kFloat32);
 
   try {
     init();
@@ -146,7 +146,7 @@ CopyOperator::CopyOperator(const yml::Node &config) {
 void CopyOperator::init() {
   if (field_size_ > 0) return;
   field_size_ = getFieldSize(source_id_);
-  setFieldSize(target_id_, field_size_);
+  setFieldSpec(target_id_, FieldSpec{DataType::kFloat32, field_size_});
 }
 
 bool CopyOperator::update(FieldMap &context) {
@@ -174,11 +174,11 @@ HistoryOperator::HistoryOperator(const yml::Node &config) {
     default_value_ = ArrXf::Zero(1);
   }
 
-  source_id_ = registerField(source_name, source_size_);
+  source_id_ = registerField(source_name, DataType::kFloat32, source_size_);
   if (include_current_frame_ or default_value_.size() == 0) {
     registerRequirement(source_id_);
   }  // otherwise, skip requirement registration since the field is not needed at update time
-  target_id_ = registerProvision(target_name, 0);
+  target_id_ = registerProvision(target_name, DataType::kFloat32);
 
   try {
     source_size_ = getFieldSize(source_id_);
@@ -191,7 +191,7 @@ void HistoryOperator::init() {
   source_size_ = getFieldSize(source_id_);
   indices_.canonicalize(history_len_);
   target_size_ = source_size_ * static_cast<FieldSize>(indices_.size());
-  setFieldSize(target_id_, target_size_);
+  setFieldSpec(target_id_, FieldSpec{DataType::kFloat32, target_size_});
 
   if (default_value_.size() == 1) {
     default_value_ = VecXf::Constant(source_size_, default_value_[0]);
@@ -257,15 +257,15 @@ void HistoryOperator::postStep(const FieldMap &context) {
 MaskedFillOperator::MaskedFillOperator(const yml::Node &config) {
   if (config["field"].hasValue()) {
     auto field_name = config["field"].as<std::string>();
-    source_id_      = registerRequirement(field_name);
+    source_id_      = registerRequirement(field_name, DataType::kFloat32);
     target_id_      = source_id_;
   } else {
     config.require(config["source"].hasValue() and config["target"].hasValue(),
                    "Specify 'field' or both 'source' and 'target' for 'masked_fill' operator");
     auto source_name = config["source"].as<std::string>();
     auto target_name = config["target"].as<std::string>();
-    source_id_       = registerRequirement(source_name);
-    target_id_       = registerProvision(target_name, 0);
+    source_id_       = registerRequirement(source_name, DataType::kFloat32);
+    target_id_       = registerProvision(target_name, DataType::kFloat32);
   }
   config.to(indices_);
   config["value"].to(value_, true);
@@ -279,7 +279,7 @@ void MaskedFillOperator::init() {
   if (field_size_ > 0) return;
   field_size_ = getFieldSize(source_id_);
   indices_.canonicalize(field_size_);
-  setFieldSize(target_id_, field_size_);
+  setFieldSpec(target_id_, FieldSpec{DataType::kFloat32, field_size_});
   buffer_.resize(field_size_);
 }
 
@@ -298,8 +298,8 @@ SliceOperator::SliceOperator(const yml::Node &config) {
   const auto source_name = config["source"].as<std::string>();
   const auto target_name = config["target"].as<std::string>();
   config.throwIf(source_name == target_name, "'source' and 'target' must not be the same");
-  source_id_ = registerRequirement(source_name);
-  target_id_ = registerProvision(target_name, 0);
+  source_id_ = registerRequirement(source_name, DataType::kFloat32);
+  target_id_ = registerProvision(target_name, DataType::kFloat32);
   config.to(indices_);
 
   try {
@@ -310,7 +310,7 @@ SliceOperator::SliceOperator(const yml::Node &config) {
 void SliceOperator::init() {
   auto source_size = getFieldSize(source_id_);
   indices_.canonicalize(source_size);
-  setFieldSize(target_id_, static_cast<FieldSize>(indices_.size()));
+  setFieldSpec(target_id_, FieldSpec{DataType::kFloat32, static_cast<FieldSize>(indices_.size())});
   buffer_.resize(getFieldSize(target_id_));
 }
 
@@ -326,7 +326,7 @@ bool SliceOperator::update(FieldMap &context) {
 SplitOperator::SplitOperator(const yml::Node &config) {
   config.assertHasValue("source", "targets");
   const auto source_name = config["source"].as<std::string>();
-  source_id_             = registerRequirement(source_name);
+  source_id_             = registerRequirement(source_name, DataType::kFloat32);
 
   const auto targets_node = config["targets"];
   targets_node.assertSequence();
@@ -339,12 +339,12 @@ SplitOperator::SplitOperator(const yml::Node &config) {
     target_node["size"].require(size > 0, "Split target size must be greater than 0");
     target_node.throwIf(name == source_name, "Split target must not be the same as its source");
     target_node.throwIf(not target_names.insert(name).second, fmt::format("Duplicate split target '{}'", name));
-    target_ids_.push_back(registerProvision(name, size));
+    target_ids_.push_back(registerProvision(name, DataType::kFloat32, size));
     segment_sizes_.push_back(size);
     total_size += size;
   }
   targets_node.require(not target_ids_.empty(), "'targets' must not be empty");
-  registerField(source_name, total_size);
+  registerField(source_name, DataType::kFloat32, total_size);
 }
 
 void SplitOperator::init() {

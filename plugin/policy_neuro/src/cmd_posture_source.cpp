@@ -13,7 +13,7 @@ const std::map<std::string, CmdRollSource::Action> CmdRollSource::kActionMap = {
 
 CmdRollSource::CmdRollSource(const NeuroPolicySpec &policy_spec, const ModuleSpec &module_spec)
     : Module(policy_spec, ModuleSpec(module_spec, "cmd_posture/roll")) {
-  cmd_roll_id_ = registerProvision("cmd_roll", 1);
+  cmd_roll_id_ = registerProvision("cmd_roll", DataType::kFloat32, 1);
 
   if (config_.hasValue()) {
     config_["roll_scale_factor"].to(roll_scale_factor_, true);
@@ -86,7 +86,7 @@ const std::map<std::string, CmdPitchSource::Action> CmdPitchSource::kActionMap =
 
 CmdPitchSource::CmdPitchSource(const NeuroPolicySpec &policy_spec, const ModuleSpec &module_spec)
     : Module(policy_spec, ModuleSpec(module_spec, "cmd_posture/pitch")) {
-  cmd_pitch_id_ = registerProvision("cmd_pitch", 1);
+  cmd_pitch_id_ = registerProvision("cmd_pitch", DataType::kFloat32, 1);
 
   if (config_.hasValue()) {
     config_["pitch_scale_factor"].to(pitch_scale_factor_, true);
@@ -159,7 +159,7 @@ const std::map<std::string, CmdHeightSource::Action> CmdHeightSource::kActionMap
 
 CmdHeightSource::CmdHeightSource(const NeuroPolicySpec &policy_spec, const ModuleSpec &module_spec)
     : Module(policy_spec, ModuleSpec(module_spec, "cmd_posture/height")) {
-  cmd_height_id_ = registerProvision("cmd_height", 1);
+  cmd_height_id_ = registerProvision("cmd_height", DataType::kFloat32, 1);
 
   if (config_.hasValue()) {
     config_["default_cmd_height"].to(default_cmd_height_, true);

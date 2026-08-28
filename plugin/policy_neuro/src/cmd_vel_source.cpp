@@ -24,8 +24,8 @@ const std::map<std::string, CmdVelSource::Action> CmdVelSource::kActionMap = {
 
 CmdVelSource::CmdVelSource(const NeuroPolicySpec &policy_spec, const ModuleSpec &module_spec)
     : Module(policy_spec, ModuleSpec(module_spec, "cmd_vel")) {
-  cmd_vel_id_   = registerProvision("cmd_vel", 3);
-  cmd_stall_id_ = registerProvision("cmd_stall", 1);
+  cmd_vel_id_   = registerProvision("cmd_vel", DataType::kFloat32, 3);
+  cmd_stall_id_ = registerProvision("cmd_stall", DataType::kFloat32, 1);
   timestep_     = 1.0F / static_cast<float>(policy_spec.control_freq);
 
   if (config_.hasValue()) {

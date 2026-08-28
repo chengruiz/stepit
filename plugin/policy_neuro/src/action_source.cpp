@@ -9,18 +9,18 @@ ActionHistory::ActionHistory(const NeuroPolicySpec &policy_spec, const ModuleSpe
   action_buf_.allocate(5);
 
   action_id_      = getFieldId("action");
-  last_action_id_ = registerProvision("last_action", 0);  // alias of action_p1
-  action_p1_id_   = registerProvision("action_p1", 0);
-  action_p2_id_   = registerProvision("action_p2", 0);
+  last_action_id_ = registerProvision("last_action", DataType::kFloat32);  // alias of action_p1
+  action_p1_id_   = registerProvision("action_p1", DataType::kFloat32);
+  action_p2_id_   = registerProvision("action_p2", DataType::kFloat32);
 }
 
 void ActionHistory::init() {
   auto action_dim = getFieldSize(action_id_);
 
   populateArray(default_action_, action_dim);
-  setFieldSize(last_action_id_, action_dim);
-  setFieldSize(action_p1_id_, action_dim);
-  setFieldSize(action_p2_id_, action_dim);
+  setFieldSpec(last_action_id_, FieldSpec{DataType::kFloat32, action_dim});
+  setFieldSpec(action_p1_id_, FieldSpec{DataType::kFloat32, action_dim});
+  setFieldSpec(action_p2_id_, FieldSpec{DataType::kFloat32, action_dim});
 }
 
 bool ActionHistory::reset() {
@@ -46,7 +46,7 @@ ActionFilter::ActionFilter(const NeuroPolicySpec &policy_spec, const ModuleSpec 
 
   default_action_ = policy_spec.default_action;
   action_buf_.allocate(window_size_);
-  action_id_ = registerRequirement("action");
+  action_id_ = registerRequirement("action", DataType::kFloat32);
 }
 
 void ActionFilter::init() {

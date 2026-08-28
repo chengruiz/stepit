@@ -13,7 +13,7 @@ FieldSubscriber::FieldSubscriber(const NeuroPolicySpec &policy_spec, const Modul
     value_node["topic"].to(field.topic);
     value_node["size"].to(field.size);
     value_node["timeout_threshold"].to(field.timeout_threshold, true);
-    field.id   = registerProvision(field.name, field.size);
+    field.id   = registerProvision(field.name, DataType::kFloat32, field.size);
     field.data = VecXf::Zero(static_cast<Eigen::Index>(field.size));
 
     int queue_size       = value_node["queue_size"].as<int>(1);

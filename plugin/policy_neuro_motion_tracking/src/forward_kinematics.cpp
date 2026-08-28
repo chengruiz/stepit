@@ -61,15 +61,15 @@ ForwardKinematics::ForwardKinematics(const NeuroPolicySpec &policy_spec, const M
 
   // Register requirements for the anchor pose and provisions for the whole body poses
   auto anchor_global_pos_field = config_["anchor_global_pos_field"].as<std::string>("base_global_pos");
-  anchor_global_pos_id_        = registerRequirement(anchor_global_pos_field, 3);
+  anchor_global_pos_id_        = registerRequirement(anchor_global_pos_field, DataType::kFloat32, 3);
   auto anchor_global_ori_field = config_["anchor_global_ori_field"].as<std::string>("base_global_ori");
-  anchor_global_ori_id_        = registerRequirement(anchor_global_ori_field, 4);
+  anchor_global_ori_id_        = registerRequirement(anchor_global_ori_field, DataType::kFloat32, 4);
 
   auto num_bodies           = static_cast<FieldSize>(body_names_.size());
-  whole_body_local_pos_id_  = registerProvision("whole_body_local_pos", 3 * num_bodies);
-  whole_body_local_ori_id_  = registerProvision("whole_body_local_ori", 4 * num_bodies);
-  whole_body_global_pos_id_ = registerProvision("whole_body_global_pos", 3 * num_bodies);
-  whole_body_global_ori_id_ = registerProvision("whole_body_global_ori", 4 * num_bodies);
+  whole_body_local_pos_id_  = registerProvision("whole_body_local_pos", DataType::kFloat32, 3 * num_bodies);
+  whole_body_local_ori_id_  = registerProvision("whole_body_local_ori", DataType::kFloat32, 4 * num_bodies);
+  whole_body_global_pos_id_ = registerProvision("whole_body_global_pos", DataType::kFloat32, 3 * num_bodies);
+  whole_body_global_ori_id_ = registerProvision("whole_body_global_ori", DataType::kFloat32, 4 * num_bodies);
 }
 
 bool ForwardKinematics::reset() { return true; }

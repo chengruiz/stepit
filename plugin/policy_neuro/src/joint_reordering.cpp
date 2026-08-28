@@ -30,8 +30,8 @@ JointReordering::JointReordering(const NeuroPolicySpec &policy_spec, const Modul
     joint_reversed_.resize(policy_spec.dof, false);
   }
 
-  joint_pos_id_ = registerRequirement("joint_pos");
-  joint_vel_id_ = registerRequirement("joint_vel");
+  joint_pos_id_ = registerRequirement("joint_pos", DataType::kFloat32);
+  joint_vel_id_ = registerRequirement("joint_vel", DataType::kFloat32);
 }
 
 void JointReordering::init() {
@@ -81,7 +81,7 @@ ActionReordering::ActionReordering(const NeuroPolicySpec &policy_spec, const Mod
     joint_reversed_.resize(policy_spec.dof, false);
   }
 
-  action_id_ = registerRequirement("action");
+  action_id_ = registerRequirement("action", DataType::kFloat32);
 }
 
 void ActionReordering::init() {

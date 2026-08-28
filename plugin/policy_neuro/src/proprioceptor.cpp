@@ -4,11 +4,11 @@ namespace stepit {
 namespace neuro_policy {
 Proprioceptor::Proprioceptor(const NeuroPolicySpec &policy_spec, const ModuleSpec &module_spec)
     : Module(policy_spec, ModuleSpec(module_spec, "proprioceptor")) {
-  ang_vel_id_   = registerProvision("ang_vel", 3);
-  gravity_id_   = registerProvision("gravity", 3);
-  joint_pos_id_ = registerProvision("joint_pos", policy_spec.dof);
-  joint_vel_id_ = registerProvision("joint_vel", policy_spec.dof);
-  lin_acc_id_   = registerProvision("lin_acc", 3);
+  ang_vel_id_   = registerProvision("ang_vel", DataType::kFloat32, 3);
+  gravity_id_   = registerProvision("gravity", DataType::kFloat32, 3);
+  joint_pos_id_ = registerProvision("joint_pos", DataType::kFloat32, policy_spec.dof);
+  joint_vel_id_ = registerProvision("joint_vel", DataType::kFloat32, policy_spec.dof);
+  lin_acc_id_   = registerProvision("lin_acc", DataType::kFloat32, 3);
 }
 
 bool Proprioceptor::update(const LowState &low_state, ControlRequests &, FieldMap &context) {
@@ -29,7 +29,7 @@ bool Proprioceptor::update(const LowState &low_state, ControlRequests &, FieldMa
 
 RollPitchSource::RollPitchSource(const NeuroPolicySpec &policy_spec, const ModuleSpec &module_spec)
     : Module(policy_spec, ModuleSpec(module_spec, "roll_pitch")) {
-  roll_pitch_id_ = registerProvision("roll_pitch", 2);
+  roll_pitch_id_ = registerProvision("roll_pitch", DataType::kFloat32, 2);
 }
 
 bool RollPitchSource::update(const LowState &low_state, ControlRequests &, FieldMap &context) {

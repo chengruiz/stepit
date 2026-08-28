@@ -5,8 +5,8 @@ namespace neuro_policy {
 TimeSource::TimeSource(const NeuroPolicySpec &policy_spec, const ModuleSpec &module_spec)
     : Module(policy_spec, ModuleSpec(module_spec, "step_count")) {
   timestep_       = 1.0F / static_cast<float>(policy_spec.control_freq);
-  step_count_id_  = registerProvision("step_count", 1);
-  policy_time_id_ = registerProvision("policy_time", 1);
+  step_count_id_  = registerProvision("step_count", DataType::kFloat32, 1);
+  policy_time_id_ = registerProvision("policy_time", DataType::kFloat32, 1);
 }
 
 bool TimeSource::reset() {

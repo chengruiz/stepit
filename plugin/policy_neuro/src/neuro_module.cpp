@@ -94,7 +94,7 @@ void NeuroModule::parseFields(bool is_input, const FieldNameVec &node_names, con
     for (std::size_t i{}; i < num_nodes; ++i) {
       const auto &field_name = node_names[i];
       FieldSize field_size   = node_sizes[i];
-      FieldId field_id       = registerField(field_name, field_size);
+      FieldId field_id       = registerField(field_name, DataType::kFloat32, field_size);
       field_names[i].push_back(field_name);
       field_sizes[i].push_back(field_size);
       field_ids[i].push_back(field_id);
@@ -118,7 +118,7 @@ void NeuroModule::parseFields(bool is_input, const FieldNameVec &node_names, con
 
       field_names[node_index].push_back(field_name);
       field_sizes[node_index].push_back(field_size);
-      field_ids[node_index].push_back(registerField(field_name, field_size));
+      field_ids[node_index].push_back(registerField(field_name, DataType::kFloat32, field_size));
     }
   };
 
@@ -144,7 +144,7 @@ void NeuroModule::parseFields(bool is_input, const FieldNameVec &node_names, con
         node_field_entries["size"].to(field_size, true);
         field_names[i].push_back(field_name);
         field_sizes[i].push_back(field_size);
-        field_ids[i].push_back(registerField(field_name, field_size));
+        field_ids[i].push_back(registerField(field_name, DataType::kFloat32, field_size));
       }
     }
   }
