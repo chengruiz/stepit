@@ -13,6 +13,7 @@ find_package(catkin REQUIRED
       grid_map_ros
       nav_msgs
       roscpp
+      std_msgs
       tf2_ros
       topic_tools
 )
@@ -114,6 +115,7 @@ catkin_package(
       grid_map_ros
       nav_msgs
       roscpp
+      std_msgs
       tf2_ros
       topic_tools
 #  DEPENDS system_lib
