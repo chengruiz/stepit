@@ -1,4 +1,5 @@
 #include <numeric>
+#include <set>
 
 #include <stepit/field/operator.h>
 
@@ -63,12 +64,16 @@ bool AffineOperator::update(FieldMap &context) {
 
 ConcatOperator::ConcatOperator(const yml::Node &config) {
   config.assertHasValue("sources", "target");
-  auto sources_node = config["sources"];
+  const auto target_name = config["target"].as<std::string>();
+  auto sources_node      = config["sources"];
   sources_node.assertSequence();
   for (const auto &source_node : sources_node) {
-    source_ids_.push_back(registerRequirement(source_node.as<std::string>()));
+    const auto source_name = source_node.as<std::string>();
+    source_node.throwIf(source_name == target_name, "Concat target must not also be a source");
+    source_ids_.push_back(registerRequirement(source_name));
   }
-  target_id_ = registerProvision(config["target"].as<std::string>(), 0);
+  sources_node.require(not source_ids_.empty(), "'sources' must not be empty");
+  target_id_ = registerProvision(target_name, 0);
 
   try {
     init();
@@ -154,11 +159,15 @@ HistoryOperator::HistoryOperator(const yml::Node &config) {
   auto source_name = config["source"].as<std::string>();
   auto target_name = config["target"].as<std::string>();
   source_size_     = config["source_size"].as<FieldSize>(0);
-  history_len_     = config["history_len"].as<std::uint32_t>();
+  if (config["source_size"].hasValue()) {
+    config["source_size"].require(source_size_ > 0, "'source_size' must be greater than 0");
+  }
+  history_len_ = config["history_len"].as<std::uint32_t>();
   config["history_len"].require(history_len_ > 0, "'history_len' must be greater than 0");
   config.to(indices_);
   newest_first_          = config["newest_first"].as<bool>(true);
   include_current_frame_ = config["include_current_frame"].as<bool>(true);
+  config.throwIf(source_name == target_name, "'source' and 'target' must not be the same");
   if (config["default_value"].isDefined()) {
     if (config["default_value"].hasValue()) config["default_value"].to(default_value_);
   } else {  // Fill with zeros by default if not provided
@@ -286,8 +295,11 @@ bool MaskedFillOperator::update(FieldMap &context) {
 SliceOperator::SliceOperator(const yml::Node &config) {
   config.require(config["source"].hasValue() and config["target"].hasValue(),
                  "Slice op must contain 'source' and 'target'");
-  source_id_ = registerRequirement(config["source"].as<std::string>());
-  target_id_ = registerProvision(config["target"].as<std::string>(), 0);
+  const auto source_name = config["source"].as<std::string>();
+  const auto target_name = config["target"].as<std::string>();
+  config.throwIf(source_name == target_name, "'source' and 'target' must not be the same");
+  source_id_ = registerRequirement(source_name);
+  target_id_ = registerProvision(target_name, 0);
   config.to(indices_);
 
   try {
@@ -313,22 +325,32 @@ bool SliceOperator::update(FieldMap &context) {
 
 SplitOperator::SplitOperator(const yml::Node &config) {
   config.assertHasValue("source", "targets");
-  source_id_ = registerRequirement(config["source"].as<std::string>());
+  const auto source_name = config["source"].as<std::string>();
+  source_id_             = registerRequirement(source_name);
 
   const auto targets_node = config["targets"];
   targets_node.assertSequence();
+  std::set<std::string> target_names;
+  FieldSize total_size{};
   for (const auto &target_node : targets_node) {
     target_node.assertMap();
-    auto name = target_node["name"].as<std::string>();
-    auto size = target_node["size"].as<FieldSize>();
+    const auto name = target_node["name"].as<std::string>();
+    const auto size = target_node["size"].as<FieldSize>();
+    target_node["size"].require(size > 0, "Split target size must be greater than 0");
+    target_node.throwIf(name == source_name, "Split target must not be the same as its source");
+    target_node.throwIf(not target_names.insert(name).second, fmt::format("Duplicate split target '{}'", name));
     target_ids_.push_back(registerProvision(name, size));
     segment_sizes_.push_back(size);
+    total_size += size;
   }
+  targets_node.require(not target_ids_.empty(), "'targets' must not be empty");
+  registerField(source_name, total_size);
 }
 
 void SplitOperator::init() {
-  auto source_size     = getFieldSize(source_id_);
-  FieldSize total_size = std::accumulate(segment_sizes_.begin(), segment_sizes_.end(), static_cast<FieldSize>(0));
+  const auto source_size = getFieldSize(source_id_);
+  const auto total_size =
+      std::accumulate(segment_sizes_.begin(), segment_sizes_.end(), static_cast<FieldSize>(0));
   STEPIT_ASSERT(total_size == source_size, "Split sizes ({}) do not match source size ({}) for '{}'.", total_size,
                 source_size, getFieldName(source_id_));
 }
