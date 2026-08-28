@@ -35,8 +35,8 @@ void QuatRotateOperator::init() {
 }
 
 bool QuatRotateOperator::update(FieldMap &context) {
-  const auto &source = context.at(source_id_);
-  const auto &quat   = context.at(quat_id_);
+  const auto &source = context.at(source_id_).get<float>();
+  const auto &quat   = context.at(quat_id_).get<float>();
 
   for (std::size_t i{}; i < num_vectors_; ++i) {
     const auto quat_offset = 4 * (num_quats_ == 1 ? 0 : i);
@@ -89,9 +89,9 @@ void QuatRotateBetweenOperator::init() {
 }
 
 bool QuatRotateBetweenOperator::update(FieldMap &context) {
-  const auto &source    = context.at(source_id_);
-  const auto &from_quat = context.at(from_quat_id_);
-  const auto &to_quat   = context.at(to_quat_id_);
+  const auto &source    = context.at(source_id_).get<float>();
+  const auto &from_quat = context.at(from_quat_id_).get<float>();
+  const auto &to_quat   = context.at(to_quat_id_).get<float>();
 
   for (std::size_t i{}; i < num_vectors_; ++i) {
     const auto from_offset = 4 * (num_from_quats_ == 1 ? 0 : i);
@@ -127,7 +127,7 @@ void QuatInverseOperator::init() {
 }
 
 bool QuatInverseOperator::update(FieldMap &context) {
-  const auto &source = context.at(source_id_);
+  const auto &source = context.at(source_id_).get<float>();
   for (std::size_t i{}; i < num_quats_; ++i) {
     Quatf q(source.segment(static_cast<Eigen::Index>(4 * i), 4));
     buffer_.segment(static_cast<Eigen::Index>(4 * i), 4) = q.inverse().coeffs();
@@ -157,7 +157,7 @@ void QuatToEulerOperator::init() {
 }
 
 bool QuatToEulerOperator::update(FieldMap &context) {
-  const auto &source = context.at(source_id_);
+  const auto &source = context.at(source_id_).get<float>();
   for (std::size_t i{}; i < num_quats_; ++i) {
     Quatf q(source.segment(static_cast<Eigen::Index>(4 * i), 4));
     buffer_.segment(static_cast<Eigen::Index>(3 * i), 3) = q.eulerAngles().array();
@@ -187,7 +187,7 @@ void EulerToQuatOperator::init() {
 }
 
 bool EulerToQuatOperator::update(FieldMap &context) {
-  const auto &source = context.at(source_id_);
+  const auto &source = context.at(source_id_).get<float>();
   for (std::size_t i{}; i < num_rpys_; ++i) {
     Quatf q = Quatf::fromEulerAngles(source.segment(static_cast<Eigen::Index>(3 * i), 3).matrix());
     buffer_.segment(static_cast<Eigen::Index>(4 * i), 4) = q.coeffs();
@@ -217,7 +217,7 @@ void QuatToAngleAxisOperator::init() {
 }
 
 bool QuatToAngleAxisOperator::update(FieldMap &context) {
-  const auto &source = context.at(source_id_);
+  const auto &source = context.at(source_id_).get<float>();
   for (std::size_t i{}; i < num_quats_; ++i) {
     Quatf q(source.segment(static_cast<Eigen::Index>(4 * i), 4));
     buffer_.segment(static_cast<Eigen::Index>(3 * i), 3) = q.rotationVector();
@@ -248,7 +248,7 @@ void QuatToRotation6dOperator::init() {
 }
 
 bool QuatToRotation6dOperator::update(FieldMap &context) {
-  const auto &source = context.at(source_id_);
+  const auto &source = context.at(source_id_).get<float>();
   for (std::size_t i{}; i < num_quats_; ++i) {
     Quatf q(source.segment(static_cast<Eigen::Index>(4 * i), 4));
     buffer_.segment(static_cast<Eigen::Index>(6 * i), 6) = q.rotation6d(order_);

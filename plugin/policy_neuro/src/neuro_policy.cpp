@@ -147,7 +147,7 @@ bool NeuroPolicy::act(const LowState &low_state, ControlRequests &requests, LowC
       return false;
     }
   }
-  action_ = context_.at(action_id_);
+  action_ = context_.at(action_id_).get<float>();
   actuator_->setLowCmd(cmd, action_);
 
   ++num_steps_;
@@ -158,8 +158,8 @@ void NeuroPolicy::postAct() {
   if (publish_fields_) {
     for (const auto &it : context_) {
       if (published_fields_.empty() or published_fields_.find(it.first) != published_fields_.end()) {
-        publisher::publishArray("field/" + getFieldName(it.first), it.second.data(), DataType::kFloat32,
-                                static_cast<std::size_t>(it.second.size()));
+        const auto &value = it.second;
+        publisher::publishArray("field/" + getFieldName(it.first), value.data(), value.dataType(), value.size());
       }
     }
   }

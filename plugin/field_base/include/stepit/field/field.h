@@ -1,11 +1,16 @@
 #ifndef STEPIT_FIELD_H_
 #define STEPIT_FIELD_H_
 
+#include <cstddef>
 #include <cstdint>
+#include <limits>
 #include <map>
 #include <mutex>
 #include <set>
 #include <stdexcept>
+#include <type_traits>
+#include <utility>
+#include <variant>
 #include <vector>
 
 #include <stepit/data_type.h>
@@ -16,12 +21,89 @@ namespace stepit {
 namespace field {
 /** Unique identifier of a registered field. */
 using FieldId = std::size_t;
-/** Runtime map from field ID to field value vector. */
-using FieldMap = std::map<FieldId, ArrXf>;
 /** Declared scalar length of one field segment. */
 using FieldSize = std::uint32_t;
 /** Ordered field ID list used for concat/split layouts. */
 using FieldIdVec = std::vector<FieldId>;
+
+/** One-dimensional owning array used as field storage. */
+template <typename T>
+using FieldArray = Eigen::Array<T, Eigen::Dynamic, 1>;
+
+/** Owning runtime value of a field. */
+class FieldValue {
+ public:
+  FieldValue() = default;
+
+  /** Copies an Eigen row or column vector into owning field storage. */
+  template <typename Derived>
+  FieldValue(const Eigen::DenseBase<Derived> &value) {
+    assign(value);
+  }
+
+  /** Replaces this value with a copy of an Eigen row or column vector. */
+  template <typename Derived>
+  FieldValue &operator=(const Eigen::DenseBase<Derived> &value) {
+    assign(value);
+    return *this;
+  }
+
+  /** Returns the stored array, throwing `std::bad_variant_access` for a type mismatch. */
+  template <typename T>
+  FieldArray<T> &get() {
+    static_assert(isSupportedScalar<T>(), "Unsupported field scalar type.");
+    return std::get<FieldArray<T>>(storage_);
+  }
+
+  /** Returns the stored array, throwing `std::bad_variant_access` for a type mismatch. */
+  template <typename T>
+  const FieldArray<T> &get() const {
+    static_assert(isSupportedScalar<T>(), "Unsupported field scalar type.");
+    return std::get<FieldArray<T>>(storage_);
+  }
+
+  /** Returns mutable access to the contiguous scalar storage. */
+  void *data();
+  /** Returns read-only access to the contiguous scalar storage. */
+  const void *data() const;
+  /** Returns the number of stored scalars. */
+  FieldSize size() const;
+  /** Returns the stored scalar data type. */
+  DataType dataType() const;
+
+ private:
+  using Storage =
+      std::variant<FieldArray<float>, FieldArray<std::int32_t>, FieldArray<std::int64_t>, FieldArray<bool>>;
+
+  template <typename T>
+  static constexpr bool isSupportedScalar() {
+    return std::is_same<T, float>::value or std::is_same<T, std::int32_t>::value or
+           std::is_same<T, std::int64_t>::value or std::is_same<T, bool>::value;
+  }
+
+  template <typename Derived>
+  void assign(const Eigen::DenseBase<Derived> &value) {
+    using Scalar = typename std::remove_cv<typename Derived::Scalar>::type;
+    static_assert(isSupportedScalar<Scalar>(), "Unsupported field scalar type.");
+    STEPIT_ASSERT(value.rows() == 1 or value.cols() == 1, "Field value must be a vector, got shape [{} x {}].",
+                  value.rows(), value.cols());
+    STEPIT_ASSERT(static_cast<std::uint64_t>(value.size()) <= std::numeric_limits<FieldSize>::max(),
+                  "Field value size {} exceeds the maximum supported size ({}).", value.size(),
+                  std::numeric_limits<FieldSize>::max());
+
+    FieldArray<Scalar> result(value.size());
+    Eigen::Index index{};
+    for (Eigen::Index col{}; col < value.cols(); ++col) {
+      for (Eigen::Index row{}; row < value.rows(); ++row) result(index++) = value.derived().coeff(row, col);
+    }
+    storage_ = std::move(result);
+  }
+
+  Storage storage_;
+};
+
+/** Runtime map from field ID to its current value. */
+using FieldMap = std::map<FieldId, FieldValue>;
 
 /** Field metadata; zero size or `kUndefined` denotes an unresolved component. */
 struct FieldSpec {

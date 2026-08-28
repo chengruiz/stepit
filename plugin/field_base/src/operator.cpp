@@ -57,7 +57,7 @@ void AffineOperator::init() {
 }
 
 bool AffineOperator::update(FieldMap &context) {
-  auto transformed    = context.at(source_id_).cwiseProduct(scale_) + bias_;
+  auto transformed    = context.at(source_id_).get<float>().cwiseProduct(scale_) + bias_;
   context[target_id_] = std::move(transformed);
   return true;
 }
@@ -232,12 +232,12 @@ void HistoryOperator::updateOutput() {
 
 bool HistoryOperator::update(FieldMap &context) {
   if (history_.empty()) {
-    history_.fill(context.at(source_id_));
+    history_.fill(context.at(source_id_).get<float>());
     updateOutput();
   }
 
   if (include_current_frame_) {
-    push(context.at(source_id_));
+    push(context.at(source_id_).get<float>());
     updateOutput();
   }
 
@@ -249,7 +249,7 @@ void HistoryOperator::postStep(const FieldMap &context) {
   if (not include_current_frame_) {
     auto it = context.find(source_id_);
     STEPIT_ASSERT(it != context.end(), "Field '{}' not found at runtime.", getFieldName(source_id_));
-    push(it->second);
+    push(it->second.get<float>());
     updateOutput();
   }
 }
@@ -284,7 +284,7 @@ void MaskedFillOperator::init() {
 }
 
 bool MaskedFillOperator::update(FieldMap &context) {
-  buffer_ = context.at(source_id_);
+  buffer_ = context.at(source_id_).get<float>();
   for (auto index : indices_) {
     buffer_[index] = value_;
   }
@@ -315,7 +315,7 @@ void SliceOperator::init() {
 }
 
 bool SliceOperator::update(FieldMap &context) {
-  const auto &source = context.at(source_id_);
+  const auto &source = context.at(source_id_).get<float>();
   for (std::size_t i{}; i < indices_.size(); ++i) {
     buffer_[static_cast<Eigen::Index>(i)] = source[indices_[i]];
   }
@@ -356,7 +356,7 @@ void SplitOperator::init() {
 }
 
 bool SplitOperator::update(FieldMap &context) {
-  splitFields(context.at(source_id_), target_ids_, context);
+  splitFields(context.at(source_id_).get<float>(), target_ids_, context);
   return true;
 }
 

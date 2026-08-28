@@ -50,8 +50,8 @@ ArrXf JointReordering::reorder(const ArrXf &in) {
 }
 
 bool JointReordering::update(const LowState &, ControlRequests &, FieldMap &context) {
-  context[joint_pos_id_] = reorder(context.at(joint_pos_id_));
-  context[joint_vel_id_] = reorder(context.at(joint_vel_id_));
+  context[joint_pos_id_] = reorder(context.at(joint_pos_id_).get<float>());
+  context[joint_vel_id_] = reorder(context.at(joint_vel_id_).get<float>());
   return true;
 }
 
@@ -98,7 +98,7 @@ ArrXf ActionReordering::reorder(const ArrXf &in) {
 }
 
 bool ActionReordering::update(const LowState &, ControlRequests &, FieldMap &context) {
-  context[action_id_] = reorder(context.at(action_id_));
+  context[action_id_] = reorder(context.at(action_id_).get<float>());
   return true;
 }
 

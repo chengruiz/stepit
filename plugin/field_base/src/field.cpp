@@ -2,6 +2,28 @@
 
 namespace stepit {
 namespace field {
+void *FieldValue::data() {
+  return std::visit([](auto &value) -> void * { return value.data(); }, storage_);
+}
+
+const void *FieldValue::data() const {
+  return std::visit([](const auto &value) -> const void * { return value.data(); }, storage_);
+}
+
+FieldSize FieldValue::size() const {
+  return std::visit([](const auto &value) { return static_cast<FieldSize>(value.size()); }, storage_);
+}
+
+DataType FieldValue::dataType() const {
+  return std::visit(
+      [](const auto &value) {
+        using Value  = typename std::decay<decltype(value)>::type;
+        using Scalar = typename Value::Scalar;
+        return DataTypeTrait<Scalar>::value;
+      },
+      storage_);
+}
+
 FieldId Node::registerRequirement(const std::string &field_name, DataType dtype, FieldSize field_size) {
   return registerRequirement(registerField(field_name, dtype, field_size));
 }
@@ -162,7 +184,7 @@ void stackField(cArrXf vec, uint32_t &offset, rArrXf result) {
 void concatFields(const FieldMap &context, const FieldIdVec &field_ids, rArrXf result) {
   uint32_t offset = 0;
   for (auto field_id : field_ids) {
-    stackField(context.at(field_id), offset, result);
+    stackField(context.at(field_id).get<float>(), offset, result);
   }
   STEPIT_ASSERT(offset == result.size(), "Concat field size ({}) does not match the result size ({}).", offset,
                 result.size());

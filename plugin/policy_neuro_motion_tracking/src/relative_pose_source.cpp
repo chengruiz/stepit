@@ -25,8 +25,8 @@ void RelativeOriSource::init() {
 }
 
 bool RelativeOriSource::update(const LowState &, ControlRequests &, FieldMap &context) {
-  Quatf current_ori(context.at(current_ori_id_));
-  const auto &target_ori_stack = context.at(target_ori_id_);
+  Quatf current_ori(context.at(current_ori_id_).get<float>());
+  const auto &target_ori_stack = context.at(target_ori_id_).get<float>();
 
   ArrXf relative_ori(4 * num_frames_);
   ArrXf relative_ori_6d(6 * num_frames_);
@@ -64,9 +64,9 @@ void RelativePosSource::init() {
 }
 
 bool RelativePosSource::update(const LowState &, ControlRequests &, FieldMap &context) {
-  Vec3f current_pos(context.at(current_pos_id_));
-  Quatf current_ori(context.at(current_ori_id_));
-  const auto &target_pos = context.at(target_pos_id_);
+  Vec3f current_pos(context.at(current_pos_id_).get<float>());
+  Quatf current_ori(context.at(current_ori_id_).get<float>());
+  const auto &target_pos = context.at(target_pos_id_).get<float>();
 
   ArrXf relative_pos(3 * num_frames_);
   for (std::size_t i{}; i < num_frames_; ++i) {
@@ -141,17 +141,20 @@ bool MotionAlignment::reset() {
 }
 
 bool MotionAlignment::update(const LowState &, ControlRequests &, FieldMap &context) {
-  Quatf current_ori(context.at(current_ori_id_));
-  const auto &target_ori = context.at(target_ori_id_);
+  Quatf current_ori(context.at(current_ori_id_).get<float>());
+  const auto &target_ori = context.at(target_ori_id_).get<float>();
 
-  Vec3f current_pos = current_pos_id_ == kInvalidFieldId ? Vec3f::Zero() : context.at(current_pos_id_);
+  Vec3f current_pos = current_pos_id_ == kInvalidFieldId
+                          ? Vec3f::Zero()
+                          : Vec3f(context.at(current_pos_id_).get<float>());
   ArrXf target_pos  = target_pos_id_ == kInvalidFieldId ? ArrXf::Zero(static_cast<Eigen::Index>(3 * num_frames_))
-                                                        : context.at(target_pos_id_);
+                                                        : ArrXf(context.at(target_pos_id_).get<float>());
 
-  const bool motion_restarted = static_cast<std::size_t>(context.at(motion_frame_index_id_)(0)) == 0;
+  const bool motion_restarted =
+      static_cast<std::size_t>(context.at(motion_frame_index_id_).get<float>()(0)) == 0;
   const auto alignment_trigger = context.find(alignment_trigger_id_);
   const bool alignment_triggered = alignment_trigger != context.end() and alignment_trigger->second.size() > 0 and
-                                   alignment_trigger->second(0) > 0.5F;
+                                   alignment_trigger->second.get<float>()(0) > 0.5F;
   if (motion_restarted or alignment_triggered) {
     Quatf reference_ori(target_ori.segment(4 * resolved_reference_index_, 4));
     Quatf current_yaw   = Quatf::fromYaw(current_ori.eulerAngles().z());

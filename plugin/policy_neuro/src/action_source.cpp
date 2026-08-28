@@ -35,7 +35,9 @@ bool ActionHistory::update(const LowState &low_state, ControlRequests &requests,
   return true;
 }
 
-void ActionHistory::postStep(const FieldMap &context) { action_buf_.push_back(context.at(action_id_)); }
+void ActionHistory::postStep(const FieldMap &context) {
+  action_buf_.push_back(context.at(action_id_).get<float>());
+}
 
 ActionFilter::ActionFilter(const NeuroPolicySpec &policy_spec, const ModuleSpec &module_spec)
     : Module(policy_spec, ModuleSpec(module_spec, "action_filter")) {
@@ -60,7 +62,7 @@ bool ActionFilter::reset() {
 }
 
 bool ActionFilter::update(const LowState &low_state, ControlRequests &requests, FieldMap &context) {
-  auto &action = context.at(action_id_);
+  auto &action = context.at(action_id_).get<float>();
   action_buf_.push_back(action);
   for (int i{1}; i < window_size_; ++i) {
     action += action_buf_.at(-i - 1, default_action_);
