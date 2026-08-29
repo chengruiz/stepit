@@ -1,5 +1,7 @@
 #include <stepit/field/field.h>
 
+#include <limits>
+
 namespace stepit {
 namespace field {
 namespace {
@@ -11,6 +13,32 @@ void validateFieldValue(FieldId field_id, const FieldValue &value, const FieldSp
   }
 }
 }  // namespace
+
+FieldValue::FieldValue(const FieldSpec &spec) {
+  STEPIT_ASSERT(spec.isResolved(), "Cannot allocate field storage with size {} and data type {}.", spec.size,
+                dataTypeName(spec.dtype));
+  STEPIT_ASSERT(spec.size <= static_cast<std::size_t>(std::numeric_limits<Eigen::Index>::max()),
+                "Field size {} exceeds the maximum Eigen index ({}).", spec.size,
+                std::numeric_limits<Eigen::Index>::max());
+
+  const auto size = static_cast<Eigen::Index>(spec.size);
+  switch (spec.dtype) {
+    case DataType::kUndefined:
+      break;
+    case DataType::kFloat32:
+      storage_.emplace<FieldArray<float>>(size);
+      break;
+    case DataType::kInt32:
+      storage_.emplace<FieldArray<std::int32_t>>(size);
+      break;
+    case DataType::kInt64:
+      storage_.emplace<FieldArray<std::int64_t>>(size);
+      break;
+    case DataType::kBool:
+      storage_.emplace<FieldArray<bool>>(size);
+      break;
+  }
+}
 
 void *FieldValue::data() {
   return std::visit([](auto &value) -> void * { return value.data(); }, storage_);
@@ -180,6 +208,13 @@ const FieldValue &readFieldValue(const FieldMap &context, FieldId field_id) {
   }
   validateFieldValue(field_id, it->second, getFieldSpec(field_id));
   return it->second;
+}
+
+FieldValue &writeFieldValue(FieldMap &context, FieldId field_id) {
+  const FieldSpec spec = getFieldSpec(field_id);
+  auto result          = context.try_emplace(field_id, spec);
+  validateFieldValue(field_id, result.first->second, spec);
+  return result.first->second;
 }
 
 void parseFieldIds(const yml::Node &node, FieldIdVec &context) {

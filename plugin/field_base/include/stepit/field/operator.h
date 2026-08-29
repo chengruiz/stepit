@@ -40,8 +40,8 @@ class ConcatOperator : public Operator {
  private:
   FieldIdVec source_ids_;
   FieldId target_id_{};
-  FieldSize target_size_{};
-  ArrXf buffer_;
+  std::vector<std::size_t> source_bytes_;
+  std::size_t target_bytes_{};
 };
 
 class ConstOperator : public Operator {

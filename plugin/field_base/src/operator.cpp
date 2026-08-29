@@ -1,3 +1,4 @@
+#include <cstring>
 #include <numeric>
 #include <set>
 
@@ -66,26 +67,42 @@ ConcatOperator::ConcatOperator(const yml::Node &config) {
   for (const auto &source_node : sources_node) {
     const auto source_name = source_node.as<std::string>();
     source_node.throwIf(source_name == target_name, "Concat target must not also be a source");
-    source_ids_.push_back(registerRequirement(source_name, DataType::kFloat32));
+    source_ids_.push_back(registerRequirement(source_name));
   }
   sources_node.require(not source_ids_.empty(), "'sources' must not be empty");
-  target_id_ = registerProvision(target_name, DataType::kFloat32);
+  target_id_ = registerProvision(target_name);
 }
 
 void ConcatOperator::init() {
-  if (target_size_ > 0) return;
-  FieldSize total_size = 0;
-  for (auto source_id : source_ids_) {
-    total_size += getFieldSize(source_id);
+  FieldSize target_size{};
+  DataType dtype{DataType::kUndefined};
+  source_bytes_.clear();
+  source_bytes_.reserve(source_ids_.size());
+  for (FieldId source_id : source_ids_) {
+    const FieldSpec source_spec = getFieldSpec(source_id);
+    if (dtype == DataType::kUndefined) {
+      dtype = source_spec.dtype;
+    } else {
+      STEPIT_ASSERT(dtype == source_spec.dtype, "Cannot concatenate fields '{}' and '{}' with data types {} and {}.",
+                    getFieldName(source_ids_.front()), getFieldName(source_id), dataTypeName(dtype),
+                    dataTypeName(source_spec.dtype));
+    }
+    target_size += source_spec.size;
+    source_bytes_.push_back(source_spec.byteSize());
   }
-  setFieldSpec(target_id_, FieldSpec{DataType::kFloat32, total_size});
-  target_size_ = total_size;
-  buffer_.resize(total_size);
+  const FieldSpec target_spec{dtype, target_size};
+  setFieldSpec(target_id_, target_spec);
+  target_bytes_ = target_spec.byteSize();
 }
 
 bool ConcatOperator::update(FieldMap &context) {
-  concatFields(context, source_ids_, buffer_);
-  context[target_id_] = buffer_;
+  auto *target       = static_cast<std::uint8_t *>(writeFieldValue(context, target_id_).data());
+  std::size_t offset = 0;
+  for (std::size_t i{}; i < source_ids_.size(); ++i) {
+    std::memcpy(target + offset, readFieldValue(context, source_ids_[i]).data(), source_bytes_[i]);
+    offset += source_bytes_[i];
+  }
+  STEPIT_ASSERT(offset == target_bytes_, "Concat copied {} bytes, expected {}.", offset, target_bytes_);
   return true;
 }
 

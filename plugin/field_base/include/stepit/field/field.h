@@ -29,10 +29,33 @@ using FieldIdVec = std::vector<FieldId>;
 template <typename T>
 using FieldArray = Eigen::Array<T, Eigen::Dynamic, 1>;
 
-/** Owning runtime value of a field. */
+/** Field metadata; zero size or `kUndefined` denotes an unresolved component. */
+struct FieldSpec {
+  /** Returns whether both size and data type are concrete and valid. */
+  bool isResolved() const { return size != 0 and dataTypeSize(dtype) != 0; }
+  /** Returns the number of bytes required by a fully resolved field. */
+  std::size_t byteSize() const {
+    STEPIT_ASSERT(isResolved(), "Cannot get the byte size of a field with data type '{}' and size {}.",
+                  dataTypeName(dtype), size);
+    return size * dataTypeSize(dtype);
+  }
+
+  DataType dtype{DataType::kUndefined};
+  FieldSize size{};
+};
+
+/**
+ * Owning runtime value of a registered field.
+ *
+ * A value stores exactly one supported scalar array. The default value is an
+ * empty float array so it can be used with standard associative containers.
+ */
 class FieldValue {
  public:
   FieldValue() = default;
+
+  /** Allocates storage described by a fully resolved field specification. */
+  explicit FieldValue(const FieldSpec &spec);
 
   /** Copies an Eigen row or column vector into owning field storage. */
   template <typename Derived>
@@ -97,14 +120,8 @@ class FieldValue {
   Storage storage_;
 };
 
-/** Runtime map from field ID to its current value. */
+/** Runtime map from field ID to the value available in the current context. */
 using FieldMap = std::map<FieldId, FieldValue>;
-
-/** Field metadata; zero size or `kUndefined` denotes an unresolved component. */
-struct FieldSpec {
-  DataType dtype{DataType::kUndefined};
-  FieldSize size{};
-};
 
 /** Sentinel value used to represent an invalid field ID. */
 constexpr FieldId kInvalidFieldId = static_cast<FieldId>(-1);
@@ -230,6 +247,8 @@ inline void setFieldSpec(FieldId id, const FieldSpec &spec) { fieldManager().set
 
 /** Returns a field present in the runtime context after validating its registered specification. */
 const FieldValue &readFieldValue(const FieldMap &context, FieldId field_id);
+/** Creates or validates a runtime value and returns it for writing. */
+FieldValue &writeFieldValue(FieldMap &context, FieldId field_id);
 
 /** Parses a YAML sequence of field names into a list of field IDs. */
 void parseFieldIds(const yml::Node &node, FieldIdVec &result);
