@@ -84,10 +84,10 @@ class FieldValue {
     return std::get<FieldArray<T>>(storage_);
   }
 
-  /** Returns mutable access to the contiguous scalar storage. */
-  void *data();
-  /** Returns read-only access to the contiguous scalar storage. */
-  const void *data() const;
+  /** Returns mutable byte access to the contiguous scalar storage. */
+  std::byte *data();
+  /** Returns read-only byte access to the contiguous scalar storage. */
+  const std::byte *data() const;
   /** Returns the number of stored scalars. */
   FieldSize size() const;
   /** Returns the stored scalar data type. */

@@ -40,12 +40,13 @@ FieldValue::FieldValue(const FieldSpec &spec) {
   }
 }
 
-void *FieldValue::data() {
-  return std::visit([](auto &value) -> void * { return value.data(); }, storage_);
+std::byte *FieldValue::data() {
+  return std::visit([](auto &value) { return reinterpret_cast<std::byte *>(value.data()); }, storage_);
 }
 
-const void *FieldValue::data() const {
-  return std::visit([](const auto &value) -> const void * { return value.data(); }, storage_);
+const std::byte *FieldValue::data() const {
+  return std::visit(
+      [](const auto &value) { return reinterpret_cast<const std::byte *>(value.data()); }, storage_);
 }
 
 FieldSize FieldValue::size() const {

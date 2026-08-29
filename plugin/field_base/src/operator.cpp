@@ -96,7 +96,7 @@ void ConcatOperator::init() {
 }
 
 bool ConcatOperator::update(FieldMap &context) {
-  auto *target       = static_cast<std::uint8_t *>(writeFieldValue(context, target_id_).data());
+  auto *target       = writeFieldValue(context, target_id_).data();
   std::size_t offset = 0;
   for (std::size_t i{}; i < source_ids_.size(); ++i) {
     std::memcpy(target + offset, readFieldValue(context, source_ids_[i]).data(), source_bytes_[i]);
