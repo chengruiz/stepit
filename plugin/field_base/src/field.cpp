@@ -202,6 +202,41 @@ FieldManager &FieldManager::instance() {
   return instance;
 }
 
+FieldValue parseFieldValue(const yml::Node &node, const FieldSpec &spec, bool allow_missing) {
+  STEPIT_ASSERT(spec.isResolved(), "Cannot parse a field value with data type '{}' and size {}.",
+                dataTypeName(spec.dtype), spec.size);
+  FieldValue result(spec);
+  switch (spec.dtype) {
+    case DataType::kUndefined:
+      STEPIT_UNREACHABLE();
+    case DataType::kFloat32: {
+      auto &value = result.get<float>();
+      if (allow_missing and not node.hasValue()) value.setZero();
+      node.to(value, allow_missing);
+      break;
+    }
+    case DataType::kInt32: {
+      auto &value = result.get<std::int32_t>();
+      if (allow_missing and not node.hasValue()) value.setZero();
+      node.to(value, allow_missing);
+      break;
+    }
+    case DataType::kInt64: {
+      auto &value = result.get<std::int64_t>();
+      if (allow_missing and not node.hasValue()) value.setZero();
+      node.to(value, allow_missing);
+      break;
+    }
+    case DataType::kBool: {
+      auto &value = result.get<bool>();
+      if (allow_missing and not node.hasValue()) value.setZero();
+      node.to(value, allow_missing);
+      break;
+    }
+  }
+  return result;
+}
+
 const FieldValue &readFieldValue(const FieldMap &context, FieldId field_id) {
   const auto it = context.find(field_id);
   if (it == context.end()) {
