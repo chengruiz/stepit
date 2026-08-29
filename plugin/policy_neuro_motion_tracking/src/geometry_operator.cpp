@@ -8,10 +8,6 @@ QuatRotateOperator::QuatRotateOperator(const yml::Node &config) {
   quat_id_   = registerRequirement(config["quaternion"].as<std::string>(), DataType::kFloat32);
   target_id_ = registerProvision(config["target"].as<std::string>(), DataType::kFloat32);
   inverse_   = config["inverse"].as<bool>(false);
-
-  try {
-    init();
-  } catch (const UndefinedFieldSizeError &) {}
 }
 
 void QuatRotateOperator::init() {
@@ -55,10 +51,6 @@ QuatRotateBetweenOperator::QuatRotateBetweenOperator(const yml::Node &config) {
   from_quat_id_ = registerRequirement(config["from_quaternion"].as<std::string>(), DataType::kFloat32);
   to_quat_id_   = registerRequirement(config["to_quaternion"].as<std::string>(), DataType::kFloat32);
   target_id_    = registerProvision(config["target"].as<std::string>(), DataType::kFloat32);
-
-  try {
-    init();
-  } catch (const UndefinedFieldSizeError &) {}
 }
 
 void QuatRotateBetweenOperator::init() {
@@ -110,10 +102,6 @@ QuatInverseOperator::QuatInverseOperator(const yml::Node &config) {
   config.assertHasValue("source", "target");
   source_id_ = registerRequirement(config["source"].as<std::string>(), DataType::kFloat32);
   target_id_ = registerProvision(config["target"].as<std::string>(), DataType::kFloat32);
-
-  try {
-    init();
-  } catch (const UndefinedFieldSizeError &) {}
 }
 
 void QuatInverseOperator::init() {
@@ -140,10 +128,6 @@ QuatToEulerOperator::QuatToEulerOperator(const yml::Node &config) {
   config.assertHasValue("source", "target");
   source_id_ = registerRequirement(config["source"].as<std::string>(), DataType::kFloat32);
   target_id_ = registerProvision(config["target"].as<std::string>(), DataType::kFloat32);
-
-  try {
-    init();
-  } catch (const UndefinedFieldSizeError &) {}
 }
 
 void QuatToEulerOperator::init() {
@@ -170,10 +154,6 @@ EulerToQuatOperator::EulerToQuatOperator(const yml::Node &config) {
   config.assertHasValue("source", "target");
   source_id_ = registerRequirement(config["source"].as<std::string>(), DataType::kFloat32);
   target_id_ = registerProvision(config["target"].as<std::string>(), DataType::kFloat32);
-
-  try {
-    init();
-  } catch (const UndefinedFieldSizeError &) {}
 }
 
 void EulerToQuatOperator::init() {
@@ -200,10 +180,6 @@ QuatToAngleAxisOperator::QuatToAngleAxisOperator(const yml::Node &config) {
   config.assertHasValue("source", "target");
   source_id_ = registerRequirement(config["source"].as<std::string>(), DataType::kFloat32);
   target_id_ = registerProvision(config["target"].as<std::string>(), DataType::kFloat32);
-
-  try {
-    init();
-  } catch (const UndefinedFieldSizeError &) {}
 }
 
 void QuatToAngleAxisOperator::init() {
@@ -231,10 +207,6 @@ QuatToRotation6dOperator::QuatToRotation6dOperator(const yml::Node &config) {
   source_id_ = registerRequirement(config["source"].as<std::string>(), DataType::kFloat32);
   target_id_ = registerProvision(config["target"].as<std::string>(), DataType::kFloat32);
   order_     = config["rotation_6d_order"].as(Rotation6dOrder::kRowMajor);
-
-  try {
-    init();
-  } catch (const UndefinedFieldSizeError &) {}
 }
 
 void QuatToRotation6dOperator::init() {

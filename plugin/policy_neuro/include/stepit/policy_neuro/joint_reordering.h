@@ -8,7 +8,7 @@ namespace neuro_policy {
 class JointReordering : public Module {
  public:
   JointReordering(const NeuroPolicySpec &policy_spec, const ModuleSpec &module_spec);
-  void init() override;
+  bool init() override;
   bool reset() override { return true; }
   bool update(const LowState &low_state, ControlRequests &, FieldMap &context) override;
 
@@ -23,7 +23,7 @@ class JointReordering : public Module {
 class ActionReordering : public Module {
  public:
   ActionReordering(const NeuroPolicySpec &policy_spec, const ModuleSpec &module_spec);
-  void init() override;
+  bool init() override;
   bool reset() override { return true; }
   bool update(const LowState &low_state, ControlRequests &, FieldMap &context) override;
 

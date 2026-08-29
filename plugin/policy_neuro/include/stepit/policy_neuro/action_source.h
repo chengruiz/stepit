@@ -9,7 +9,7 @@ namespace neuro_policy {
 class ActionHistory : public Module {
  public:
   ActionHistory(const NeuroPolicySpec &policy_spec, const ModuleSpec &module_spec);
-  void init() override;
+  bool init() override;
   bool reset() override;
   bool update(const LowState &low_state, ControlRequests &requests, FieldMap &context) override;
   void postStep(const FieldMap &context) override;
@@ -26,7 +26,7 @@ class ActionHistory : public Module {
 class ActionFilter : public Module {
  public:
   ActionFilter(const NeuroPolicySpec &policy_spec, const ModuleSpec &module_spec);
-  void init() override;
+  bool init() override;
   bool reset() override;
   bool update(const LowState &low_state, ControlRequests &requests, FieldMap &context) override;
 

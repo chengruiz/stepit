@@ -8,7 +8,7 @@ namespace neuro_policy {
 class RelativeOriSource : public Module {
  public:
   RelativeOriSource(const NeuroPolicySpec &, const ModuleSpec &module_spec);
-  void init() override;
+  bool init() override;
   bool update(const LowState &, ControlRequests &, FieldMap &context) override;
 
  protected:
@@ -25,7 +25,7 @@ class RelativeOriSource : public Module {
 class RelativePosSource : public Module {
  public:
   RelativePosSource(const NeuroPolicySpec &, const ModuleSpec &module_spec);
-  void init() override;
+  bool init() override;
   bool update(const LowState &, ControlRequests &, FieldMap &context) override;
 
  protected:
@@ -42,7 +42,7 @@ class RelativePosSource : public Module {
 class MotionAlignment : public Module {
  public:
   MotionAlignment(const NeuroPolicySpec &, const ModuleSpec &module_spec);
-  void init() override;
+  bool init() override;
   bool reset() override;
   bool update(const LowState &, ControlRequests &, FieldMap &context) override;
 

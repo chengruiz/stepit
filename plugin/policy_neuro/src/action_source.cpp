@@ -14,13 +14,14 @@ ActionHistory::ActionHistory(const NeuroPolicySpec &policy_spec, const ModuleSpe
   action_p2_id_   = registerProvision("action_p2", DataType::kFloat32);
 }
 
-void ActionHistory::init() {
+bool ActionHistory::init() {
   auto action_dim = getFieldSize(action_id_);
 
   populateArray(default_action_, action_dim);
   setFieldSpec(last_action_id_, FieldSpec{DataType::kFloat32, action_dim});
   setFieldSpec(action_p1_id_, FieldSpec{DataType::kFloat32, action_dim});
   setFieldSpec(action_p2_id_, FieldSpec{DataType::kFloat32, action_dim});
+  return true;
 }
 
 bool ActionHistory::reset() {
@@ -51,9 +52,10 @@ ActionFilter::ActionFilter(const NeuroPolicySpec &policy_spec, const ModuleSpec 
   action_id_ = registerRequirement("action", DataType::kFloat32);
 }
 
-void ActionFilter::init() {
+bool ActionFilter::init() {
   auto action_dim = getFieldSize(action_id_);
   populateArray(default_action_, action_dim);
+  return true;
 }
 
 bool ActionFilter::reset() {

@@ -7,6 +7,7 @@ namespace stepit {
 namespace field {
 class Operator : public Node, public Interface<Operator, const yml::Node & /* config */> {
  public:
+  /** Initializes field-dependent state and throws UndefinedFieldSpecError when an input specification is unresolved. */
   virtual void init() {}
   virtual bool reset() { return true; }
   virtual bool update(FieldMap &context) = 0;

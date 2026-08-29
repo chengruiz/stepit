@@ -33,7 +33,13 @@ struct ModuleSpec {
 class Module : public Node,
                public Interface<Module, const NeuroPolicySpec & /* policy_spec */, const ModuleSpec & /* name */> {
  public:
-  virtual void init() {}
+  /**
+   * Initializes field-dependent state owned by this module.
+   *
+   * Returns true when complete, or false after making partial progress. Throws
+   * UndefinedFieldSpecError when no progress can be made until another module resolves a field.
+   */
+  virtual bool init() { return true; }
   virtual bool reset() { return true; }
   virtual bool update(const LowState &low_state, ControlRequests &requests, FieldMap &context) = 0;
   virtual void postStep(const FieldMap &context) {}

@@ -1,3 +1,5 @@
+#include <exception>
+
 #include <stepit/policy_neuro/neuro_policy.h>
 
 namespace stepit {
@@ -64,7 +66,30 @@ NeuroPolicy::NeuroPolicy(const RobotSpec &robot_spec, const std::string &home_di
   }
   STEPIT_ASSERT(unavailable_fields_.empty() and unresolved_modules_.empty(), "Policy is not fully resolved.");
 
-  for (const auto &module : resolved_modules_) module->init();
+  std::vector<Module *> pending_modules;
+  pending_modules.reserve(resolved_modules_.size());
+  for (const auto &module : resolved_modules_) pending_modules.push_back(module.get());
+
+  while (not pending_modules.empty()) {
+    bool progressed = false;
+    std::exception_ptr first_error;
+
+    for (auto it = pending_modules.begin(); it != pending_modules.end();) {
+      try {
+        if ((*it)->init()) {
+          it = pending_modules.erase(it);
+        } else {
+          ++it;
+        }
+        progressed = true;
+      } catch (const UndefinedFieldSpecError &) {
+        if (not first_error) first_error = std::current_exception();
+        ++it;
+      }
+    }
+
+    if (not progressed) std::rethrow_exception(first_error);
+  }
   auto action_dim = getFieldSize(action_id_);
   action_.setZero(action_dim);
 

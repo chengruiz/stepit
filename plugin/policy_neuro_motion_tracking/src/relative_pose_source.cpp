@@ -15,13 +15,14 @@ RelativeOriSource::RelativeOriSource(const NeuroPolicySpec &policy_spec, const M
   relative_ori_6d_id_ = registerProvision("relative_ori_6d", DataType::kFloat32);
 }
 
-void RelativeOriSource::init() {
+bool RelativeOriSource::init() {
   auto target_ori_size = getFieldSize(target_ori_id_);
   STEPIT_ASSERT(target_ori_size > 0 and target_ori_size % 4 == 0, "Field '{}' must have size 4 * N, but got {}.",
                 target_ori_name_, target_ori_size);
   num_frames_ = target_ori_size / 4;
   setFieldSpec(relative_ori_id_, FieldSpec{DataType::kFloat32, static_cast<FieldSize>(4 * num_frames_)});
   setFieldSpec(relative_ori_6d_id_, FieldSpec{DataType::kFloat32, static_cast<FieldSize>(6 * num_frames_)});
+  return true;
 }
 
 bool RelativeOriSource::update(const LowState &, ControlRequests &, FieldMap &context) {
@@ -55,12 +56,13 @@ RelativePosSource::RelativePosSource(const NeuroPolicySpec &policy_spec, const M
   relative_pos_id_ = registerProvision("relative_pos", DataType::kFloat32);
 }
 
-void RelativePosSource::init() {
+bool RelativePosSource::init() {
   auto target_pos_size = getFieldSize(target_pos_id_);
   STEPIT_ASSERT(target_pos_size > 0 and target_pos_size % 3 == 0, "Field '{}' must have size 3 * N, but got {}.",
                 target_pos_name_, target_pos_size);
   num_frames_ = target_pos_size / 3;
   setFieldSpec(relative_pos_id_, FieldSpec{DataType::kFloat32, static_cast<FieldSize>(3 * num_frames_)});
+  return true;
 }
 
 bool RelativePosSource::update(const LowState &, ControlRequests &, FieldMap &context) {
@@ -110,28 +112,31 @@ MotionAlignment::MotionAlignment(const NeuroPolicySpec &policy_spec, const Modul
   aligned_target_pos_id_ = registerProvision("aligned_target_pos", DataType::kFloat32);
 }
 
-void MotionAlignment::init() {
+bool MotionAlignment::init() {
   auto target_ori_size = getFieldSize(target_ori_id_);
   STEPIT_ASSERT(target_ori_size > 0 and target_ori_size % 4 == 0, "Field '{}' must have size 4 * N, but got {}.",
                 target_ori_name_, target_ori_size);
-  num_frames_ = target_ori_size / 4;
-  STEPIT_ASSERT(reference_index_ >= -static_cast<int>(num_frames_) and reference_index_ < static_cast<int>(num_frames_),
-                "'reference_index'={} is out of range for {} frames. Expected [{}, {}).", reference_index_, num_frames_,
-                -static_cast<int>(num_frames_), static_cast<int>(num_frames_));
-  resolved_reference_index_ = reference_index_ >= 0 ? static_cast<std::size_t>(reference_index_)
-                                                    : num_frames_ + reference_index_;
-  setFieldSpec(aligned_target_ori_id_, FieldSpec{DataType::kFloat32, static_cast<FieldSize>(4 * num_frames_)});
+  const auto num_frames = target_ori_size / 4;
+  STEPIT_ASSERT(reference_index_ >= -static_cast<int>(num_frames) and reference_index_ < static_cast<int>(num_frames),
+                "'reference_index'={} is out of range for {} frames. Expected [{}, {}).", reference_index_, num_frames,
+                -static_cast<int>(num_frames), static_cast<int>(num_frames));
 
   if (target_pos_id_ != kInvalidFieldId) {
     auto target_pos_size = getFieldSize(target_pos_id_);
     STEPIT_ASSERT(target_pos_size > 0 and target_pos_size % 3 == 0, "Field '{}' must have size 3 * N, but got {}.",
                   target_pos_name_, target_pos_size);
     std::size_t target_pos_num_frames = target_pos_size / 3;
-    STEPIT_ASSERT(target_pos_num_frames == num_frames_,
-                  "Field '{}' must have {} frames to match '{}', but got {} frames.", target_pos_name_, num_frames_,
+    STEPIT_ASSERT(target_pos_num_frames == num_frames,
+                  "Field '{}' must have {} frames to match '{}', but got {} frames.", target_pos_name_, num_frames,
                   target_ori_name_, target_pos_num_frames);
   }
+
+  num_frames_ = num_frames;
+  resolved_reference_index_ = reference_index_ >= 0 ? static_cast<std::size_t>(reference_index_)
+                                                     : num_frames_ + reference_index_;
+  setFieldSpec(aligned_target_ori_id_, FieldSpec{DataType::kFloat32, static_cast<FieldSize>(4 * num_frames_)});
   setFieldSpec(aligned_target_pos_id_, FieldSpec{DataType::kFloat32, static_cast<FieldSize>(3 * num_frames_)});
+  return true;
 }
 
 bool MotionAlignment::reset() {

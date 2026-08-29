@@ -1,3 +1,6 @@
+#include <algorithm>
+#include <exception>
+
 #include <stepit/policy_neuro/field_ops.h>
 
 namespace stepit {
@@ -16,12 +19,32 @@ FieldOps::FieldOps(const NeuroPolicySpec &policy_spec, const ModuleSpec &module_
     for (auto field_id : operation->provisions()) registerProvision(field_id);
     operations_.push_back(std::move(operation));
   }
+  operation_fields_resolved_.resize(operations_.size(), false);
 }
 
-void FieldOps::init() {
-  for (auto &operation : operations_) {
-    operation->init();
+bool FieldOps::init() {
+  bool progressed = false;
+  std::exception_ptr first_error;
+
+  for (std::size_t i{}; i < operations_.size(); ++i) {
+    if (operation_fields_resolved_[i]) continue;
+
+    try {
+      operations_[i]->init();
+      operation_fields_resolved_[i] = true;
+      progressed                    = true;
+    } catch (const UndefinedFieldSpecError &) {
+      if (not first_error) first_error = std::current_exception();
+    }
   }
+
+  if (std::all_of(operation_fields_resolved_.begin(), operation_fields_resolved_.end(),
+                  [](bool resolved) { return resolved; })) {
+    return true;
+  }
+  if (progressed) return false;
+
+  std::rethrow_exception(first_error);
 }
 
 bool FieldOps::reset() {

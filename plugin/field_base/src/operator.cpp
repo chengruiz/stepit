@@ -21,10 +21,6 @@ AffineOperator::AffineOperator(const yml::Node &config) : node_(config) {
 
   config.assertMutuallyExclusive({"scale", "std"});
   config.assertMutuallyExclusive({"bias", "mean"});
-
-  try {
-    init();
-  } catch (const UndefinedFieldSizeError &) {}
 }
 
 void AffineOperator::init() {
@@ -74,10 +70,6 @@ ConcatOperator::ConcatOperator(const yml::Node &config) {
   }
   sources_node.require(not source_ids_.empty(), "'sources' must not be empty");
   target_id_ = registerProvision(target_name, DataType::kFloat32);
-
-  try {
-    init();
-  } catch (const UndefinedFieldSizeError &) {}
 }
 
 void ConcatOperator::init() {
@@ -137,10 +129,6 @@ CopyOperator::CopyOperator(const yml::Node &config) {
   config.throwIf(source_name == target_name, "'source' and 'target' must not be the same");
   source_id_ = registerRequirement(source_name, DataType::kFloat32);
   target_id_ = registerProvision(target_name, DataType::kFloat32);
-
-  try {
-    init();
-  } catch (const UndefinedFieldSizeError &) {}
 }
 
 void CopyOperator::init() {
@@ -179,11 +167,6 @@ HistoryOperator::HistoryOperator(const yml::Node &config) {
     registerRequirement(source_id_);
   }  // otherwise, skip requirement registration since the field is not needed at update time
   target_id_ = registerProvision(target_name, DataType::kFloat32);
-
-  try {
-    source_size_ = getFieldSize(source_id_);
-  } catch (const UndefinedFieldSizeError &) {}
-  if (source_size_ > 0) init();
 }
 
 void HistoryOperator::init() {
@@ -269,10 +252,6 @@ MaskedFillOperator::MaskedFillOperator(const yml::Node &config) {
   }
   config.to(indices_);
   config["value"].to(value_, true);
-
-  try {
-    init();
-  } catch (const UndefinedFieldSizeError &) {}
 }
 
 void MaskedFillOperator::init() {
@@ -301,10 +280,6 @@ SliceOperator::SliceOperator(const yml::Node &config) {
   source_id_ = registerRequirement(source_name, DataType::kFloat32);
   target_id_ = registerProvision(target_name, DataType::kFloat32);
   config.to(indices_);
-
-  try {
-    init();
-  } catch (const UndefinedFieldSizeError &) {}
 }
 
 void SliceOperator::init() {
