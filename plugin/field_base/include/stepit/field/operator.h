@@ -120,7 +120,8 @@ class SliceOperator : public Operator {
   FieldId source_id_{};
   FieldId target_id_{};
   yml::Indices indices_;
-  ArrXf buffer_;
+  std::size_t element_size_{};
+  std::size_t source_bytes_{};
 };
 
 class SplitOperator : public Operator {
@@ -134,6 +135,8 @@ class SplitOperator : public Operator {
   FieldId source_id_{};
   FieldIdVec target_ids_;
   std::vector<FieldSize> segment_sizes_;
+  std::vector<std::size_t> segment_bytes_;
+  std::size_t source_bytes_{};
 };
 }  // namespace field
 }  // namespace stepit

@@ -1,5 +1,4 @@
 #include <cstring>
-#include <numeric>
 #include <set>
 
 #include <stepit/field/operator.h>
@@ -8,16 +7,14 @@ namespace stepit {
 namespace field {
 AffineOperator::AffineOperator(const yml::Node &config) : node_(config) {
   if (config["field"].hasValue()) {
-    auto field_name = config["field"].as<std::string>();
-    source_id_      = registerRequirement(field_name, DataType::kFloat32);
-    target_id_      = source_id_;
+    const auto field_name = config["field"].as<std::string>();
+    source_id_            = registerRequirement(field_name, DataType::kFloat32);
+    target_id_            = source_id_;
   } else {
     config.require(config["source"].hasValue() and config["target"].hasValue(),
                    "Specify 'field' or both 'source' and 'target' for 'affine' operator");
-    auto source_name = config["source"].as<std::string>();
-    auto target_name = config["target"].as<std::string>();
-    source_id_       = registerRequirement(source_name, DataType::kFloat32);
-    target_id_       = registerProvision(target_name, DataType::kFloat32);
+    source_id_ = registerRequirement(config["source"].as<std::string>(), DataType::kFloat32);
+    target_id_ = registerProvision(config["target"].as<std::string>(), DataType::kFloat32);
   }
 
   config.assertMutuallyExclusive({"scale", "std"});
@@ -25,14 +22,14 @@ AffineOperator::AffineOperator(const yml::Node &config) : node_(config) {
 }
 
 void AffineOperator::init() {
-  if (field_size_ > 0) return;
-  field_size_ = getFieldSize(source_id_);
-  setFieldSpec(target_id_, FieldSpec{DataType::kFloat32, field_size_});
-  scale_ = ArrXf::Ones(field_size_);
-  bias_  = ArrXf::Zero(field_size_);
+  const FieldSpec source_spec = getFieldSpec(source_id_);
+  setFieldSpec(target_id_, source_spec);
+  field_size_ = source_spec.size;
+  scale_      = ArrXf::Ones(field_size_);
+  bias_       = ArrXf::Zero(field_size_);
 
-  auto scale_node = node_["scale"];
-  auto std_node   = node_["std"];
+  const auto scale_node = node_["scale"];
+  const auto std_node   = node_["std"];
   if (scale_node.hasValue()) {
     scale_node.to(scale_);
   } else if (std_node.hasValue()) {
@@ -42,8 +39,8 @@ void AffineOperator::init() {
     scale_ = std.cwiseInverse();
   }
 
-  auto bias_node = node_["bias"];
-  auto mean_node = node_["mean"];
+  const auto bias_node = node_["bias"];
+  const auto mean_node = node_["mean"];
   if (bias_node.hasValue()) {
     bias_node.to(bias_);
   } else if (mean_node.hasValue()) {
@@ -54,8 +51,8 @@ void AffineOperator::init() {
 }
 
 bool AffineOperator::update(FieldMap &context) {
-  auto transformed    = context.at(source_id_).get<float>().cwiseProduct(scale_) + bias_;
-  context[target_id_] = std::move(transformed);
+  ArrXf transformed   = readFieldValue(context, source_id_).get<float>().cwiseProduct(scale_) + bias_;
+  context[target_id_] = transformed;
   return true;
 }
 
@@ -252,34 +249,30 @@ void HistoryOperator::postStep(const FieldMap &context) {
 
 MaskedFillOperator::MaskedFillOperator(const yml::Node &config) {
   if (config["field"].hasValue()) {
-    auto field_name = config["field"].as<std::string>();
-    source_id_      = registerRequirement(field_name, DataType::kFloat32);
-    target_id_      = source_id_;
+    const auto field_name = config["field"].as<std::string>();
+    source_id_            = registerRequirement(field_name, DataType::kFloat32);
+    target_id_            = source_id_;
   } else {
     config.require(config["source"].hasValue() and config["target"].hasValue(),
                    "Specify 'field' or both 'source' and 'target' for 'masked_fill' operator");
-    auto source_name = config["source"].as<std::string>();
-    auto target_name = config["target"].as<std::string>();
-    source_id_       = registerRequirement(source_name, DataType::kFloat32);
-    target_id_       = registerProvision(target_name, DataType::kFloat32);
+    source_id_ = registerRequirement(config["source"].as<std::string>(), DataType::kFloat32);
+    target_id_ = registerProvision(config["target"].as<std::string>(), DataType::kFloat32);
   }
   config.to(indices_);
   config["value"].to(value_, true);
 }
 
 void MaskedFillOperator::init() {
-  if (field_size_ > 0) return;
-  field_size_ = getFieldSize(source_id_);
+  const FieldSpec source_spec = getFieldSpec(source_id_);
+  setFieldSpec(target_id_, source_spec);
+  field_size_ = source_spec.size;
   indices_.canonicalize(field_size_);
-  setFieldSpec(target_id_, FieldSpec{DataType::kFloat32, field_size_});
   buffer_.resize(field_size_);
 }
 
 bool MaskedFillOperator::update(FieldMap &context) {
-  buffer_ = context.at(source_id_).get<float>();
-  for (auto index : indices_) {
-    buffer_[index] = value_;
-  }
+  buffer_ = readFieldValue(context, source_id_).get<float>();
+  for (auto index : indices_) buffer_[index] = value_;
   context[target_id_] = buffer_;
   return true;
 }
@@ -290,36 +283,40 @@ SliceOperator::SliceOperator(const yml::Node &config) {
   const auto source_name = config["source"].as<std::string>();
   const auto target_name = config["target"].as<std::string>();
   config.throwIf(source_name == target_name, "'source' and 'target' must not be the same");
-  source_id_ = registerRequirement(source_name, DataType::kFloat32);
-  target_id_ = registerProvision(target_name, DataType::kFloat32);
+  source_id_ = registerRequirement(source_name);
+  target_id_ = registerProvision(target_name);
   config.to(indices_);
 }
 
 void SliceOperator::init() {
-  auto source_size = getFieldSize(source_id_);
-  indices_.canonicalize(source_size);
-  setFieldSpec(target_id_, FieldSpec{DataType::kFloat32, indices_.size()});
-  buffer_.resize(getFieldSize(target_id_));
+  const FieldSpec source_spec = getFieldSpec(source_id_);
+  indices_.canonicalize(source_spec.size);
+  setFieldSpec(target_id_, FieldSpec{source_spec.dtype, indices_.size()});
+  element_size_ = dataTypeSize(source_spec.dtype);
+  source_bytes_ = source_spec.byteSize();
 }
 
 bool SliceOperator::update(FieldMap &context) {
-  const auto &source = context.at(source_id_).get<float>();
+  const auto *source = readFieldValue(context, source_id_).data();
+  auto *target       = writeFieldValue(context, target_id_).data();
   for (std::size_t i{}; i < indices_.size(); ++i) {
-    buffer_[static_cast<Eigen::Index>(i)] = source[indices_[i]];
+    const std::size_t source_offset = indices_[i] * element_size_;
+    STEPIT_ASSERT(source_offset + element_size_ <= source_bytes_, "Slice source byte range [{}..{}) exceeds {}.",
+                  source_offset, source_offset + element_size_, source_bytes_);
+    std::memcpy(target + i * element_size_, source + source_offset, element_size_);
   }
-  context[target_id_] = buffer_;
   return true;
 }
 
 SplitOperator::SplitOperator(const yml::Node &config) {
   config.assertHasValue("source", "targets");
   const auto source_name = config["source"].as<std::string>();
-  source_id_             = registerRequirement(source_name, DataType::kFloat32);
+  source_id_             = registerRequirement(source_name);
 
   const auto targets_node = config["targets"];
   targets_node.assertSequence();
   std::set<std::string> target_names;
-  FieldSize total_size{};
+  std::size_t total_size{};
   for (const auto &target_node : targets_node) {
     target_node.assertMap();
     const auto name = target_node["name"].as<std::string>();
@@ -327,23 +324,38 @@ SplitOperator::SplitOperator(const yml::Node &config) {
     target_node["size"].require(size > 0, "Split target size must be greater than 0");
     target_node.throwIf(name == source_name, "Split target must not be the same as its source");
     target_node.throwIf(not target_names.insert(name).second, fmt::format("Duplicate split target '{}'", name));
-    target_ids_.push_back(registerProvision(name, DataType::kFloat32, size));
+    target_ids_.push_back(registerProvision(name, DataType::kUndefined, size));
     segment_sizes_.push_back(size);
     total_size += size;
   }
   targets_node.require(not target_ids_.empty(), "'targets' must not be empty");
-  registerField(source_name, DataType::kFloat32, total_size);
+  registerField(source_name, DataType::kUndefined, total_size);
 }
 
 void SplitOperator::init() {
-  const auto source_size = getFieldSize(source_id_);
-  const auto total_size = std::accumulate(segment_sizes_.begin(), segment_sizes_.end(), std::size_t{0});
-  STEPIT_ASSERT(total_size == source_size, "Split sizes ({}) do not match source size ({}) for '{}'.", total_size,
-                source_size, getFieldName(source_id_));
+  const FieldSpec source_spec = getFieldSpec(source_id_);
+  std::size_t total_size{};
+  segment_bytes_.clear();
+  segment_bytes_.reserve(segment_sizes_.size());
+  for (std::size_t i{}; i < segment_sizes_.size(); ++i) {
+    total_size += segment_sizes_[i];
+    const FieldSpec target_spec{source_spec.dtype, segment_sizes_[i]};
+    setFieldSpec(target_ids_[i], target_spec);
+    segment_bytes_.push_back(target_spec.byteSize());
+  }
+  STEPIT_ASSERT(total_size == source_spec.size, "Split sizes ({}) do not match source size ({}) for '{}'.", total_size,
+                source_spec.size, getFieldName(source_id_));
+  source_bytes_ = source_spec.byteSize();
 }
 
 bool SplitOperator::update(FieldMap &context) {
-  splitFields(context.at(source_id_).get<float>(), target_ids_, context);
+  const auto *source = readFieldValue(context, source_id_).data();
+  std::size_t offset = 0;
+  for (std::size_t i{}; i < target_ids_.size(); ++i) {
+    std::memcpy(writeFieldValue(context, target_ids_[i]).data(), source + offset, segment_bytes_[i]);
+    offset += segment_bytes_[i];
+  }
+  STEPIT_ASSERT(offset == source_bytes_, "Split copied {} bytes, expected {}.", offset, source_bytes_);
   return true;
 }
 
