@@ -59,7 +59,7 @@ bool AffineOperator::update(FieldMap &context) {
 ConcatOperator::ConcatOperator(const yml::Node &config) {
   config.assertHasValue("sources", "target");
   const auto target_name = config["target"].as<std::string>();
-  auto sources_node      = config["sources"];
+  const auto sources_node = config["sources"];
   sources_node.assertSequence();
   for (const auto &source_node : sources_node) {
     const auto source_name = source_node.as<std::string>();
@@ -106,12 +106,12 @@ bool ConcatOperator::update(FieldMap &context) {
 ConstOperator::ConstOperator(const yml::Node &config) {
   config.require(config["target"].hasValue() or config["field"].hasValue(),
                  "Specify 'target' or 'field' for 'const' operator");
-  auto target_name = config["target"].hasValue() ? config["target"].as<std::string>()
-                                                 : config["field"].as<std::string>();
+  const auto target_name = config["target"].hasValue() ? config["target"].as<std::string>()
+                                                       : config["field"].as<std::string>();
 
-  auto value_node = config["value"];
-  value_node
-      .require(value_node.isScalar() or value_node.isNonEmptySequence(), "Expected a scalar or a non-empty sequence");
+  const auto value_node = config["value"];
+  value_node.require(value_node.isScalar() or value_node.isNonEmptySequence(),
+                     "Expected a scalar or a non-empty sequence");
 
   FieldSize size{};
   if (value_node.isScalar()) {
@@ -138,8 +138,8 @@ bool ConstOperator::update(FieldMap &context) {
 
 CopyOperator::CopyOperator(const yml::Node &config) {
   config.assertHasValue("source", "target");
-  auto source_name = config["source"].as<std::string>();
-  auto target_name = config["target"].as<std::string>();
+  const auto source_name = config["source"].as<std::string>();
+  const auto target_name = config["target"].as<std::string>();
   config.throwIf(source_name == target_name, "'source' and 'target' must not be the same");
   source_id_ = registerRequirement(source_name);
   target_id_ = registerProvision(target_name);
@@ -154,9 +154,9 @@ bool CopyOperator::update(FieldMap &context) {
 
 HistoryOperator::HistoryOperator(const yml::Node &config) {
   config.assertHasValue("source", "target");
-  auto source_name = config["source"].as<std::string>();
-  auto target_name = config["target"].as<std::string>();
-  source_size_     = config["source_size"].as<FieldSize>(0);
+  const auto source_name = config["source"].as<std::string>();
+  const auto target_name = config["target"].as<std::string>();
+  source_size_           = config["source_size"].as<FieldSize>(0);
   if (config["source_size"].hasValue()) {
     config["source_size"].require(source_size_ > 0, "'source_size' must be greater than 0");
   }

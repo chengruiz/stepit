@@ -9,8 +9,11 @@ class Operator : public Node, public Interface<Operator, const yml::Node & /* co
  public:
   /** Initializes field-dependent state and throws UndefinedFieldSpecError when an input specification is unresolved. */
   virtual void init() {}
+  /** Clears persistent state before a policy run. */
   virtual bool reset() { return true; }
+  /** Reads input fields and writes output fields for the current step. */
   virtual bool update(FieldMap &context) = 0;
+  /** Updates delayed state after all modules have completed the current step. */
   virtual void postStep(const FieldMap &context) {}
 };
 

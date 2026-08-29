@@ -116,14 +116,14 @@ FieldId FieldManager::registerField(const std::string &name, DataType dtype, Fie
   std::lock_guard<std::recursive_mutex> lock(mutex_);
   auto it = name_to_id_.find(name);
   if (it == name_to_id_.end()) {  // If not registered
-    auto id           = next_id_++;
-    name_to_id_[name] = id;
+    const FieldId id   = next_id_++;
+    name_to_id_[name]  = id;
     id_to_name_.push_back(name);
     id_to_spec_.push_back(FieldSpec{dtype, size});
     return id;
   }
 
-  auto id = it->second;
+  const FieldId id = it->second;
   setFieldSpec(id, FieldSpec{dtype, size});
   return id;
 }
@@ -158,7 +158,7 @@ FieldSpec FieldManager::getFieldSpec(FieldId id) const {
 FieldSize FieldManager::getFieldSize(FieldId id) const {
   std::lock_guard<std::recursive_mutex> lock(mutex_);
   if (id >= next_id_) throw InvalidFieldIdError(id);
-  FieldSize size = id_to_spec_[id].size;
+  const FieldSize size = id_to_spec_[id].size;
   if (size == 0) throw UndefinedFieldSizeError(id);
   return size;
 }
@@ -166,7 +166,7 @@ FieldSize FieldManager::getFieldSize(FieldId id) const {
 DataType FieldManager::getFieldDataType(FieldId id) const {
   std::lock_guard<std::recursive_mutex> lock(mutex_);
   if (id >= next_id_) throw InvalidFieldIdError(id);
-  DataType dtype = id_to_spec_[id].dtype;
+  const DataType dtype = id_to_spec_[id].dtype;
   if (dtype == DataType::kUndefined) throw UndefinedFieldDataTypeError(id);
   return dtype;
 }
@@ -191,6 +191,7 @@ void FieldManager::setFieldSpec(FieldId id, const FieldSpec &spec) {
     STEPIT_DBUGNT("Size of field '{}' set to {}.", getFieldName(id), spec.size);
     registered.size = spec.size;
   }
+
   if (spec.dtype != DataType::kUndefined and registered.dtype == DataType::kUndefined) {
     STEPIT_DBUGNT("Data type of field '{}' set to {}.", getFieldName(id), dataTypeName(spec.dtype));
     registered.dtype = spec.dtype;
@@ -253,13 +254,9 @@ FieldValue &ensureFieldValue(FieldMap &context, FieldId field_id) {
   return result.first->second;
 }
 
-void parseFieldIds(const yml::Node &node, FieldIdVec &context) {
+void parseFieldIds(const yml::Node &node, FieldIdVec &result) {
   node.assertSequence();
-  for (const auto &item : node) {
-    auto name  = item.as<std::string>();
-    FieldId id = getFieldId(name);
-    context.push_back(id);
-  }
+  for (const auto &item : node) result.push_back(getFieldId(item.as<std::string>()));
 }
 
 void stackField(cArrXf vec, FieldSize &offset, rArrXf result) {

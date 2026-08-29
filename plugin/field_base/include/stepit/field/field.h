@@ -7,6 +7,7 @@
 #include <mutex>
 #include <set>
 #include <stdexcept>
+#include <string>
 #include <type_traits>
 #include <utility>
 #include <variant>
@@ -88,9 +89,9 @@ class FieldValue {
   std::byte *data();
   /** Returns read-only byte access to the contiguous scalar storage. */
   const std::byte *data() const;
-  /** Returns the number of stored scalars. */
+  /** Returns the scalar length of this value. */
   FieldSize size() const;
-  /** Returns the stored scalar data type. */
+  /** Returns the scalar data type of this value. */
   DataType dataType() const;
 
  private:
