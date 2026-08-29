@@ -93,7 +93,7 @@ void ConcatOperator::init() {
 }
 
 bool ConcatOperator::update(FieldMap &context) {
-  auto *target       = writeFieldValue(context, target_id_).data();
+  auto *target       = ensureFieldValue(context, target_id_).data();
   std::size_t offset = 0;
   for (std::size_t i{}; i < source_ids_.size(); ++i) {
     std::memcpy(target + offset, readFieldValue(context, source_ids_[i]).data(), source_bytes_[i]);
@@ -298,7 +298,7 @@ void SliceOperator::init() {
 
 bool SliceOperator::update(FieldMap &context) {
   const auto *source = readFieldValue(context, source_id_).data();
-  auto *target       = writeFieldValue(context, target_id_).data();
+  auto *target       = ensureFieldValue(context, target_id_).data();
   for (std::size_t i{}; i < indices_.size(); ++i) {
     const std::size_t source_offset = indices_[i] * element_size_;
     STEPIT_ASSERT(source_offset + element_size_ <= source_bytes_, "Slice source byte range [{}..{}) exceeds {}.",
@@ -352,7 +352,7 @@ bool SplitOperator::update(FieldMap &context) {
   const auto *source = readFieldValue(context, source_id_).data();
   std::size_t offset = 0;
   for (std::size_t i{}; i < target_ids_.size(); ++i) {
-    std::memcpy(writeFieldValue(context, target_ids_[i]).data(), source + offset, segment_bytes_[i]);
+    std::memcpy(ensureFieldValue(context, target_ids_[i]).data(), source + offset, segment_bytes_[i]);
     offset += segment_bytes_[i];
   }
   STEPIT_ASSERT(offset == source_bytes_, "Split copied {} bytes, expected {}.", offset, source_bytes_);

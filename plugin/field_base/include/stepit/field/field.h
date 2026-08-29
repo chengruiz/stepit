@@ -247,8 +247,8 @@ inline void setFieldSpec(FieldId id, const FieldSpec &spec) { fieldManager().set
 
 /** Returns a field present in the runtime context after validating its registered specification. */
 const FieldValue &readFieldValue(const FieldMap &context, FieldId field_id);
-/** Creates or validates a runtime value and returns it for writing. */
-FieldValue &writeFieldValue(FieldMap &context, FieldId field_id);
+/** Ensures that a correctly specified runtime value exists and returns it. */
+FieldValue &ensureFieldValue(FieldMap &context, FieldId field_id);
 
 /** Parses a YAML sequence of field names into a list of field IDs. */
 void parseFieldIds(const yml::Node &node, FieldIdVec &result);

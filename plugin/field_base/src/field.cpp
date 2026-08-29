@@ -211,7 +211,7 @@ const FieldValue &readFieldValue(const FieldMap &context, FieldId field_id) {
   return it->second;
 }
 
-FieldValue &writeFieldValue(FieldMap &context, FieldId field_id) {
+FieldValue &ensureFieldValue(FieldMap &context, FieldId field_id) {
   const FieldSpec spec = getFieldSpec(field_id);
   auto result          = context.try_emplace(field_id, spec);
   validateFieldValue(field_id, result.first->second, spec);
