@@ -25,6 +25,9 @@ StepIt plugin providing foundational field registry, generic field operators and
   | `slice`       | Extracts selected indices/ranges from a source field into a target field.   |
   | `split`       | Splits one source field into multiple target fields by configured segments. |
 
+`copy`, `concat`, `history`, `slice`, and `split` preserve the source scalar type; all `concat` sources must use the
+same type. `affine`, `const`, and `masked_fill` operate on `float32` fields.
+
 ### Executables
 
 - `data_info`: prints key/shape/dtype summary for arrays loaded through `stepit::field::DataLoader`.

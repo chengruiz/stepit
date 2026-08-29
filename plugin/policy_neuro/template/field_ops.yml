@@ -80,7 +80,7 @@ operators:
     # -----------------------------------------
     newest_first: true           # [Optional] Bool, newest frame at beginning when true
     include_current_frame: true  # [Optional] Bool, include current frame in output when true
-    default_value: 0.0           # [Optional] Union[Null, Float, List[Float]], used for initial history fill
+    default_value: 0.0           # [Optional] Union[Null, Scalar, List[Scalar]], using the source field's dtype
                                  #   If Null, fill with the first observed value.
 
   - type: split                  # Literal["split"]

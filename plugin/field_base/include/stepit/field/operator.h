@@ -77,8 +77,8 @@ class HistoryOperator : public Operator {
   void postStep(const FieldMap &context) override;
 
  private:
-  void push(const ArrXf &frame);
-  void updateOutput();
+  void push(const FieldValue &frame);
+  void render(std::byte *target) const;
 
   FieldId source_id_{};
   FieldId target_id_{};
@@ -88,9 +88,11 @@ class HistoryOperator : public Operator {
   yml::Indices indices_;
   bool newest_first_{true};
   bool include_current_frame_{true};
-  ArrXf default_value_;
-  RingBuffer<ArrXf> history_;
-  ArrXf output_;
+  bool has_default_value_{true};
+  yml::Node default_value_node_;
+  std::size_t source_bytes_{};
+  FieldValue default_value_;
+  RingBuffer<FieldValue> history_;
 };
 
 class MaskedFillOperator : public Operator {

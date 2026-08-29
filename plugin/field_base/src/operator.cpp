@@ -166,47 +166,45 @@ HistoryOperator::HistoryOperator(const yml::Node &config) {
   newest_first_          = config["newest_first"].as<bool>(true);
   include_current_frame_ = config["include_current_frame"].as<bool>(true);
   config.throwIf(source_name == target_name, "'source' and 'target' must not be the same");
-  if (config["default_value"].isDefined()) {
-    if (config["default_value"].hasValue()) config["default_value"].to(default_value_);
-  } else {  // Fill with zeros by default if not provided
-    default_value_ = ArrXf::Zero(1);
-  }
 
-  source_id_ = registerField(source_name, DataType::kFloat32, source_size_);
-  if (include_current_frame_ or default_value_.size() == 0) {
-    registerRequirement(source_id_);
-  }  // otherwise, skip requirement registration since the field is not needed at update time
-  target_id_ = registerProvision(target_name, DataType::kFloat32);
+  default_value_node_ = config["default_value"];
+  if (default_value_node_.isDefined()) {
+    default_value_node_.require(
+        not default_value_node_.hasValue() or default_value_node_.isScalar() or default_value_node_.isSequence(),
+        "Expected 'default_value' to be a scalar, sequence, or null");
+  }
+  has_default_value_ = not default_value_node_.isDefined() or
+                       (default_value_node_.hasValue() and
+                        (not default_value_node_.isSequence() or default_value_node_.size() > 0));
+
+  source_id_ = registerField(source_name, DataType::kUndefined, source_size_);
+  if (include_current_frame_ or not has_default_value_) registerRequirement(source_id_);
+  target_id_ = registerProvision(target_name);
 }
 
 void HistoryOperator::init() {
-  if (target_size_ > 0) return;
-  source_size_ = getFieldSize(source_id_);
+  const FieldSpec source_spec = getFieldSpec(source_id_);
   indices_.canonicalize(history_len_);
+  source_size_ = source_spec.size;
   target_size_ = source_size_ * indices_.size();
-  setFieldSpec(target_id_, FieldSpec{DataType::kFloat32, target_size_});
+  setFieldSpec(target_id_, FieldSpec{source_spec.dtype, target_size_});
 
-  if (default_value_.size() == 1) {
-    default_value_ = VecXf::Constant(source_size_, default_value_[0]);
-  } else if (default_value_.size() != 0) {
-    STEPIT_ASSERT(default_value_.size() == source_size_,
-                  "Default value size of history op does not match the source field size.");
+  source_bytes_ = source_spec.byteSize();
+  if (has_default_value_) {
+    const yml::Node value_node =
+        default_value_node_.isSequence(1) ? default_value_node_[0] : default_value_node_;
+    default_value_ = parseFieldValue(value_node, source_spec, true);
   }
-
   history_.allocate(history_len_);
-  output_.resize(target_size_);
 }
 
 bool HistoryOperator::reset() {
   history_.clear();
-  if (default_value_.size() > 0) {
-    history_.fill(default_value_);
-    updateOutput();
-  }
+  if (has_default_value_) history_.fill(default_value_);
   return true;
 }
 
-void HistoryOperator::push(const ArrXf &frame) {
+void HistoryOperator::push(const FieldValue &frame) {
   if (newest_first_) {
     history_.push_front(frame);
   } else {
@@ -214,37 +212,34 @@ void HistoryOperator::push(const ArrXf &frame) {
   }
 }
 
-void HistoryOperator::updateOutput() {
-  FieldSize offset = 0;
+void HistoryOperator::render(std::byte *target) const {
+  auto *output       = target;
+  std::size_t offset = 0;
   for (auto index : indices_) {
-    stackField(history_[index], offset, output_);
+    const auto &frame = history_[index];
+    STEPIT_ASSERT(frame.size() == source_size_ and
+                      frame.dataType() == getFieldDataType(source_id_),
+                  "History frame specification does not match source field '{}'.", getFieldName(source_id_));
+    std::memcpy(output + offset, frame.data(), source_bytes_);
+    offset += source_bytes_;
   }
-  STEPIT_ASSERT(offset == output_.size(), "History field size ({}) does not match the target size ({}).", offset,
-                output_.size());
+  const std::size_t target_bytes = getFieldSpec(target_id_).byteSize();
+  STEPIT_ASSERT(offset == target_bytes, "History rendered {} bytes, expected {}.", offset, target_bytes);
 }
 
 bool HistoryOperator::update(FieldMap &context) {
-  if (history_.empty()) {
-    history_.fill(context.at(source_id_).get<float>());
-    updateOutput();
+  const FieldValue *source = nullptr;
+  if (history_.empty() or include_current_frame_) {
+    source = &readFieldValue(context, source_id_);
   }
-
-  if (include_current_frame_) {
-    push(context.at(source_id_).get<float>());
-    updateOutput();
-  }
-
-  context[target_id_] = output_;
+  if (history_.empty()) history_.fill(*source);
+  if (include_current_frame_) push(*source);
+  render(ensureFieldValue(context, target_id_).data());
   return true;
 }
 
 void HistoryOperator::postStep(const FieldMap &context) {
-  if (not include_current_frame_) {
-    auto it = context.find(source_id_);
-    STEPIT_ASSERT(it != context.end(), "Field '{}' not found at runtime.", getFieldName(source_id_));
-    push(it->second.get<float>());
-    updateOutput();
-  }
+  if (not include_current_frame_) push(readFieldValue(context, source_id_));
 }
 
 MaskedFillOperator::MaskedFillOperator(const yml::Node &config) {
