@@ -3,7 +3,6 @@
 
 #include <cstddef>
 #include <cstdint>
-#include <limits>
 #include <map>
 #include <mutex>
 #include <set>
@@ -22,7 +21,7 @@ namespace field {
 /** Unique identifier of a registered field. */
 using FieldId = std::size_t;
 /** Declared scalar length of one field segment. */
-using FieldSize = std::uint32_t;
+using FieldSize = std::size_t;
 /** Ordered field ID list used for concat/split layouts. */
 using FieldIdVec = std::vector<FieldId>;
 
@@ -87,10 +86,6 @@ class FieldValue {
     static_assert(isSupportedScalar<Scalar>(), "Unsupported field scalar type.");
     STEPIT_ASSERT(value.rows() == 1 or value.cols() == 1, "Field value must be a vector, got shape [{} x {}].",
                   value.rows(), value.cols());
-    STEPIT_ASSERT(static_cast<std::uint64_t>(value.size()) <= std::numeric_limits<FieldSize>::max(),
-                  "Field value size {} exceeds the maximum supported size ({}).", value.size(),
-                  std::numeric_limits<FieldSize>::max());
-
     FieldArray<Scalar> result(value.size());
     Eigen::Index index{};
     for (Eigen::Index col{}; col < value.cols(); ++col) {
@@ -239,7 +234,7 @@ const FieldValue &readFieldValue(const FieldMap &context, FieldId field_id);
 /** Parses a YAML sequence of field names into a list of field IDs. */
 void parseFieldIds(const yml::Node &node, FieldIdVec &result);
 /** Copies a vector into a result buffer at offset, then advances the offset. */
-void stackField(cArrXf vec, uint32_t &index, rArrXf result);
+void stackField(cArrXf vec, FieldSize &index, rArrXf result);
 /** Concatenates selected fields from context into a pre-sized destination vector. */
 void concatFields(const FieldMap &context, const FieldIdVec &field_ids, rArrXf result);
 /** Splits a source vector into field slices according to registered field sizes. */

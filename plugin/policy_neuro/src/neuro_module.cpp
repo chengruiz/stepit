@@ -69,7 +69,7 @@ bool NeuroModule::update(const LowState &, ControlRequests &, FieldMap &context)
   }
   nn_->runInference();
   for (std::size_t i{}; i < output_names_.size(); ++i) {
-    cmArrXf output{nn_->getOutput<float>(output_names_[i]), output_dims_[i]};
+    cmArrXf output{nn_->getOutput<float>(output_names_[i]), static_cast<Eigen::Index>(output_dims_[i])};
     if (assert_all_finite_ and not output.allFinite()) {
       STEPIT_CRIT("Indices '{}' of output '{}' are not all-finite.", getNonFiniteIndices(output), output_names_[i]);
       return false;
@@ -150,7 +150,7 @@ void NeuroModule::parseFields(bool is_input, const FieldNameVec &node_names, con
   }
 
   for (std::size_t i{}; i < num_nodes; ++i) {
-    std::size_t total_size = std::accumulate(field_sizes[i].begin(), field_sizes[i].end(), static_cast<FieldSize>(0));
+    const std::size_t total_size = std::accumulate(field_sizes[i].begin(), field_sizes[i].end(), std::size_t{0});
     STEPIT_ASSERT(total_size == node_sizes[i],
                   "Total size of fields for node '{}' must equal the neural network's {} size {}, but got {}.",
                   node_names[i], identifier, node_sizes[i], total_size);

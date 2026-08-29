@@ -21,7 +21,7 @@ const void *FieldValue::data() const {
 }
 
 FieldSize FieldValue::size() const {
-  return std::visit([](const auto &value) { return static_cast<FieldSize>(value.size()); }, storage_);
+  return std::visit([](const auto &value) { return static_cast<std::size_t>(value.size()); }, storage_);
 }
 
 DataType FieldValue::dataType() const {
@@ -191,7 +191,7 @@ void parseFieldIds(const yml::Node &node, FieldIdVec &context) {
   }
 }
 
-void stackField(cArrXf vec, uint32_t &offset, rArrXf result) {
+void stackField(cArrXf vec, FieldSize &offset, rArrXf result) {
   STEPIT_ASSERT(offset + vec.size() <= result.size(), "Field segment size ({} + {}) out of bounds ({}).", offset,
                 vec.size(), result.size());
   result.segment(offset, vec.size()) = vec;
@@ -199,7 +199,7 @@ void stackField(cArrXf vec, uint32_t &offset, rArrXf result) {
 }
 
 void concatFields(const FieldMap &context, const FieldIdVec &field_ids, rArrXf result) {
-  uint32_t offset = 0;
+  FieldSize offset = 0;
   for (auto field_id : field_ids) {
     stackField(context.at(field_id).get<float>(), offset, result);
   }

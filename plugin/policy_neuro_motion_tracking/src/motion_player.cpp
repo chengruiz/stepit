@@ -103,8 +103,7 @@ MotionPlayer::MotionPlayer(const NeuroPolicySpec &policy_spec, const ModuleSpec 
 
   // Register the provision for the field
   for (auto &field_spec : field_specs_) {
-    field_spec.field_id =
-        registerProvision(field_spec.name, DataType::kFloat32, static_cast<FieldSize>(field_spec.field_size));
+    field_spec.field_id = registerProvision(field_spec.name, DataType::kFloat32, field_spec.field_size);
   }
   motion_frame_index_id_ = registerProvision("motion_frame_index", DataType::kFloat32, 1);
   // Initialize buffers for each field

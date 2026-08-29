@@ -110,7 +110,7 @@ ConstOperator::ConstOperator(const yml::Node &config) {
     if (size > 0) {
       config.throwIf(value_.size() != size, "'size' and 'value' lengths mismatch");
     } else {
-      size = static_cast<FieldSize>(value_.size());
+      size = static_cast<std::size_t>(value_.size());
     }
   }
 
@@ -169,7 +169,7 @@ void HistoryOperator::init() {
   if (target_size_ > 0) return;
   source_size_ = getFieldSize(source_id_);
   indices_.canonicalize(history_len_);
-  target_size_ = source_size_ * static_cast<FieldSize>(indices_.size());
+  target_size_ = source_size_ * indices_.size();
   setFieldSpec(target_id_, FieldSpec{DataType::kFloat32, target_size_});
 
   if (default_value_.size() == 1) {
@@ -281,7 +281,7 @@ SliceOperator::SliceOperator(const yml::Node &config) {
 void SliceOperator::init() {
   auto source_size = getFieldSize(source_id_);
   indices_.canonicalize(source_size);
-  setFieldSpec(target_id_, FieldSpec{DataType::kFloat32, static_cast<FieldSize>(indices_.size())});
+  setFieldSpec(target_id_, FieldSpec{DataType::kFloat32, indices_.size()});
   buffer_.resize(getFieldSize(target_id_));
 }
 
@@ -320,8 +320,7 @@ SplitOperator::SplitOperator(const yml::Node &config) {
 
 void SplitOperator::init() {
   const auto source_size = getFieldSize(source_id_);
-  const auto total_size =
-      std::accumulate(segment_sizes_.begin(), segment_sizes_.end(), static_cast<FieldSize>(0));
+  const auto total_size = std::accumulate(segment_sizes_.begin(), segment_sizes_.end(), std::size_t{0});
   STEPIT_ASSERT(total_size == source_size, "Split sizes ({}) do not match source size ({}) for '{}'.", total_size,
                 source_size, getFieldName(source_id_));
 }

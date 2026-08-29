@@ -65,7 +65,7 @@ ForwardKinematics::ForwardKinematics(const NeuroPolicySpec &policy_spec, const M
   auto anchor_global_ori_field = config_["anchor_global_ori_field"].as<std::string>("base_global_ori");
   anchor_global_ori_id_        = registerRequirement(anchor_global_ori_field, DataType::kFloat32, 4);
 
-  auto num_bodies           = static_cast<FieldSize>(body_names_.size());
+  const auto num_bodies     = body_names_.size();
   whole_body_local_pos_id_  = registerProvision("whole_body_local_pos", DataType::kFloat32, 3 * num_bodies);
   whole_body_local_ori_id_  = registerProvision("whole_body_local_ori", DataType::kFloat32, 4 * num_bodies);
   whole_body_global_pos_id_ = registerProvision("whole_body_global_pos", DataType::kFloat32, 3 * num_bodies);

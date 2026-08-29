@@ -136,7 +136,7 @@ void QuatToEulerOperator::init() {
   STEPIT_ASSERT(source_size > 0 and source_size % 4 == 0, "Field '{}' must have size 4 * N, but got {}.",
                 getFieldName(source_id_), source_size);
   num_quats_ = source_size / 4;
-  setFieldSpec(target_id_, FieldSpec{DataType::kFloat32, static_cast<FieldSize>(3 * num_quats_)});
+  setFieldSpec(target_id_, FieldSpec{DataType::kFloat32, 3 * num_quats_});
   buffer_.resize(getFieldSize(target_id_));
 }
 
@@ -162,7 +162,7 @@ void EulerToQuatOperator::init() {
   STEPIT_ASSERT(source_size > 0 and source_size % 3 == 0, "Field '{}' must have size 3 * N, but got {}.",
                 getFieldName(source_id_), source_size);
   num_rpys_ = source_size / 3;
-  setFieldSpec(target_id_, FieldSpec{DataType::kFloat32, static_cast<FieldSize>(4 * num_rpys_)});
+  setFieldSpec(target_id_, FieldSpec{DataType::kFloat32, 4 * num_rpys_});
   buffer_.resize(getFieldSize(target_id_));
 }
 
@@ -188,7 +188,7 @@ void QuatToAngleAxisOperator::init() {
   STEPIT_ASSERT(source_size > 0 and source_size % 4 == 0, "Field '{}' must have size 4 * N, but got {}.",
                 getFieldName(source_id_), source_size);
   num_quats_ = source_size / 4;
-  setFieldSpec(target_id_, FieldSpec{DataType::kFloat32, static_cast<FieldSize>(3 * num_quats_)});
+  setFieldSpec(target_id_, FieldSpec{DataType::kFloat32, 3 * num_quats_});
   buffer_.resize(getFieldSize(target_id_));
 }
 
@@ -215,7 +215,7 @@ void QuatToRotation6dOperator::init() {
   STEPIT_ASSERT(source_size > 0 and source_size % 4 == 0, "Field '{}' must have size 4 * N, but got {}.",
                 getFieldName(source_id_), source_size);
   num_quats_ = source_size / 4;
-  setFieldSpec(target_id_, FieldSpec{DataType::kFloat32, static_cast<FieldSize>(6 * num_quats_)});
+  setFieldSpec(target_id_, FieldSpec{DataType::kFloat32, 6 * num_quats_});
   buffer_.resize(getFieldSize(target_id_));
 }
 
