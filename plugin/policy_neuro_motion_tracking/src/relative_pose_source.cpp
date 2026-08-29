@@ -20,7 +20,7 @@ bool RelativeOriSource::init() {
   STEPIT_ASSERT(target_ori_size > 0 and target_ori_size % 4 == 0, "Field '{}' must have size 4 * N, but got {}.",
                 target_ori_name_, target_ori_size);
   num_frames_ = target_ori_size / 4;
-  setFieldSpec(relative_ori_id_, FieldSpec{DataType::kFloat32, 4 * num_frames_});
+  setFieldSpec(relative_ori_id_, FieldSpec{DataType::kFloat32, target_ori_size});
   setFieldSpec(relative_ori_6d_id_, FieldSpec{DataType::kFloat32, 6 * num_frames_});
   return true;
 }
@@ -61,7 +61,7 @@ bool RelativePosSource::init() {
   STEPIT_ASSERT(target_pos_size > 0 and target_pos_size % 3 == 0, "Field '{}' must have size 3 * N, but got {}.",
                 target_pos_name_, target_pos_size);
   num_frames_ = target_pos_size / 3;
-  setFieldSpec(relative_pos_id_, FieldSpec{DataType::kFloat32, 3 * num_frames_});
+  setFieldSpec(relative_pos_id_, FieldSpec{DataType::kFloat32, target_pos_size});
   return true;
 }
 
@@ -134,7 +134,7 @@ bool MotionAlignment::init() {
   num_frames_ = num_frames;
   resolved_reference_index_ = reference_index_ >= 0 ? static_cast<std::size_t>(reference_index_)
                                                      : num_frames_ + reference_index_;
-  setFieldSpec(aligned_target_ori_id_, FieldSpec{DataType::kFloat32, 4 * num_frames_});
+  setFieldSpec(aligned_target_ori_id_, FieldSpec{DataType::kFloat32, target_ori_size});
   setFieldSpec(aligned_target_pos_id_, FieldSpec{DataType::kFloat32, 3 * num_frames_});
   return true;
 }
