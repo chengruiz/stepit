@@ -65,7 +65,6 @@ class CopyOperator : public Operator {
  private:
   FieldId source_id_{};
   FieldId target_id_{};
-  FieldSize field_size_{};
 };
 
 class HistoryOperator : public Operator {

@@ -127,18 +127,14 @@ CopyOperator::CopyOperator(const yml::Node &config) {
   auto source_name = config["source"].as<std::string>();
   auto target_name = config["target"].as<std::string>();
   config.throwIf(source_name == target_name, "'source' and 'target' must not be the same");
-  source_id_ = registerRequirement(source_name, DataType::kFloat32);
-  target_id_ = registerProvision(target_name, DataType::kFloat32);
+  source_id_ = registerRequirement(source_name);
+  target_id_ = registerProvision(target_name);
 }
 
-void CopyOperator::init() {
-  if (field_size_ > 0) return;
-  field_size_ = getFieldSize(source_id_);
-  setFieldSpec(target_id_, FieldSpec{DataType::kFloat32, field_size_});
-}
+void CopyOperator::init() { setFieldSpec(target_id_, getFieldSpec(source_id_)); }
 
 bool CopyOperator::update(FieldMap &context) {
-  context[target_id_] = context.at(source_id_);
+  context[target_id_] = readFieldValue(context, source_id_);
   return true;
 }
 

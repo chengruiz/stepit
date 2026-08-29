@@ -233,6 +233,9 @@ inline FieldSize getFieldSize(FieldId id) { return fieldManager().getFieldSize(i
 inline DataType getFieldDataType(FieldId id) { return fieldManager().getFieldDataType(id); }
 inline void setFieldSpec(FieldId id, const FieldSpec &spec) { fieldManager().setFieldSpec(id, spec); }
 
+/** Returns a field present in the runtime context after validating its registered specification. */
+const FieldValue &readFieldValue(const FieldMap &context, FieldId field_id);
+
 /** Parses a YAML sequence of field names into a list of field IDs. */
 void parseFieldIds(const yml::Node &node, FieldIdVec &result);
 /** Copies a vector into a result buffer at offset, then advances the offset. */

@@ -2,6 +2,16 @@
 
 namespace stepit {
 namespace field {
+namespace {
+void validateFieldValue(FieldId field_id, const FieldValue &value, const FieldSpec &spec) {
+  if (value.size() != spec.size or value.dataType() != spec.dtype) {
+    STEPIT_THROW("Runtime value of field '{}' has data type '{}' and size {}, expected '{}' and {}.",
+                 getFieldName(field_id), dataTypeName(value.dataType()), value.size(), dataTypeName(spec.dtype),
+                 spec.size);
+  }
+}
+}  // namespace
+
 void *FieldValue::data() {
   return std::visit([](auto &value) -> void * { return value.data(); }, storage_);
 }
@@ -71,9 +81,8 @@ InvalidFieldIdError::InvalidFieldIdError(FieldId field_id)
 
 FieldId FieldManager::registerField(const std::string &name, DataType dtype, FieldSize size) {
   STEPIT_ASSERT(not name.empty(), "Field name should not be empty.");
-  STEPIT_ASSERT(dtype == DataType::kUndefined or dtype == DataType::kFloat32,
-                "Field '{}' has data type '{}', but the current Field storage only supports float32.", name,
-                dataTypeName(dtype));
+  STEPIT_ASSERT(dtype == DataType::kUndefined or dataTypeSize(dtype) != 0, "Field '{}' has an invalid data type.",
+                name);
 
   std::lock_guard<std::recursive_mutex> lock(mutex_);
   auto it = name_to_id_.find(name);
@@ -134,9 +143,8 @@ DataType FieldManager::getFieldDataType(FieldId id) const {
 }
 
 void FieldManager::setFieldSpec(FieldId id, const FieldSpec &spec) {
-  STEPIT_ASSERT(spec.dtype == DataType::kUndefined or spec.dtype == DataType::kFloat32,
-                "Cannot set field data type to '{}': the current Field storage only supports float32.",
-                dataTypeName(spec.dtype));
+  STEPIT_ASSERT(spec.dtype == DataType::kUndefined or dataTypeSize(spec.dtype) != 0,
+                "Cannot set an invalid field data type.");
 
   std::lock_guard<std::recursive_mutex> lock(mutex_);
   if (id >= next_id_) throw InvalidFieldIdError(id);
@@ -163,6 +171,15 @@ void FieldManager::setFieldSpec(FieldId id, const FieldSpec &spec) {
 FieldManager &FieldManager::instance() {
   static FieldManager instance;
   return instance;
+}
+
+const FieldValue &readFieldValue(const FieldMap &context, FieldId field_id) {
+  const auto it = context.find(field_id);
+  if (it == context.end()) {
+    STEPIT_THROW("Field '{}' is not available in the runtime context.", getFieldName(field_id));
+  }
+  validateFieldValue(field_id, it->second, getFieldSpec(field_id));
+  return it->second;
 }
 
 void parseFieldIds(const yml::Node &node, FieldIdVec &context) {
