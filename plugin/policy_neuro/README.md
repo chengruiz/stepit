@@ -110,9 +110,9 @@ StepIt plugin for running neural network-based policy.
 ### Module
 
 Classes derived from `Module` require to declare their input dependencies (`requirements`) and output fields
-(`provisions`) by registering named fields through a global FieldManager. At runtime, FieldManager assigns a
-unique ID, data type, and size to each field, and maintains a registry of source factories. Then the modules
-sequentially produce or process data segments identified by FieldId.
+(`provisions`) by registering named fields through a global FieldManager. FieldManager assigns a unique ID to each
+field and merges its declared size and scalar data type. At runtime, modules sequentially produce or process values
+identified by FieldId.
 
 ### NeuroPolicy
 
