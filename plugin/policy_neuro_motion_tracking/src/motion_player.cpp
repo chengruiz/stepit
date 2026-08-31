@@ -105,7 +105,8 @@ MotionPlayer::MotionPlayer(const NeuroPolicySpec &policy_spec, const ModuleSpec 
   for (auto &field_spec : field_specs_) {
     field_spec.field_id = registerProvision(field_spec.name, DataType::kFloat32, field_spec.field_size);
   }
-  motion_frame_index_id_ = registerProvision("motion_frame_index", DataType::kFloat32, 1);
+  motion_frame_index_id_   = registerProvision("motion_frame_index", DataType::kInt64, 1);
+  motion_restart_event_id_ = registerProvision("motion_restart_event", DataType::kBool, 1);
   // Initialize buffers for each field
   buffers_.resize(field_specs_.size());
   for (std::size_t i{}; i < field_specs_.size(); ++i) {
@@ -114,8 +115,9 @@ MotionPlayer::MotionPlayer(const NeuroPolicySpec &policy_spec, const ModuleSpec 
 }
 
 bool MotionPlayer::reset() {
-  clip_index_  = 0;
-  frame_index_ = 0;
+  clip_index_           = 0;
+  frame_index_          = 0;
+  motion_restart_event_ = true;
 
   joystick_rules_.emplace_back([](const joystick::State &js) -> std::string {
     if (js.Select().on_press) return "Policy/Motion/ReplayCurrentClip";
@@ -148,7 +150,9 @@ bool MotionPlayer::update(const LowState &, ControlRequests &requests, FieldMap 
     }
     context[field_spec.field_id] = buffer;
   }
-  context[motion_frame_index_id_] = ArrXf::Constant(1, static_cast<float>(frame_index_));
+  context[motion_frame_index_id_]   = FieldArray<std::int64_t>::Constant(1, static_cast<std::int64_t>(frame_index_));
+  context[motion_restart_event_id_] = FieldArray<bool>::Constant(1, motion_restart_event_);
+  motion_restart_event_             = false;
 
   if (frame_index_ + 1 < motions_[clip_index_].num_frames) ++frame_index_;
   return true;
@@ -158,21 +162,24 @@ void MotionPlayer::handleControlRequest(ControlRequest request) {
   auto action = lookupAction(request.action(), kActionMap);
   switch (action) {
     case Action::kReplayCurrentClip: {
-      frame_index_ = 0;
+      frame_index_          = 0;
+      motion_restart_event_ = true;
       request.response(kSuccess);
       STEPIT_LOG("Replaying motion clip '{}'.", motions_[clip_index_].name);
       break;
     }
     case Action::kSelectNextClip: {
-      clip_index_  = (clip_index_ + 1) % motions_.size();
-      frame_index_ = 0;
+      clip_index_           = (clip_index_ + 1) % motions_.size();
+      frame_index_          = 0;
+      motion_restart_event_ = true;
       STEPIT_LOG("Switched to motion clip '{}'.", motions_[clip_index_].name);
       request.response(kSuccess);
       break;
     }
     case Action::kSelectPreviousClip: {
-      clip_index_  = (clip_index_ + motions_.size() - 1) % motions_.size();
-      frame_index_ = 0;
+      clip_index_           = (clip_index_ + motions_.size() - 1) % motions_.size();
+      frame_index_          = 0;
+      motion_restart_event_ = true;
       STEPIT_LOG("Switched to motion clip '{}'.", motions_[clip_index_].name);
       request.response(kSuccess);
       break;

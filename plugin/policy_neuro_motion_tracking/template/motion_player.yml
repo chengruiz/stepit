@@ -3,6 +3,8 @@ dataloader_factory: "npz"              # [Optional] String, dataloader factory t
 offsets: [0]                           # [Optional] Sequence[Int], frame offsets to stack for every field by default.
                                        #   Values are relative to the current frame and clamped to valid bounds.
 
+# The module also provides `motion_frame_index` (int64) and `motion_restart_event` (bool, true for one frame).
+
 field:                                 # Sequence[Dict], Sequence of mappings defining the fields
   - name: "target_joint_pos"           # String, name of the field
     key: "joint_pos"                   # String, key in the motion source corresponding to this field

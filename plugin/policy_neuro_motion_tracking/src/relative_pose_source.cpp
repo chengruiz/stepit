@@ -94,11 +94,11 @@ MotionAlignment::MotionAlignment(const NeuroPolicySpec &policy_spec, const Modul
   target_ori_name_        = config_["target_ori_name"].as<std::string>("base_target_ori");
   alignment_trigger_name_ = config_["alignment_trigger_name"].as<std::string>(alignment_trigger_name_);
 
-  current_ori_id_        = registerRequirement(current_ori_name_, DataType::kFloat32, 4);
-  target_ori_id_         = registerRequirement(target_ori_name_, DataType::kFloat32);
-  motion_frame_index_id_ = registerRequirement("motion_frame_index", DataType::kFloat32, 1);
+  current_ori_id_          = registerRequirement(current_ori_name_, DataType::kFloat32, 4);
+  target_ori_id_           = registerRequirement(target_ori_name_, DataType::kFloat32);
+  motion_restart_event_id_ = registerRequirement("motion_restart_event", DataType::kBool, 1);
   if (not alignment_trigger_name_.empty()) {
-    alignment_trigger_id_ = registerField(alignment_trigger_name_, DataType::kFloat32, 1);
+    alignment_trigger_id_ = registerField(alignment_trigger_name_, DataType::kBool, 1);
   }
   aligned_target_ori_id_ = registerProvision("aligned_target_ori", DataType::kFloat32);
 
@@ -154,10 +154,10 @@ bool MotionAlignment::update(const LowState &, ControlRequests &, FieldMap &cont
   ArrXf target_pos  = target_pos_id_ == kInvalidFieldId ? ArrXf::Zero(static_cast<Eigen::Index>(3 * num_frames_))
                                                         : ArrXf(context.at(target_pos_id_).get<float>());
 
-  const bool motion_restarted    = static_cast<std::size_t>(context.at(motion_frame_index_id_).get<float>()(0)) == 0;
+  const bool motion_restarted    = context.at(motion_restart_event_id_).get<bool>()(0);
   const auto alignment_trigger   = context.find(alignment_trigger_id_);
   const bool alignment_triggered = alignment_trigger != context.end() and alignment_trigger->second.size() > 0 and
-                                   alignment_trigger->second.get<float>()(0) > 0.5F;
+                                   alignment_trigger->second.get<bool>()(0);
   if (motion_restarted or alignment_triggered) {
     Quatf reference_ori(target_ori.segment(4 * resolved_reference_index_, 4));
     Quatf current_yaw   = Quatf::fromYaw(current_ori.eulerAngles().z());

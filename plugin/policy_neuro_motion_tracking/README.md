@@ -18,7 +18,8 @@ sudo apt install ros-${ROS_DISTRO}-pinocchio
 
 - `forward_kinematics`: computes whole-body local and global link poses from URDF and joint states.
 - `motion_alignment`: aligns stacked target orientations and optional stacked target positions to the robot pose using a configurable reference frame index.
-- `motion_player`: loads frame-wise trajectory arrays and publishes configured fields each control step.
+- `motion_player`: loads frame-wise trajectory arrays and publishes configured fields, the current frame index, and a
+  one-frame restart event each control step.
 - `relative_ori`: computes relative orientation and 6D rotation representation between the current orientation and target orientations.
 - `relative_pos`: converts target positions to the current frame.
 

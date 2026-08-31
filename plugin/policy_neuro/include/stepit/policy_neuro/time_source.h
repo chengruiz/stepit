@@ -1,6 +1,8 @@
 #ifndef STEPIT_NEURO_POLICY_TIME_SOURCE_H_
 #define STEPIT_NEURO_POLICY_TIME_SOURCE_H_
 
+#include <cstdint>
+
 #include <stepit/policy_neuro/module.h>
 
 namespace stepit {
@@ -16,7 +18,7 @@ class TimeSource : public Module {
   FieldId policy_time_id_{};
   float timestep_{};
 
-  std::uint64_t step_count_{};
+  std::int64_t step_count_{};
 };
 }  // namespace neuro_policy
 }  // namespace stepit

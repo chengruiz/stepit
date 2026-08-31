@@ -56,9 +56,11 @@ class MotionPlayer : public Module {
   std::vector<ArrXf> buffers_;
   std::vector<JoystickRule> joystick_rules_;
   FieldId motion_frame_index_id_{};
+  FieldId motion_restart_event_id_{};
 
   std::size_t clip_index_{};
   std::size_t frame_index_{};
+  bool motion_restart_event_{true};
 };
 }  // namespace neuro_policy
 }  // namespace stepit
