@@ -195,7 +195,7 @@ int main(int argc, char *argv[]) {
   }
 
   model->clearState();
-  model->warmup(speed_warmup);
+  model->warmup(static_cast<std::size_t>(speed_warmup));
   model->clearState();
 
   displayFormattedBanner(60, nullptr, "Speed test");

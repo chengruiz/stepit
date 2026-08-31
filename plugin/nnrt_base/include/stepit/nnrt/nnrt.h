@@ -20,7 +20,7 @@ class Nnrt : public Interface<Nnrt, const std::string & /* path */, const yml::N
   virtual void runInference()                              = 0;
   virtual const void *getOutput(std::size_t idx)           = 0;
   virtual void clearState() {}
-  void warmup(int iterations = 10);
+  void warmup(std::size_t iterations = 10);
   void printInfo() const;
 
   std::size_t getNumInputs() const { return num_in_; }

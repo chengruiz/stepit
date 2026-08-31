@@ -22,10 +22,12 @@ Nnrt::Nnrt(const std::string &path, const yml::Node &config) : config_(config) {
   path_ = fs::canonical(path).string();
 }
 
-void Nnrt::warmup(int iterations) {
+void Nnrt::warmup(std::size_t iterations) {
+  if (iterations == 0) return;
+
   Timer timer;
   timer.start();
-  for (int i{}; i < iterations; ++i) runInference();
+  for (std::size_t i{}; i < iterations; ++i) runInference();
   synchronize();
   timer.stop();
   STEPIT_DBUGNT("Average warmup inference time: {}.", timer.total<USec>() / iterations);
