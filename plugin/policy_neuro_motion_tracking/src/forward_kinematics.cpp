@@ -1,4 +1,5 @@
 #include <pinocchio/algorithm/frames.hpp>
+#include <pinocchio/algorithm/joint-configuration.hpp>
 #include <pinocchio/algorithm/kinematics.hpp>
 #include <pinocchio/parsers/urdf.hpp>
 
@@ -75,7 +76,7 @@ ForwardKinematics::ForwardKinematics(const NeuroPolicySpec &policy_spec, const M
 bool ForwardKinematics::reset() { return true; }
 
 bool ForwardKinematics::update(const LowState &low_state, ControlRequests &, FieldMap &context) {
-  pinocchio::Model::ConfigVectorType q  = pinocchio::Model::ConfigVectorType::Zero(model_.nq);
+  pinocchio::Model::ConfigVectorType q  = pinocchio::neutral(model_);
   pinocchio::Model::TangentVectorType v = pinocchio::Model::TangentVectorType::Zero(model_.nv);
 
   for (std::size_t i{}; i < joint_indices_.size(); ++i) {
