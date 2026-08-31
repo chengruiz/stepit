@@ -1,12 +1,19 @@
 cmake_minimum_required(VERSION 3.23)
-project(stepit_plugin_ros_base)
+project(stepit_plugin_publisher_ros)
 
-find_package(catkin REQUIRED COMPONENTS roscpp)
+find_package(catkin REQUIRED COMPONENTS
+    diagnostic_msgs
+    geometry_msgs
+    nav_msgs
+    roscpp
+    sensor_msgs
+    std_msgs
+)
 
 catkin_package(
     INCLUDE_DIRS include
     LIBRARIES ${PROJECT_NAME}
-    CATKIN_DEPENDS roscpp
+    CATKIN_DEPENDS diagnostic_msgs geometry_msgs nav_msgs roscpp sensor_msgs std_msgs
 )
 if (NOT STEPIT_BUILDING_WITH_CATKIN)
   get_target_property(CMAKE_RUNTIME_OUTPUT_DIRECTORY stepit_core RUNTIME_OUTPUT_DIRECTORY)
@@ -17,13 +24,12 @@ endif ()
 stepit_add_plugin(${PROJECT_NAME})
 target_sources(${PROJECT_NAME}
     PRIVATE
-      src/node_handle.cpp
-      src/spin.cpp
+      src/publisher.cpp
     PUBLIC
       FILE_SET HEADERS
       BASE_DIRS include
       FILES
-        include/stepit/ros/node_handle.h
+        include/stepit/ros/publisher.h
 )
 foreach (catkin_include_dir ${catkin_INCLUDE_DIRS})
   target_include_directories(${PROJECT_NAME} PUBLIC "$<BUILD_INTERFACE:${catkin_include_dir}>")
@@ -34,6 +40,7 @@ foreach (catkin_include_dir ${catkin_INCLUDE_DIRS})
 endforeach ()
 target_link_libraries(${PROJECT_NAME} PUBLIC
     stepit_core
+    stepit_plugin_ros_base
     ${catkin_LIBRARIES}
 )
 install(TARGETS ${PROJECT_NAME}
@@ -41,15 +48,6 @@ install(TARGETS ${PROJECT_NAME}
     LIBRARY DESTINATION ${STEPIT_LIB_DESTINATION}
     ARCHIVE DESTINATION ${STEPIT_LIB_DESTINATION}
     FILE_SET HEADERS DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
-)
-
-set(entry_target ${PROJECT_NAME}_entry)
-stepit_add_entry(${entry_target})
-target_sources(${entry_target} PRIVATE src/entry.cpp)
-target_link_libraries(${entry_target} PRIVATE ${PROJECT_NAME})
-install(TARGETS ${entry_target}
-    EXPORT stepitTargets
-    LIBRARY DESTINATION ${STEPIT_LIB_DESTINATION}
 )
 
 add_dependencies(${PROJECT_NAME} ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})

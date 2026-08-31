@@ -55,8 +55,12 @@ StepIt discovers build-time plugins through explicit indexes. The built-in index
 [`plugin/plugins.cmake`](plugin/plugins.cmake); each directory specified by `STEPIT_PLUGIN_DIRS` must also contain a
 `plugins.cmake` file that sets `STEPIT_PLUGIN_PATHS`. Read a plugin's `README.md` before using it.
 
+Built-in plugins are organized by responsibility:
+
 - **Control**
   - [`control_console`](plugin/control/console): Controlling with standard input.
+  - [`control_ros`](plugin/control/ros): Controlling through ROS topics and services.
+  - [`control_ros2`](plugin/control/ros2): Controlling through ROS2 topics and services.
 
 - **Examples**
   - [`debugging_helper`](plugin/example/debugging_helper): Helper utilities for debugging.
@@ -67,12 +71,14 @@ StepIt discovers build-time plugins through explicit indexes. The built-in index
 
 - **Integrations**
   - [`redis_base`](plugin/integration/redis): Reusable Redis client support for other plugins.
-  - [`ros_base`](plugin/integration/ros): ROS extensions, e.g. subscribing joysticks and publishing states.
-  - [`ros2_base`](plugin/integration/ros2): ROS2 extensions, e.g. subscribing joysticks and publishing states.
+  - [`ros_base`](plugin/integration/ros): ROS node lifecycle, spinning, and shared ROS utilities.
+  - [`ros2_base`](plugin/integration/ros2): ROS2 node lifecycle, spinning, QoS, and shared ROS2 utilities.
 
 - **Joystick**
   - [`joystick_base`](plugin/joystick/base): Interface for general joystick and joystick control.
   - [`joystick_redis`](plugin/joystick/redis): Controlling with joystick data read from Redis.
+  - [`joystick_ros`](plugin/joystick/ros): Joystick input from ROS `sensor_msgs/Joy` topics.
+  - [`joystick_ros2`](plugin/joystick/ros2): Joystick input from ROS2 `sensor_msgs/msg/Joy` topics.
   - [`joystick_udp`](plugin/joystick/udp): Controlling with Retroid gamepads.
   - [`joystick_usb`](plugin/joystick/usb): Controlling with USB joysticks, e.g. Xbox 360 controller.
 
@@ -95,6 +101,8 @@ StepIt discovers build-time plugins through explicit indexes. The built-in index
 
 - **Publishing**
   - [`publisher_csv`](plugin/publisher/csv): Publisher for writing robot data to CSV files.
+  - [`publisher_ros`](plugin/publisher/ros): Publisher for ROS topics.
+  - [`publisher_ros2`](plugin/publisher/ros2): Publisher for ROS2 topics.
 
 - **Robots**
   - [`robot_deeprobotics_lite3`](plugin/robot/deeprobotics/lite3): Controlling the DeepRobotics Lite3 robot.
@@ -129,8 +137,8 @@ Run `./install/bin/stepit --help` for more information.
 ## Notes
 
 - **Environment Variable**: StepIt reads environment variables listed in [`environment.sh`](config/environment.sh). Environment variables have lower precedence than their corresponding command-line arguments.
-- **Control Input**: Generally, StepIt accepts strings as control inputs, and returns a response for each one. These inputs can be provided via [the console](plugin/control/console), [joysticks](plugin/joystick/base), or topics/services in [ROS1](plugin/integration/ros)/[ROS2](plugin/integration/ros2). See [doc/control.md](doc/control.md) for more details.
-- **State Publishing**: StepIt publishes the robot states to [CSV files](plugin/publisher/csv), or via [ROS1](plugin/integration/ros) or [ROS2](plugin/integration/ros2) topics.
+- **Control Input**: Generally, StepIt accepts strings as control inputs, and returns a response for each one. These inputs can be provided via [the console](plugin/control/console), [joysticks](plugin/joystick/base), or topics/services in [ROS1](plugin/control/ros)/[ROS2](plugin/control/ros2). See [doc/control.md](doc/control.md) for more details.
+- **State Publishing**: StepIt publishes the robot states to [CSV files](plugin/publisher/csv), or via [ROS1](plugin/publisher/ros) or [ROS2](plugin/publisher/ros2) topics.
 - **Plugin Mechanism**: StepIt provides a flexible plugin architecture to enable integration of new modules without modifying existing code. See [doc/plugin.md](doc/plugin.md) for more details.
 - **ROS Integrations**: StepIt works well with ROS1 and ROS2. Make sure you read the README.md of [ROS1](plugin/integration/ros) or [ROS2](plugin/integration/ros2) before you start.
 - **Simulation**: StepIt supports [unitree_mujoco](https://github.com/unitreerobotics/unitree_mujoco)-based simulation. See [robot_unitree2](plugin/robot/unitree2) or [stepit_sim](https://github.com/legnAray/stepit_sim) for more details.

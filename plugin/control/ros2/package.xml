@@ -1,14 +1,16 @@
 <?xml version="1.0"?>
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
-  <name>stepit_plugin_ros2_base</name>
+  <name>stepit_plugin_control_ros2</name>
   <version>0.0.0</version>
-  <description>ROS2 node and event-loop integration for StepIt</description>
+  <description>ROS2 control-input plugin for StepIt</description>
   <maintainer email="jewel@zju.edu.cn">Chengrui Zhu</maintainer>
   <license>MIT</license>
 
   <buildtool_depend>ament_cmake</buildtool_depend>
   <depend>rclcpp</depend>
+  <depend>std_msgs</depend>
+  <depend>stepit_ros2_msgs</depend>
 
   <test_depend>ament_lint_auto</test_depend>
   <test_depend>ament_lint_common</test_depend>

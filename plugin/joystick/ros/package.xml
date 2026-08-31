@@ -1,11 +1,12 @@
 <?xml version="1.0"?>
 <package format="2">
-  <name>stepit_plugin_ros_base</name>
+  <name>stepit_plugin_joystick_ros</name>
   <version>0.0.0</version>
-  <description>ROS node and event-loop integration for StepIt.</description>
+  <description>ROS joystick-input plugin for StepIt.</description>
   <maintainer email="jewel@zju.edu.cn">jewel</maintainer>
   <license>MIT</license>
 
   <buildtool_depend>catkin</buildtool_depend>
   <depend>roscpp</depend>
+  <depend>sensor_msgs</depend>
 </package>

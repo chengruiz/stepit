@@ -1,5 +1,7 @@
 set(STEPIT_PLUGIN_PATHS
     control/console
+    control/ros
+    control/ros2
     example/debugging_helper
     field/base
     field/python
@@ -8,6 +10,8 @@ set(STEPIT_PLUGIN_PATHS
     integration/ros2
     joystick/base
     joystick/redis
+    joystick/ros
+    joystick/ros2
     joystick/udp
     joystick/usb
     nnrt/base
@@ -24,6 +28,8 @@ set(STEPIT_PLUGIN_PATHS
     modular_policy/locomotion_ros
     modular_policy/locomotion_ros2
     publisher/csv
+    publisher/ros
+    publisher/ros2
     robot/deeprobotics/lite3
     robot/deeprobotics/x30
     robot/unitree/aliengo
