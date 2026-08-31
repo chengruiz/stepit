@@ -17,7 +17,7 @@ NeuroPolicy::NeuroPolicy(const RobotSpec &robot_spec, const std::string &home_di
   config_[default_action_key].to(spec_.default_action, true);
   STEPIT_ASSERT(tailored_.empty() or tailored_ == robot_spec.robot_name,
                 "Policy tailored for '{}' cannot be used with robot '{}'.", tailored_, robot_spec.robot_name);
-  action_id_ = registerField("action", DataType::kFloat32);
+  action_id_ = registerField("action", DataType::kFloat32, spec_.dof);
   displayFormattedBanner(60, kGreen, "NeuroPolicy {} ({}Hz)", spec_.policy_name, getControlFreq());
 
   // Add modules read from the YAML file
