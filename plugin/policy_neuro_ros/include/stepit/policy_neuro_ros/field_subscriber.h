@@ -1,7 +1,13 @@
 #ifndef STEPIT_NEURO_POLICY_ROS_FIELD_SUBSCRIBER_H_
 #define STEPIT_NEURO_POLICY_ROS_FIELD_SUBSCRIBER_H_
 
+#include <mutex>
+#include <vector>
+
 #include <std_msgs/Float32MultiArray.h>
+#include <std_msgs/Int32MultiArray.h>
+#include <std_msgs/Int64MultiArray.h>
+#include <std_msgs/UInt8MultiArray.h>
 
 #include <stepit/policy_neuro/module.h>
 #include <stepit/ros/node_handle.h>
@@ -15,23 +21,30 @@ class FieldSubscriber : public Module {
   bool update(const LowState &low_state, ControlRequests &requests, FieldMap &context) override;
 
  private:
-  void callback(std::size_t index, const std_msgs::Float32MultiArray::ConstPtr &msg);
+  template <typename Scalar, typename Sequence>
+  void storeField(std::size_t index, const Sequence &source);
+  void float32Callback(std::size_t index, const std_msgs::Float32MultiArray::ConstPtr &msg);
+  void int32Callback(std::size_t index, const std_msgs::Int32MultiArray::ConstPtr &msg);
+  void int64Callback(std::size_t index, const std_msgs::Int64MultiArray::ConstPtr &msg);
+  void boolCallback(std::size_t index, const std_msgs::UInt8MultiArray::ConstPtr &msg);
 
   struct FieldData {
     FieldId id{};
     std::string name;
     std::string topic;
-    std::size_t size;
-    ros::Subscriber subscriber;
+    DataType dtype{DataType::kUndefined};
+    FieldSize size{};
     float timeout_threshold{};
 
     bool received{false};
     ros::Time stamp;
-    VecXf data;
+    ros::Subscriber subscriber;
   };
 
-  std::vector<FieldData> fields_;
+  // Keep subscription handles last so they are destroyed before callback state.
   std::mutex mutex_;
+  FieldMap field_values_;
+  std::vector<FieldData> fields_;
 };
 }  // namespace neuro_policy
 }  // namespace stepit

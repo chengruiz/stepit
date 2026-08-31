@@ -3,6 +3,7 @@
 example_field_0:                # String, field name
   topic: "/example_field_0"     # String, ROS2 topic to subscribe
   size: 3                       # Int, field dimension
+  dtype: "float32"              # Literal["float32", "int32", "int64", "bool"], field scalar type
   timeout_threshold: 0.0        # [Optional] Float, seconds before data is considered stale
                                 #   If a field is not received within the timeout, the policy will exit.
                                 #   If not specified or not larger than 0, no timeout is applied.

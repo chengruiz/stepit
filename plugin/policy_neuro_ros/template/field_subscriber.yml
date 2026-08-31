@@ -3,6 +3,7 @@
 example_field_0:             # String, field name
   topic: "/example_field_0"  # String, ROS topic to subscribe
   size: 3                    # Int, field dimension
+  dtype: "float32"           # Literal["float32", "int32", "int64", "bool"], field scalar type
 
   queue_size: 1              # [Optional] Int, the size of the subscriber queue      
   timeout_threshold: 0.0     # [Optional] Float, seconds before data is considered stale

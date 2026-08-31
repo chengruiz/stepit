@@ -1,8 +1,14 @@
 #ifndef STEPIT_NEURO_POLICY_ROS2_FIELD_SUBSCRIBER2_H_
 #define STEPIT_NEURO_POLICY_ROS2_FIELD_SUBSCRIBER2_H_
 
+#include <mutex>
+#include <vector>
+
 #include <rclcpp/rclcpp.hpp>
 #include <std_msgs/msg/float32_multi_array.hpp>
+#include <std_msgs/msg/int32_multi_array.hpp>
+#include <std_msgs/msg/int64_multi_array.hpp>
+#include <std_msgs/msg/u_int8_multi_array.hpp>
 
 #include <stepit/policy_neuro/module.h>
 
@@ -14,23 +20,30 @@ class FieldSubscriber2 : public Module {
   bool update(const LowState &low_state, ControlRequests &requests, FieldMap &context) override;
 
  private:
-  void callback(std::size_t index, const std_msgs::msg::Float32MultiArray::SharedPtr msg);
+  template <typename Scalar, typename Sequence>
+  void storeField(std::size_t index, const Sequence &source);
+  void float32Callback(std::size_t index, const std_msgs::msg::Float32MultiArray::SharedPtr msg);
+  void int32Callback(std::size_t index, const std_msgs::msg::Int32MultiArray::SharedPtr msg);
+  void int64Callback(std::size_t index, const std_msgs::msg::Int64MultiArray::SharedPtr msg);
+  void boolCallback(std::size_t index, const std_msgs::msg::UInt8MultiArray::SharedPtr msg);
 
   struct FieldData {
     FieldId id{};
     std::string name;
     std::string topic;
-    std::size_t size;
-    rclcpp::Subscription<std_msgs::msg::Float32MultiArray>::SharedPtr subscriber;
+    DataType dtype{DataType::kUndefined};
+    FieldSize size{};
     float timeout_threshold{};
 
     bool received{false};
     rclcpp::Time stamp{0, 0, RCL_ROS_TIME};
-    VecXf data;
+    rclcpp::SubscriptionBase::SharedPtr subscriber;
   };
 
-  std::vector<FieldData> fields_;
+  // Keep subscription handles last so they are destroyed before callback state.
   std::mutex mutex_;
+  FieldMap field_values_;
+  std::vector<FieldData> fields_;
 };
 }  // namespace stepit::neuro_policy
 
