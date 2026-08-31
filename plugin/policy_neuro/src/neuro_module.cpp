@@ -1,3 +1,4 @@
+#include <cstring>
 #include <numeric>
 
 #include <stepit/policy_neuro/neuro_module.h>
@@ -19,29 +20,23 @@ NeuroModule::NeuroModule(const NeuroPolicySpec &policy_spec, const ModuleSpec &m
   if (STEPIT_VERBOSITY >= kInfo) nn_->printInfo();
 
   for (const auto &input_name : nn_->getInputNames()) {
-    if (not nn_->isInputRecurrent(input_name)) {
-      STEPIT_ASSERT(nn_->getInputDtype(input_name) == DataType::kFloat32,
-                    "NeuroModule requires float32 inputs, but input '{}' has dtype {}.", input_name,
-                    dataTypeName(nn_->getInputDtype(input_name)));
-      input_names_.push_back(input_name);
-      std::size_t input_size = nn_->getInputSize(input_name);
-      input_dims_.push_back(input_size);
-      input_arr_.push_back(ArrXf::Zero(input_size));
-    }
+    if (nn_->isInputRecurrent(input_name)) continue;
+    input_names_.push_back(input_name);
+    input_dtypes_.push_back(nn_->getInputDtype(input_name));
+    input_dims_.push_back(nn_->getInputSize(input_name));
+    input_values_.emplace_back(FieldSpec{input_dtypes_.back(), input_dims_.back()});
   }
   for (const auto &output_name : nn_->getOutputNames()) {
-    if (not nn_->isOutputRecurrent(output_name)) {
-      STEPIT_ASSERT(nn_->getOutputDtype(output_name) == DataType::kFloat32,
-                    "NeuroModule requires float32 outputs, but output '{}' has dtype {}.", output_name,
-                    dataTypeName(nn_->getOutputDtype(output_name)));
-      output_names_.push_back(output_name);
-      output_dims_.push_back(nn_->getOutputSize(output_name));
-    }
+    if (nn_->isOutputRecurrent(output_name)) continue;
+    output_names_.push_back(output_name);
+    output_dtypes_.push_back(nn_->getOutputDtype(output_name));
+    output_dims_.push_back(nn_->getOutputSize(output_name));
   }
-  STEPIT_ASSERT(input_names_.size() >= 1, "The neural network must have at least one ordinary input.");
-  STEPIT_ASSERT(output_names_.size() >= 1, "The neural network must have at least one ordinary output.");
-  parseFields(true, input_names_, input_dims_, input_field_names_, input_field_sizes_, input_field_ids_);
-  parseFields(false, output_names_, output_dims_, output_field_names_, output_field_sizes_, output_field_ids_);
+  STEPIT_ASSERT(not input_names_.empty(), "The neural network must have at least one ordinary input.");
+  STEPIT_ASSERT(not output_names_.empty(), "The neural network must have at least one ordinary output.");
+  parseFields(true, input_names_, input_dtypes_, input_dims_, input_field_names_, input_field_sizes_, input_field_ids_);
+  parseFields(false, output_names_, output_dtypes_, output_dims_, output_field_names_, output_field_sizes_,
+              output_field_ids_);
 
   if (STEPIT_VERBOSITY >= kInfo) {
     STEPIT_LOGNT("Input:");
@@ -59,29 +54,68 @@ bool NeuroModule::reset() {
 
 bool NeuroModule::update(const LowState &, ControlRequests &, FieldMap &context) {
   for (std::size_t i{}; i < input_names_.size(); ++i) {
-    concatFields(context, input_field_ids_[i], input_arr_[i]);
-    if (assert_all_finite_ and not input_arr_[i].allFinite()) {
-      STEPIT_CRIT("Indices '{}' of input '{}' are not all-finite.", getNonFiniteIndices(input_arr_[i]),
-                  input_names_[i]);
-      return false;
+    auto &input_value       = input_values_[i];
+    auto *input             = input_value.data();
+    const auto input_bytes  = FieldSpec{input_value.dataType(), input_value.size()}.byteSize();
+    std::size_t offset{};
+    for (std::size_t j{}; j < input_field_ids_[i].size(); ++j) {
+      const FieldSpec field_spec{input_dtypes_[i], input_field_sizes_[i][j]};
+      const std::size_t bytes = field_spec.byteSize();
+      if (offset > input_bytes or bytes > input_bytes - offset) {
+        STEPIT_THROW("Input field '{}' byte range starting at {} with length {} exceeds node '{}' size {}.",
+                     getFieldName(input_field_ids_[i][j]), offset, bytes, input_names_[i], input_bytes);
+      }
+      const void *field_data = readFieldValue(context, input_field_ids_[i][j]).data();
+      if (assert_all_finite_ and input_dtypes_[i] == DataType::kFloat32) {
+        Eigen::Map<const ArrXf> values(static_cast<const float *>(field_data), input_field_sizes_[i][j]);
+        if (not values.allFinite()) {
+          STEPIT_CRIT("Indices '{}' of input field '{}' for node '{}' are not all-finite.",
+                      getNonFiniteIndices(values), getFieldName(input_field_ids_[i][j]), input_names_[i]);
+          return false;
+        }
+      }
+      std::memcpy(input + offset, field_data, bytes);
+      offset += bytes;
     }
-    nn_->setInput(input_names_[i], input_arr_[i].data());
+    STEPIT_ASSERT(offset == input_bytes, "Input '{}' received {} bytes, expected {}.", input_names_[i], offset,
+                  input_bytes);
+
+    nn_->setInput(input_names_[i], static_cast<const void *>(input));
   }
+
   nn_->runInference();
   for (std::size_t i{}; i < output_names_.size(); ++i) {
-    cmArrXf output{nn_->getOutput<float>(output_names_[i]), static_cast<Eigen::Index>(output_dims_[i])};
-    if (assert_all_finite_ and not output.allFinite()) {
-      STEPIT_CRIT("Indices '{}' of output '{}' are not all-finite.", getNonFiniteIndices(output), output_names_[i]);
-      return false;
+    const void *output = nn_->getOutput(output_names_[i]);
+    if (assert_all_finite_ and output_dtypes_[i] == DataType::kFloat32) {
+      Eigen::Map<const ArrXf> values(static_cast<const float *>(output), output_dims_[i]);
+      if (not values.allFinite()) {
+        STEPIT_CRIT("Indices '{}' of output '{}' are not all-finite.", getNonFiniteIndices(values), output_names_[i]);
+        return false;
+      }
     }
-    splitFields(output, output_field_ids_[i], context);
+
+    const auto *source = static_cast<const std::uint8_t *>(output);
+    std::size_t offset{};
+    const std::size_t output_bytes = nn_->getOutputBytes(output_names_[i]);
+    for (std::size_t j{}; j < output_field_ids_[i].size(); ++j) {
+      const FieldSpec field_spec{output_dtypes_[i], output_field_sizes_[i][j]};
+      const std::size_t bytes = field_spec.byteSize();
+      if (offset > output_bytes or bytes > output_bytes - offset) {
+        STEPIT_THROW("Output field '{}' byte range starting at {} with length {} exceeds node '{}' size {}.",
+                     getFieldName(output_field_ids_[i][j]), offset, bytes, output_names_[i], output_bytes);
+      }
+      std::memcpy(ensureFieldValue(context, output_field_ids_[i][j]).data(), source + offset, bytes);
+      offset += bytes;
+    }
+    STEPIT_ASSERT(offset == output_bytes, "Output '{}' produced {} bytes, expected {}.", output_names_[i], offset,
+                  output_bytes);
   }
   return true;
 }
 
-void NeuroModule::parseFields(bool is_input, const FieldNameVec &node_names, const FieldSizeVec &node_sizes,
-                              std::vector<FieldNameVec> &field_names, std::vector<FieldSizeVec> &field_sizes,
-                              std::vector<FieldIdVec> &field_ids) {
+void NeuroModule::parseFields(bool is_input, const FieldNameVec &node_names, const DataTypeVec &node_dtypes,
+                              const FieldSizeVec &node_sizes, std::vector<FieldNameVec> &field_names,
+                              std::vector<FieldSizeVec> &field_sizes, std::vector<FieldIdVec> &field_ids) {
   const std::string identifier = is_input ? "input" : "output";
   const std::string fields_key = is_input ? config_.getDefinedKey({"input_field", "inputs", "input_fields"})
                                           : config_.getDefinedKey({"output_field", "outputs", "output_fields"});
@@ -94,7 +128,7 @@ void NeuroModule::parseFields(bool is_input, const FieldNameVec &node_names, con
     for (std::size_t i{}; i < num_nodes; ++i) {
       const auto &field_name = node_names[i];
       FieldSize field_size   = node_sizes[i];
-      FieldId field_id       = registerField(field_name, DataType::kFloat32, field_size);
+      FieldId field_id       = registerField(field_name, node_dtypes[i], field_size);
       field_names[i].push_back(field_name);
       field_sizes[i].push_back(field_size);
       field_ids[i].push_back(field_id);
@@ -118,7 +152,7 @@ void NeuroModule::parseFields(bool is_input, const FieldNameVec &node_names, con
 
       field_names[node_index].push_back(field_name);
       field_sizes[node_index].push_back(field_size);
-      field_ids[node_index].push_back(registerField(field_name, DataType::kFloat32, field_size));
+      field_ids[node_index].push_back(registerField(field_name, node_dtypes[node_index], field_size));
     }
   };
 
@@ -144,7 +178,7 @@ void NeuroModule::parseFields(bool is_input, const FieldNameVec &node_names, con
         node_field_entries["size"].to(field_size, true);
         field_names[i].push_back(field_name);
         field_sizes[i].push_back(field_size);
-        field_ids[i].push_back(registerField(field_name, DataType::kFloat32, field_size));
+        field_ids[i].push_back(registerField(field_name, node_dtypes[i], field_size));
       }
     }
   }

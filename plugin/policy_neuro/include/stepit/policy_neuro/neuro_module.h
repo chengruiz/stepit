@@ -14,10 +14,12 @@ class NeuroModule : public Module {
 
  private:
   using FieldNameVec = std::vector<std::string>;
+  using DataTypeVec  = std::vector<DataType>;
   using FieldSizeVec = std::vector<FieldSize>;
   void parseFields(                            // Parse field properties from the configuration
       bool is_input,                           // true for input fields, false for output fields
       const FieldNameVec &node_names,          // Names of the neural network's ordinary inputs/outputs
+      const DataTypeVec &node_dtypes,          // Scalar types of the neural network's ordinary inputs/outputs
       const FieldSizeVec &node_sizes,          // Sizes of the neural network's ordinary inputs/outputs
       std::vector<FieldNameVec> &field_names,  // Output vector of field names for each ordinary input/output
       std::vector<FieldSizeVec> &field_sizes,  // Output vector of field sizes for each ordinary input/output
@@ -31,12 +33,13 @@ class NeuroModule : public Module {
   std::string model_path_;
   std::string run_name_;
   bool assert_all_finite_{true};
+  DataTypeVec input_dtypes_, output_dtypes_;
   FieldSizeVec input_dims_{}, output_dims_{};
   FieldNameVec input_names_{}, output_names_{};
   std::vector<FieldNameVec> input_field_names_, output_field_names_;
   std::vector<FieldSizeVec> input_field_sizes_, output_field_sizes_;
   std::vector<FieldIdVec> input_field_ids_, output_field_ids_;
-  std::vector<ArrXf> input_arr_;
+  std::vector<FieldValue> input_values_;
 };
 
 class NeuroActor : public NeuroModule {
