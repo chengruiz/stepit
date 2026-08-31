@@ -1,4 +1,3 @@
-#include <cstring>
 #include <numeric>
 
 #include <stepit/policy_neuro/neuro_module.h>
@@ -54,33 +53,25 @@ bool NeuroModule::reset() {
 
 bool NeuroModule::update(const LowState &, ControlRequests &, FieldMap &context) {
   for (std::size_t i{}; i < input_names_.size(); ++i) {
-    auto &input_value       = input_values_[i];
-    auto *input             = input_value.data();
-    const auto input_bytes  = FieldSpec{input_value.dataType(), input_value.size()}.byteSize();
-    std::size_t offset{};
+    auto &input_value = input_values_[i];
+    FieldSize offset{};
     for (std::size_t j{}; j < input_field_ids_[i].size(); ++j) {
-      const FieldSpec field_spec{input_dtypes_[i], input_field_sizes_[i][j]};
-      const std::size_t bytes = field_spec.byteSize();
-      if (offset > input_bytes or bytes > input_bytes - offset) {
-        STEPIT_THROW("Input field '{}' byte range starting at {} with length {} exceeds node '{}' size {}.",
-                     getFieldName(input_field_ids_[i][j]), offset, bytes, input_names_[i], input_bytes);
-      }
-      const void *field_data = readFieldValue(context, input_field_ids_[i][j]).data();
+      const FieldValue &field_value = readFieldValue(context, input_field_ids_[i][j]);
       if (assert_all_finite_ and isFloatingPoint(input_dtypes_[i])) {
-        Eigen::Map<const ArrXf> values(static_cast<const float *>(field_data), input_field_sizes_[i][j]);
+        const auto &values = field_value.get<float>();
         if (not values.allFinite()) {
           STEPIT_CRIT("Indices '{}' of input field '{}' for node '{}' are not all-finite.",
                       getNonFiniteIndices(values), getFieldName(input_field_ids_[i][j]), input_names_[i]);
           return false;
         }
       }
-      std::memcpy(input + offset, field_data, bytes);
-      offset += bytes;
+      input_value.copyFrom(field_value, 0, offset, field_value.size());
+      offset += field_value.size();
     }
-    STEPIT_ASSERT(offset == input_bytes, "Input '{}' received {} bytes, expected {}.", input_names_[i], offset,
-                  input_bytes);
+    STEPIT_ASSERT(offset == input_value.size(), "Input '{}' received {} elements, expected {}.", input_names_[i],
+                  offset, input_value.size());
 
-    nn_->setInput(input_names_[i], static_cast<const void *>(input));
+    nn_->setInput(input_names_[i], static_cast<const void *>(input_value.data()));
   }
 
   nn_->runInference();
@@ -94,21 +85,14 @@ bool NeuroModule::update(const LowState &, ControlRequests &, FieldMap &context)
       }
     }
 
-    const auto *source = static_cast<const std::uint8_t *>(output);
-    std::size_t offset{};
-    const std::size_t output_bytes = nn_->getOutputBytes(output_names_[i]);
-    for (std::size_t j{}; j < output_field_ids_[i].size(); ++j) {
-      const FieldSpec field_spec{output_dtypes_[i], output_field_sizes_[i][j]};
-      const std::size_t bytes = field_spec.byteSize();
-      if (offset > output_bytes or bytes > output_bytes - offset) {
-        STEPIT_THROW("Output field '{}' byte range starting at {} with length {} exceeds node '{}' size {}.",
-                     getFieldName(output_field_ids_[i][j]), offset, bytes, output_names_[i], output_bytes);
-      }
-      std::memcpy(ensureFieldValue(context, output_field_ids_[i][j]).data(), source + offset, bytes);
-      offset += bytes;
+    FieldSize source_offset{};
+    for (FieldId field_id : output_field_ids_[i]) {
+      auto &target = ensureFieldValue(context, field_id);
+      target.copyFrom(output, source_offset, 0, target.size());
+      source_offset += target.size();
     }
-    STEPIT_ASSERT(offset == output_bytes, "Output '{}' produced {} bytes, expected {}.", output_names_[i], offset,
-                  output_bytes);
+    STEPIT_ASSERT(source_offset == output_dims_[i], "Output '{}' produced {} elements, expected {}.", output_names_[i],
+                  source_offset, output_dims_[i]);
   }
   return true;
 }

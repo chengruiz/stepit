@@ -93,6 +93,10 @@ class FieldValue {
   FieldSize size() const;
   /** Returns the scalar data type of this value. */
   DataType dataType() const;
+  /** Copies a scalar range from another value of the same data type. */
+  void copyFrom(const FieldValue &source, FieldSize source_offset, FieldSize target_offset, FieldSize count);
+  /** Copies a scalar range from a raw buffer containing this value's data type. */
+  void copyFrom(const void *source, FieldSize source_offset, FieldSize target_offset, FieldSize count);
   /** Returns an element-wise scalar conversion with the same length. */
   FieldValue cast(DataType dtype) const;
 

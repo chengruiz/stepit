@@ -1,6 +1,7 @@
 #include <stepit/field/field.h>
 
 #include <cmath>
+#include <cstring>
 #include <limits>
 
 namespace stepit {
@@ -62,6 +63,28 @@ DataType FieldValue::dataType() const {
         return DataTypeTrait<Scalar>::value;
       },
       storage_);
+}
+
+void FieldValue::copyFrom(const FieldValue &source, FieldSize source_offset, FieldSize target_offset,
+                          FieldSize count) {
+  STEPIT_ASSERT(source.dataType() == dataType(), "Cannot copy field data from type '{}' to type '{}'.",
+                dataTypeName(source.dataType()), dataTypeName(dataType()));
+  STEPIT_ASSERT(source_offset <= source.size() and count <= source.size() - source_offset,
+                "Source range with offset {} and count {} exceeds field value size {}.", source_offset, count,
+                source.size());
+  copyFrom(static_cast<const void *>(source.data()), source_offset, target_offset, count);
+}
+
+void FieldValue::copyFrom(const void *source, FieldSize source_offset, FieldSize target_offset, FieldSize count) {
+  STEPIT_ASSERT(target_offset <= size() and count <= size() - target_offset,
+                "Target range with offset {} and count {} exceeds field value size {}.", target_offset, count, size());
+  if (count == 0) return;
+  STEPIT_ASSERT(source != nullptr, "Cannot copy field data from a null source.");
+
+  const std::size_t element_size = dataTypeSize(dataType());
+  const auto *source_data        = static_cast<const std::byte *>(source);
+  std::memmove(data() + target_offset * element_size, source_data + source_offset * element_size,
+               count * element_size);
 }
 
 FieldValue FieldValue::cast(DataType dtype) const {

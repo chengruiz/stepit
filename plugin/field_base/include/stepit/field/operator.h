@@ -56,8 +56,6 @@ class ConcatOperator : public Operator {
  private:
   FieldIdVec source_ids_;
   FieldId target_id_{};
-  std::vector<std::size_t> source_bytes_;
-  std::size_t target_bytes_{};
 };
 
 class ConstOperator : public Operator {
@@ -94,7 +92,7 @@ class HistoryOperator : public Operator {
 
  private:
   void push(const FieldValue &frame);
-  void render(std::byte *target) const;
+  void render(FieldValue &target) const;
 
   FieldId source_id_{};
   FieldId target_id_{};
@@ -106,7 +104,6 @@ class HistoryOperator : public Operator {
   bool include_current_frame_{true};
   bool has_default_value_{true};
   yml::Node default_value_node_;
-  std::size_t source_bytes_{};
   FieldValue default_value_;
   RingBuffer<FieldValue> history_;
 };
@@ -138,8 +135,6 @@ class SliceOperator : public Operator {
   FieldId source_id_{};
   FieldId target_id_{};
   yml::Indices indices_;
-  std::size_t element_size_{};
-  std::size_t source_bytes_{};
 };
 
 class SplitOperator : public Operator {
@@ -153,8 +148,6 @@ class SplitOperator : public Operator {
   FieldId source_id_{};
   FieldIdVec target_ids_;
   std::vector<FieldSize> segment_sizes_;
-  std::vector<std::size_t> segment_bytes_;
-  std::size_t source_bytes_{};
 };
 }  // namespace field
 }  // namespace stepit

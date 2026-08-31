@@ -1,4 +1,3 @@
-#include <cstring>
 #include <set>
 
 #include <stepit/field/operator.h>
@@ -94,8 +93,6 @@ ConcatOperator::ConcatOperator(const yml::Node &config) {
 void ConcatOperator::init() {
   FieldSize target_size{};
   DataType dtype{DataType::kUndefined};
-  source_bytes_.clear();
-  source_bytes_.reserve(source_ids_.size());
   for (FieldId source_id : source_ids_) {
     const FieldSpec source_spec = getFieldSpec(source_id);
     if (dtype == DataType::kUndefined) {
@@ -106,21 +103,20 @@ void ConcatOperator::init() {
                     dataTypeName(source_spec.dtype));
     }
     target_size += source_spec.size;
-    source_bytes_.push_back(source_spec.byteSize());
   }
-  const FieldSpec target_spec{dtype, target_size};
-  setFieldSpec(target_id_, target_spec);
-  target_bytes_ = target_spec.byteSize();
+  setFieldSpec(target_id_, FieldSpec{dtype, target_size});
 }
 
 bool ConcatOperator::update(FieldMap &context) {
-  auto *target       = ensureFieldValue(context, target_id_).data();
-  std::size_t offset = 0;
-  for (std::size_t i{}; i < source_ids_.size(); ++i) {
-    std::memcpy(target + offset, readFieldValue(context, source_ids_[i]).data(), source_bytes_[i]);
-    offset += source_bytes_[i];
+  auto &target            = ensureFieldValue(context, target_id_);
+  FieldSize target_offset = 0;
+  for (FieldId source_id : source_ids_) {
+    const auto &source = readFieldValue(context, source_id);
+    target.copyFrom(source, 0, target_offset, source.size());
+    target_offset += source.size();
   }
-  STEPIT_ASSERT(offset == target_bytes_, "Concat copied {} bytes, expected {}.", offset, target_bytes_);
+  STEPIT_ASSERT(target_offset == target.size(), "Concat copied {} elements, expected {}.", target_offset,
+                target.size());
   return true;
 }
 
@@ -210,7 +206,6 @@ void HistoryOperator::init() {
   target_size_ = source_size_ * indices_.size();
   setFieldSpec(target_id_, FieldSpec{source_spec.dtype, target_size_});
 
-  source_bytes_ = source_spec.byteSize();
   if (has_default_value_) {
     const yml::Node value_node =
         default_value_node_.isSequence(1) ? default_value_node_[0] : default_value_node_;
@@ -233,19 +228,18 @@ void HistoryOperator::push(const FieldValue &frame) {
   }
 }
 
-void HistoryOperator::render(std::byte *target) const {
-  auto *output       = target;
-  std::size_t offset = 0;
+void HistoryOperator::render(FieldValue &target) const {
+  FieldSize target_offset = 0;
   for (auto index : indices_) {
     const auto &frame = history_[index];
     STEPIT_ASSERT(frame.size() == source_size_ and
                       frame.dataType() == getFieldDataType(source_id_),
                   "History frame specification does not match source field '{}'.", getFieldName(source_id_));
-    std::memcpy(output + offset, frame.data(), source_bytes_);
-    offset += source_bytes_;
+    target.copyFrom(frame, 0, target_offset, frame.size());
+    target_offset += frame.size();
   }
-  const std::size_t target_bytes = getFieldSpec(target_id_).byteSize();
-  STEPIT_ASSERT(offset == target_bytes, "History rendered {} bytes, expected {}.", offset, target_bytes);
+  STEPIT_ASSERT(target_offset == target.size(), "History rendered {} elements, expected {}.", target_offset,
+                target.size());
 }
 
 bool HistoryOperator::update(FieldMap &context) {
@@ -255,7 +249,7 @@ bool HistoryOperator::update(FieldMap &context) {
   }
   if (history_.empty()) history_.fill(*source);
   if (include_current_frame_) push(*source);
-  render(ensureFieldValue(context, target_id_).data());
+  render(ensureFieldValue(context, target_id_));
   return true;
 }
 
@@ -308,18 +302,13 @@ void SliceOperator::init() {
   const FieldSpec source_spec = getFieldSpec(source_id_);
   indices_.canonicalize(source_spec.size);
   setFieldSpec(target_id_, FieldSpec{source_spec.dtype, indices_.size()});
-  element_size_ = dataTypeSize(source_spec.dtype);
-  source_bytes_ = source_spec.byteSize();
 }
 
 bool SliceOperator::update(FieldMap &context) {
-  const auto *source = readFieldValue(context, source_id_).data();
-  auto *target       = ensureFieldValue(context, target_id_).data();
+  const auto &source = readFieldValue(context, source_id_);
+  auto &target       = ensureFieldValue(context, target_id_);
   for (std::size_t i{}; i < indices_.size(); ++i) {
-    const std::size_t source_offset = indices_[i] * element_size_;
-    STEPIT_ASSERT(source_offset + element_size_ <= source_bytes_, "Slice source byte range [{}..{}) exceeds {}.",
-                  source_offset, source_offset + element_size_, source_bytes_);
-    std::memcpy(target + i * element_size_, source + source_offset, element_size_);
+    target.copyFrom(source, indices_[i], i, 1);
   }
   return true;
 }
@@ -350,28 +339,25 @@ SplitOperator::SplitOperator(const yml::Node &config) {
 
 void SplitOperator::init() {
   const FieldSpec source_spec = getFieldSpec(source_id_);
-  std::size_t total_size{};
-  segment_bytes_.clear();
-  segment_bytes_.reserve(segment_sizes_.size());
+  FieldSize total_size{};
   for (std::size_t i{}; i < segment_sizes_.size(); ++i) {
     total_size += segment_sizes_[i];
-    const FieldSpec target_spec{source_spec.dtype, segment_sizes_[i]};
-    setFieldSpec(target_ids_[i], target_spec);
-    segment_bytes_.push_back(target_spec.byteSize());
+    setFieldSpec(target_ids_[i], FieldSpec{source_spec.dtype, segment_sizes_[i]});
   }
   STEPIT_ASSERT(total_size == source_spec.size, "Split sizes ({}) do not match source size ({}) for '{}'.", total_size,
                 source_spec.size, getFieldName(source_id_));
-  source_bytes_ = source_spec.byteSize();
 }
 
 bool SplitOperator::update(FieldMap &context) {
-  const auto *source = readFieldValue(context, source_id_).data();
-  std::size_t offset = 0;
+  const auto &source       = readFieldValue(context, source_id_);
+  FieldSize source_offset = 0;
   for (std::size_t i{}; i < target_ids_.size(); ++i) {
-    std::memcpy(ensureFieldValue(context, target_ids_[i]).data(), source + offset, segment_bytes_[i]);
-    offset += segment_bytes_[i];
+    auto &target = ensureFieldValue(context, target_ids_[i]);
+    target.copyFrom(source, source_offset, 0, target.size());
+    source_offset += target.size();
   }
-  STEPIT_ASSERT(offset == source_bytes_, "Split copied {} bytes, expected {}.", offset, source_bytes_);
+  STEPIT_ASSERT(source_offset == source.size(), "Split copied {} elements, expected {}.", source_offset,
+                source.size());
   return true;
 }
 
