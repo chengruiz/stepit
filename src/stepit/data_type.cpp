@@ -3,6 +3,19 @@
 #include <stdexcept>
 
 namespace stepit {
+bool isFloatingPoint(DataType dtype) {
+  switch (dtype) {
+    case DataType::kFloat32:
+      return true;
+    case DataType::kUndefined:
+    case DataType::kInt32:
+    case DataType::kInt64:
+    case DataType::kBool:
+      return false;
+  }
+  return false;
+}
+
 std::size_t dataTypeSize(DataType dtype) {
   switch (dtype) {
     case DataType::kUndefined:

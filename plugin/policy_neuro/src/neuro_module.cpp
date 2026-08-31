@@ -66,7 +66,7 @@ bool NeuroModule::update(const LowState &, ControlRequests &, FieldMap &context)
                      getFieldName(input_field_ids_[i][j]), offset, bytes, input_names_[i], input_bytes);
       }
       const void *field_data = readFieldValue(context, input_field_ids_[i][j]).data();
-      if (assert_all_finite_ and input_dtypes_[i] == DataType::kFloat32) {
+      if (assert_all_finite_ and isFloatingPoint(input_dtypes_[i])) {
         Eigen::Map<const ArrXf> values(static_cast<const float *>(field_data), input_field_sizes_[i][j]);
         if (not values.allFinite()) {
           STEPIT_CRIT("Indices '{}' of input field '{}' for node '{}' are not all-finite.",
@@ -86,7 +86,7 @@ bool NeuroModule::update(const LowState &, ControlRequests &, FieldMap &context)
   nn_->runInference();
   for (std::size_t i{}; i < output_names_.size(); ++i) {
     const void *output = nn_->getOutput(output_names_[i]);
-    if (assert_all_finite_ and output_dtypes_[i] == DataType::kFloat32) {
+    if (assert_all_finite_ and isFloatingPoint(output_dtypes_[i])) {
       Eigen::Map<const ArrXf> values(static_cast<const float *>(output), output_dims_[i]);
       if (not values.allFinite()) {
         STEPIT_CRIT("Indices '{}' of output '{}' are not all-finite.", getNonFiniteIndices(values), output_names_[i]);

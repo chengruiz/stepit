@@ -9,6 +9,8 @@ namespace stepit {
 /** Scalar data types. */
 enum class DataType { kUndefined, kFloat32, kInt32, kInt64, kBool };
 
+/** Returns whether the data type is floating point. */
+bool isFloatingPoint(DataType dtype);
 /** Returns one scalar's byte size, or zero for `kUndefined` or an invalid value. */
 std::size_t dataTypeSize(DataType dtype);
 /** Returns a stable diagnostic name. */
