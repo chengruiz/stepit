@@ -257,12 +257,6 @@ FieldValue &ensureFieldValue(FieldMap &context, FieldId field_id);
 
 /** Parses a YAML sequence of field names into a list of field IDs. */
 void parseFieldIds(const yml::Node &node, FieldIdVec &result);
-/** Copies a vector into a result buffer at offset, then advances the offset. */
-void stackField(cArrXf vec, FieldSize &index, rArrXf result);
-/** Concatenates selected fields from context into a pre-sized destination vector. */
-void concatFields(const FieldMap &context, const FieldIdVec &field_ids, rArrXf result);
-/** Splits a source vector into field slices according to registered field sizes. */
-void splitFields(cArrXf source, const FieldIdVec &field_ids, FieldMap &result);
 }  // namespace field
 }  // namespace stepit
 

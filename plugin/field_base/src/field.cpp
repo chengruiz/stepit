@@ -287,34 +287,5 @@ void parseFieldIds(const yml::Node &node, FieldIdVec &result) {
   node.assertSequence();
   for (const auto &item : node) result.push_back(getFieldId(item.as<std::string>()));
 }
-
-void stackField(cArrXf vec, FieldSize &offset, rArrXf result) {
-  STEPIT_ASSERT(offset + vec.size() <= result.size(), "Field segment size ({} + {}) out of bounds ({}).", offset,
-                vec.size(), result.size());
-  result.segment(offset, vec.size()) = vec;
-  offset += vec.size();
-}
-
-void concatFields(const FieldMap &context, const FieldIdVec &field_ids, rArrXf result) {
-  FieldSize offset = 0;
-  for (auto field_id : field_ids) {
-    stackField(context.at(field_id).get<float>(), offset, result);
-  }
-  STEPIT_ASSERT(offset == result.size(), "Concat field size ({}) does not match the result size ({}).", offset,
-                result.size());
-}
-
-void splitFields(cArrXf source, const FieldIdVec &field_ids, FieldMap &context) {
-  FieldSize offset = 0;
-  for (auto field_id : field_ids) {
-    FieldSize size = getFieldSize(field_id);
-    STEPIT_ASSERT(offset + size <= source.size(), "Field segment size ({} + {}) out of bound ({}).", offset, size,
-                  source.size());
-    context[field_id] = source.segment(offset, size);
-    offset += size;
-  }
-  STEPIT_ASSERT(offset == source.size(), "Split field size ({}) does not match the source size ({}).", offset,
-                source.size());
-}
 }  // namespace field
 }  // namespace stepit
