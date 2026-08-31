@@ -101,8 +101,7 @@ class FieldValue {
   FieldValue cast(DataType dtype) const;
 
  private:
-  using Storage =
-      std::variant<FieldArray<float>, FieldArray<std::int32_t>, FieldArray<std::int64_t>, FieldArray<bool>>;
+  using Storage = std::variant<FieldArray<float>, FieldArray<std::int32_t>, FieldArray<std::int64_t>, FieldArray<bool>>;
 
   template <typename T>
   static constexpr bool isSupportedScalar() {

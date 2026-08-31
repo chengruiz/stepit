@@ -48,8 +48,7 @@ class Ros2Publisher : public Publisher {
     using BoolPublisher    = TypedPublisher<std_msgs::msg::UInt8MultiArray, std::uint8_t>;
     using PublisherVariant = std::variant<Float32Publisher, Int32Publisher, Int64Publisher, BoolPublisher>;
 
-    static PublisherVariant makePublisher(const rclcpp::Node::SharedPtr &node, const std::string &name,
-                                          DataType dtype);
+    static PublisherVariant makePublisher(const rclcpp::Node::SharedPtr &node, const std::string &name, DataType dtype);
 
     std::string name_;
     DataType dtype_;

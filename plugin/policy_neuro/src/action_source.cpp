@@ -36,9 +36,7 @@ bool ActionHistory::update(const LowState &low_state, ControlRequests &requests,
   return true;
 }
 
-void ActionHistory::postStep(const FieldMap &context) {
-  action_buf_.push_back(context.at(action_id_).get<float>());
-}
+void ActionHistory::postStep(const FieldMap &context) { action_buf_.push_back(context.at(action_id_).get<float>()); }
 
 ActionFilter::ActionFilter(const NeuroPolicySpec &policy_spec, const ModuleSpec &module_spec)
     : Module(policy_spec, ModuleSpec(module_spec, "action_filter")) {

@@ -36,8 +36,7 @@ Actuator::Actuator(const NeuroPolicySpec &policy_spec, const ModuleSpec &module_
 PositionActuator::PositionActuator(const NeuroPolicySpec &policy_spec, const ModuleSpec &module_spec)
     : Actuator(policy_spec, module_spec) {
   target_joint_pos_.setZero(policy_spec.dof);
-  last_target_joint_pos_id_ =
-      registerProvision("last_target_joint_pos", DataType::kFloat32, target_joint_pos_.size());
+  last_target_joint_pos_id_ = registerProvision("last_target_joint_pos", DataType::kFloat32, target_joint_pos_.size());
 }
 
 bool PositionActuator::reset() {
@@ -71,8 +70,7 @@ void PositionActuator::setLowCmd(LowCmd &cmd, cArrXf action) {
 VelocityActuator::VelocityActuator(const NeuroPolicySpec &policy_spec, const ModuleSpec &module_spec)
     : Actuator(policy_spec, module_spec) {
   target_joint_vel_         = bias_;
-  last_target_joint_vel_id_ =
-      registerProvision("last_target_joint_vel", DataType::kFloat32, target_joint_vel_.size());
+  last_target_joint_vel_id_ = registerProvision("last_target_joint_vel", DataType::kFloat32, target_joint_vel_.size());
 }
 
 bool VelocityActuator::reset() {
@@ -99,8 +97,7 @@ void VelocityActuator::setLowCmd(LowCmd &cmd, cArrXf action) {
 TorqueActuator::TorqueActuator(const NeuroPolicySpec &policy_spec, const ModuleSpec &module_spec)
     : Actuator(policy_spec, module_spec) {
   target_joint_tor_         = bias_;
-  last_target_joint_tor_id_ =
-      registerProvision("last_target_joint_tor", DataType::kFloat32, target_joint_tor_.size());
+  last_target_joint_tor_id_ = registerProvision("last_target_joint_tor", DataType::kFloat32, target_joint_tor_.size());
 }
 
 bool TorqueActuator::reset() {

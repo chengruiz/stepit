@@ -160,7 +160,7 @@ void Communication::mainEvent() {
     if (frozen_) active_ = false;
 
     const auto &negative_joint_power_limit = spec().safety.negative_joint_power_limit;
-    actual_low_cmd_ = low_cmd_;
+    actual_low_cmd_                        = low_cmd_;
 
     if (not active_) {
       setDampedCommand(actual_low_cmd_);

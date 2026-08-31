@@ -61,7 +61,7 @@ int main(int argc, char *argv[]) {
     STEPIT_SET_VERBOSITY(static_cast<VerbosityLevel>(arg_map["verbosity"].as<int>()));
   }
 
-  const bool speed_only     = arg_map["speed-only"].as<bool>();
+  const bool speed_only      = arg_map["speed-only"].as<bool>();
   const int speed_iterations = arg_map["speed-iterations"].as<int>();
   const int speed_warmup     = arg_map["speed-warmup"].as<int>();
   if (speed_iterations <= 0) {

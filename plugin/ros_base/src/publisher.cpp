@@ -10,8 +10,7 @@
 #include <stepit/ros/publisher.h>
 
 namespace stepit {
-RosPublisher::ArrayPublisher::ArrayPublisher(std::string name, DataType dtype)
-    : name_(std::move(name)), dtype_(dtype) {
+RosPublisher::ArrayPublisher::ArrayPublisher(std::string name, DataType dtype) : name_(std::move(name)), dtype_(dtype) {
   switch (dtype_) {
     case DataType::kUndefined:
       STEPIT_THROW("Cannot create array channel '{}' with undefined data type.", name_);

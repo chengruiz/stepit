@@ -53,7 +53,6 @@ DataType parseDataType(const std::string &name) {
   if (name == "int32") return DataType::kInt32;
   if (name == "int64") return DataType::kInt64;
   if (name == "bool") return DataType::kBool;
-  throw std::invalid_argument("Unsupported data type '" + name +
-                              "'. Expected one of: float32, int32, int64, bool");
+  throw std::invalid_argument("Unsupported data type '" + name + "'. Expected one of: float32, int32, int64, bool");
 }
 }  // namespace stepit

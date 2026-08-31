@@ -78,7 +78,7 @@ bool CastOperator::update(FieldMap &context) {
 
 ConcatOperator::ConcatOperator(const yml::Node &config) {
   config.assertHasValue("sources", "target");
-  const auto target_name = config["target"].as<std::string>();
+  const auto target_name  = config["target"].as<std::string>();
   const auto sources_node = config["sources"];
   sources_node.assertSequence();
   for (const auto &source_node : sources_node) {
@@ -127,8 +127,8 @@ ConstOperator::ConstOperator(const yml::Node &config) {
                                                        : config["field"].as<std::string>();
 
   const auto value_node = config["value"];
-  value_node.require(value_node.isScalar() or value_node.isNonEmptySequence(),
-                     "Expected a scalar or a non-empty sequence");
+  value_node
+      .require(value_node.isScalar() or value_node.isNonEmptySequence(), "Expected a scalar or a non-empty sequence");
 
   FieldSize size{};
   if (value_node.isScalar()) {
@@ -207,9 +207,8 @@ void HistoryOperator::init() {
   setFieldSpec(target_id_, FieldSpec{source_spec.dtype, target_size_});
 
   if (has_default_value_) {
-    const yml::Node value_node =
-        default_value_node_.isSequence(1) ? default_value_node_[0] : default_value_node_;
-    default_value_ = parseFieldValue(value_node, source_spec, true);
+    const yml::Node value_node = default_value_node_.isSequence(1) ? default_value_node_[0] : default_value_node_;
+    default_value_             = parseFieldValue(value_node, source_spec, true);
   }
   history_.allocate(history_len_);
 }
@@ -232,8 +231,7 @@ void HistoryOperator::render(FieldValue &target) const {
   FieldSize target_offset = 0;
   for (auto index : indices_) {
     const auto &frame = history_[index];
-    STEPIT_ASSERT(frame.size() == source_size_ and
-                      frame.dataType() == getFieldDataType(source_id_),
+    STEPIT_ASSERT(frame.size() == source_size_ and frame.dataType() == getFieldDataType(source_id_),
                   "History frame specification does not match source field '{}'.", getFieldName(source_id_));
     target.copyFrom(frame, 0, target_offset, frame.size());
     target_offset += frame.size();
@@ -349,15 +347,14 @@ void SplitOperator::init() {
 }
 
 bool SplitOperator::update(FieldMap &context) {
-  const auto &source       = readFieldValue(context, source_id_);
+  const auto &source      = readFieldValue(context, source_id_);
   FieldSize source_offset = 0;
   for (std::size_t i{}; i < target_ids_.size(); ++i) {
     auto &target = ensureFieldValue(context, target_ids_[i]);
     target.copyFrom(source, source_offset, 0, target.size());
     source_offset += target.size();
   }
-  STEPIT_ASSERT(source_offset == source.size(), "Split copied {} elements, expected {}.", source_offset,
-                source.size());
+  STEPIT_ASSERT(source_offset == source.size(), "Split copied {} elements, expected {}.", source_offset, source.size());
   return true;
 }
 

@@ -47,8 +47,7 @@ std::byte *FieldValue::data() {
 }
 
 const std::byte *FieldValue::data() const {
-  return std::visit(
-      [](const auto &value) { return reinterpret_cast<const std::byte *>(value.data()); }, storage_);
+  return std::visit([](const auto &value) { return reinterpret_cast<const std::byte *>(value.data()); }, storage_);
 }
 
 FieldSize FieldValue::size() const {
@@ -65,8 +64,7 @@ DataType FieldValue::dataType() const {
       storage_);
 }
 
-void FieldValue::copyFrom(const FieldValue &source, FieldSize source_offset, FieldSize target_offset,
-                          FieldSize count) {
+void FieldValue::copyFrom(const FieldValue &source, FieldSize source_offset, FieldSize target_offset, FieldSize count) {
   STEPIT_ASSERT(source.dataType() == dataType(), "Cannot copy field data from type '{}' to type '{}'.",
                 dataTypeName(source.dataType()), dataTypeName(dataType()));
   STEPIT_ASSERT(source_offset <= source.size() and count <= source.size() - source_offset,
@@ -83,25 +81,24 @@ void FieldValue::copyFrom(const void *source, FieldSize source_offset, FieldSize
 
   const std::size_t element_size = dataTypeSize(dataType());
   const auto *source_data        = static_cast<const std::byte *>(source);
-  std::memmove(data() + target_offset * element_size, source_data + source_offset * element_size,
-               count * element_size);
+  std::memmove(data() + target_offset * element_size, source_data + source_offset * element_size, count * element_size);
 }
 
 FieldValue FieldValue::cast(DataType dtype) const {
   FieldValue result(FieldSpec{dtype, size()});
   std::visit(
       [](const auto &source, auto &target) {
-        using Source = typename std::decay<decltype(source)>::type::Scalar;
-        using Target = typename std::decay<decltype(target)>::type::Scalar;
-        constexpr bool float_to_integer =
-            std::is_same<Source, float>::value and
-            (std::is_same<Target, std::int32_t>::value or std::is_same<Target, std::int64_t>::value);
-        constexpr bool narrowing_integer =
-            std::is_same<Source, std::int64_t>::value and std::is_same<Target, std::int32_t>::value;
+        using Source                    = typename std::decay<decltype(source)>::type::Scalar;
+        using Target                    = typename std::decay<decltype(target)>::type::Scalar;
+        constexpr bool float_to_integer = std::is_same<Source, float>::value and
+                                          (std::is_same<Target, std::int32_t>::value or
+                                           std::is_same<Target, std::int64_t>::value);
+        constexpr bool narrowing_integer = std::is_same<Source, std::int64_t>::value and
+                                           std::is_same<Target, std::int32_t>::value;
         if constexpr (float_to_integer or narrowing_integer) {
           for (Eigen::Index index{}; index < source.size(); ++index) {
             const long double element = static_cast<long double>(source(index));
-            bool valid = element >= static_cast<long double>(std::numeric_limits<Target>::lowest()) and
+            bool valid                = element >= static_cast<long double>(std::numeric_limits<Target>::lowest()) and
                          element <= static_cast<long double>(std::numeric_limits<Target>::max());
             if constexpr (float_to_integer) valid = valid and std::isfinite(source(index));
             STEPIT_ASSERT(valid, "Cannot cast element {} from {} value {} to {}.", index,
@@ -168,8 +165,8 @@ FieldId FieldManager::registerField(const std::string &name, DataType dtype, Fie
   std::lock_guard<std::recursive_mutex> lock(mutex_);
   auto it = name_to_id_.find(name);
   if (it == name_to_id_.end()) {  // If not registered
-    const FieldId id   = next_id_++;
-    name_to_id_[name]  = id;
+    const FieldId id  = next_id_++;
+    name_to_id_[name] = id;
     id_to_name_.push_back(name);
     id_to_spec_.push_back(FieldSpec{dtype, size});
     return id;

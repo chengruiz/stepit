@@ -52,16 +52,16 @@ bool NegativeJointPowerLimit::apply(const LowState &state, const LowCmd &request
     const float modeled_power = modeled_torque * motor_state.dq;
     if (modeled_power >= -limit) continue;
 
-    applied                 = true;
-    const float safe_torque = -limit / motor_state.dq;
+    applied                    = true;
+    const float safe_torque    = -limit / motor_state.dq;
     float remaining_correction = safe_torque - modeled_torque;
     auto &filtered             = filtered_cmd[i];
 
     const bool feedforward_can_help = (requested.tor < 0.0F and remaining_correction > 0.0F) or
                                       (requested.tor > 0.0F and remaining_correction < 0.0F);
     if (feedforward_can_help) {
-      const float feedforward_correction =
-          std::copysign(std::min(std::abs(requested.tor), std::abs(remaining_correction)), remaining_correction);
+      const float feedforward_correction = std::copysign(
+          std::min(std::abs(requested.tor), std::abs(remaining_correction)), remaining_correction);
       filtered.tor += feedforward_correction;
       remaining_correction -= feedforward_correction;
     }

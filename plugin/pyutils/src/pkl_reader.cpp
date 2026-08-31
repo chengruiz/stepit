@@ -27,11 +27,11 @@ PklReader::PklReader(const std::string &path) {
   ensurePythonInterpreter();
   pybind11::gil_scoped_acquire gil;
 
-  auto builtins  = pybind11::module_::import("builtins");
-  auto pickle    = pybind11::module_::import("pickle");
-  auto numpy     = pybind11::module_::import("numpy");
-  auto file      = builtins.attr("open")(fs::canonical(resolved_path).string(), "rb");
-  auto data      = pickle.attr("load")(file);
+  auto builtins = pybind11::module_::import("builtins");
+  auto pickle   = pybind11::module_::import("pickle");
+  auto numpy    = pybind11::module_::import("numpy");
+  auto file     = builtins.attr("open")(fs::canonical(resolved_path).string(), "rb");
+  auto data     = pickle.attr("load")(file);
   file.attr("close")();
   auto data_type = pybind11::str(pybind11::type::of(data)).cast<std::string>();
 

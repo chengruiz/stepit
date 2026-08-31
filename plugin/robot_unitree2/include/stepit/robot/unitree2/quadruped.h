@@ -113,9 +113,9 @@ struct AliengoSimSpec {
   static constexpr uint8_t kMotorServoMode = kGo2MotorServoMode;
 };
 
-using Go2Api = UnitreeQuadrupedApi<Go2Spec>;
-using Go2WApi = UnitreeQuadrupedApi<Go2WSpec>;
-using B2Api = UnitreeQuadrupedApi<B2Spec>;
+using Go2Api        = UnitreeQuadrupedApi<Go2Spec>;
+using Go2WApi       = UnitreeQuadrupedApi<Go2WSpec>;
+using B2Api         = UnitreeQuadrupedApi<B2Spec>;
 using AliengoSimApi = UnitreeQuadrupedApi<AliengoSimSpec>;
 }  // namespace stepit
 

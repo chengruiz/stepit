@@ -60,8 +60,8 @@ bool NeuroModule::update(const LowState &, ControlRequests &, FieldMap &context)
       if (assert_all_finite_ and isFloatingPoint(input_dtypes_[i])) {
         const auto &values = field_value.get<float>();
         if (not values.allFinite()) {
-          STEPIT_CRIT("Indices '{}' of input field '{}' for node '{}' are not all-finite.",
-                      getNonFiniteIndices(values), getFieldName(input_field_ids_[i][j]), input_names_[i]);
+          STEPIT_CRIT("Indices '{}' of input field '{}' for node '{}' are not all-finite.", getNonFiniteIndices(values),
+                      getFieldName(input_field_ids_[i][j]), input_names_[i]);
           return false;
         }
       }

@@ -88,10 +88,10 @@ MotionAlignment::MotionAlignment(const NeuroPolicySpec &policy_spec, const Modul
   reference_index_          = config_["reference_index"].as<int>(0);
   resolved_reference_index_ = 0;
 
-  current_pos_name_ = config_["current_pos_name"].as<std::string>("base_global_pos");
-  current_ori_name_ = config_["current_ori_name"].as<std::string>("base_global_ori");
-  target_pos_name_  = config_["target_pos_name"].as<std::string>("base_target_pos");
-  target_ori_name_  = config_["target_ori_name"].as<std::string>("base_target_ori");
+  current_pos_name_       = config_["current_pos_name"].as<std::string>("base_global_pos");
+  current_ori_name_       = config_["current_ori_name"].as<std::string>("base_global_ori");
+  target_pos_name_        = config_["target_pos_name"].as<std::string>("base_target_pos");
+  target_ori_name_        = config_["target_ori_name"].as<std::string>("base_target_ori");
   alignment_trigger_name_ = config_["alignment_trigger_name"].as<std::string>(alignment_trigger_name_);
 
   current_ori_id_        = registerRequirement(current_ori_name_, DataType::kFloat32, 4);
@@ -131,9 +131,9 @@ bool MotionAlignment::init() {
                   target_ori_name_, target_pos_num_frames);
   }
 
-  num_frames_ = num_frames;
+  num_frames_               = num_frames;
   resolved_reference_index_ = reference_index_ >= 0 ? static_cast<std::size_t>(reference_index_)
-                                                     : num_frames_ + reference_index_;
+                                                    : num_frames_ + reference_index_;
   setFieldSpec(aligned_target_ori_id_, FieldSpec{DataType::kFloat32, target_ori_size});
   setFieldSpec(aligned_target_pos_id_, FieldSpec{DataType::kFloat32, 3 * num_frames_});
   return true;
@@ -149,15 +149,13 @@ bool MotionAlignment::update(const LowState &, ControlRequests &, FieldMap &cont
   Quatf current_ori(context.at(current_ori_id_).get<float>());
   const auto &target_ori = context.at(target_ori_id_).get<float>();
 
-  Vec3f current_pos = current_pos_id_ == kInvalidFieldId
-                          ? Vec3f::Zero()
-                          : Vec3f(context.at(current_pos_id_).get<float>());
+  Vec3f current_pos = current_pos_id_ == kInvalidFieldId ? Vec3f::Zero()
+                                                         : Vec3f(context.at(current_pos_id_).get<float>());
   ArrXf target_pos  = target_pos_id_ == kInvalidFieldId ? ArrXf::Zero(static_cast<Eigen::Index>(3 * num_frames_))
                                                         : ArrXf(context.at(target_pos_id_).get<float>());
 
-  const bool motion_restarted =
-      static_cast<std::size_t>(context.at(motion_frame_index_id_).get<float>()(0)) == 0;
-  const auto alignment_trigger = context.find(alignment_trigger_id_);
+  const bool motion_restarted    = static_cast<std::size_t>(context.at(motion_frame_index_id_).get<float>()(0)) == 0;
+  const auto alignment_trigger   = context.find(alignment_trigger_id_);
   const bool alignment_triggered = alignment_trigger != context.end() and alignment_trigger->second.size() > 0 and
                                    alignment_trigger->second.get<float>()(0) > 0.5F;
   if (motion_restarted or alignment_triggered) {

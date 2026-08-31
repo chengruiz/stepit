@@ -6,8 +6,8 @@
 
 namespace stepit {
 template <typename Message, typename Scalar>
-Ros2Publisher::ArrayPublisher::TypedPublisher<Message, Scalar>::TypedPublisher(
-    const rclcpp::Node::SharedPtr &node, const std::string &name)
+Ros2Publisher::ArrayPublisher::TypedPublisher<Message, Scalar>::TypedPublisher(const rclcpp::Node::SharedPtr &node,
+                                                                               const std::string &name)
     : publisher_(node->create_publisher<Message>(name, 1)) {}
 
 template <typename Message, typename Scalar>

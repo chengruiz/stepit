@@ -94,9 +94,7 @@ class RedisJoystick final : public Joystick {
     received_    = true;
   }
 
-  bool isConnected() const {
-    return received_ and getElapsedTime<MSec>(last_update_) < disconnect_timeout_ms_;
-  }
+  bool isConnected() const { return received_ and getElapsedTime<MSec>(last_update_) < disconnect_timeout_ms_; }
 
   void parsePayload(const JsonDict &payload, State &state) const {
     bool a{false}, b{false}, x{false}, y{false}, start{false}, select{false}, las{false}, ras{false};

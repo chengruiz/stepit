@@ -21,9 +21,7 @@ const std::map<std::string, Agent::Action> Agent::kActionMap = {
 Agent::Agent(const std::string &robot_factory, const std::vector<std::string> &control_factories)
     : communication_(robot_factory), ctrl_input_(control_factories), low_cmd_(communication_.dof()) {}
 
-Agent::~Agent() {
-  shutdown();
-}
+Agent::~Agent() { shutdown(); }
 
 void Agent::addPolicy(const std::string &policy_factory, const std::string &home_dir) {
   auto policy = Policy::make(policy_factory, spec(), home_dir);
