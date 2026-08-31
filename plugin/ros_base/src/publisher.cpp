@@ -56,7 +56,7 @@ void RosPublisher::ArrayPublisher::publish(const void *data, DataType dtype, std
       publishMessage<std_msgs::Int64MultiArray, std::int64_t>(data, size);
       break;
     case DataType::kBool:
-      publishMessage<std_msgs::UInt8MultiArray, std::uint8_t>(data, size);
+      publishMessage<std_msgs::UInt8MultiArray, bool>(data, size);
       break;
     default:
       STEPIT_THROW("Unsupported data type '{}' for array channel '{}'.", dataTypeName(dtype_), name_);
