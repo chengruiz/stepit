@@ -12,12 +12,12 @@ unset(STEPIT_PLUGIN_DEPENDS)
 set(STEPIT_PLUGIN_BUILDABLE TRUE)
 set(STEPIT_PLUGIN_REASON "")
 
-include("${STEPIT_PLUGIN_MANIFEST_DIR}/stepit_plugin_manifest.cmake")
+include("${STEPIT_PLUGIN_MANIFEST_DIR}/plugin.cmake")
 
 if (NOT DEFINED STEPIT_PLUGIN_NAME OR STEPIT_PLUGIN_NAME STREQUAL "")
   message(
       FATAL_ERROR
-      "Plugin manifest '${STEPIT_PLUGIN_MANIFEST_DIR}/stepit_plugin_manifest.cmake' "
+      "Plugin manifest '${STEPIT_PLUGIN_MANIFEST_DIR}/plugin.cmake' "
       "must call stepit_declare_plugin(NAME <plugin> ...)."
   )
 endif ()

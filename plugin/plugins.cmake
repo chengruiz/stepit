@@ -1,0 +1,30 @@
+set(STEPIT_PLUGIN_PATHS
+    control_console
+    debugging_helper
+    field_base
+    joystick_base
+    joystick_redis
+    joystick_udp
+    joystick_usb
+    nnrt_base
+    nnrt_onnxruntime
+    nnrt_tensorrt
+    nnrt_torchjit
+    policy_neuro
+    policy_neuro_motion_tracking
+    policy_neuro_redis
+    policy_neuro_ros
+    policy_neuro_ros2
+    publisher_csv
+    pyutils
+    redis_base
+    robot_deeprobotics_lite3
+    robot_deeprobotics_x30
+    robot_unitree2
+    robot_unitree2_ros2
+    robot_unitree_aliengo
+    robot_unitree_b1
+    robot_unitree_go1
+    ros2_base
+    ros_base
+)

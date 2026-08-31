@@ -2,13 +2,27 @@
 
 StepIt employs a modular plugin architecture to extend functionalities like robot backends, control inputs, and policies.
 
-## 1. Directory Structure
+## 1. Plugin Root Index
+
+At configure time, StepIt treats its built-in `plugin/` directory and every CMake `STEPIT_PLUGIN_DIRS` entry as a
+plugin root. Each root must contain `plugins.cmake`, which sets `STEPIT_PLUGIN_PATHS` to the plugin directories it
+contains. Relative paths are resolved from the root; absolute paths are also allowed.
+
+```cmake
+# plugin_root/plugins.cmake
+set(STEPIT_PLUGIN_PATHS
+    field_base
+    my_plugin
+)
+```
+
+## 2. Plugin Directory
 
 A typical plugin directory layout:
 
 ```text
 my_plugin/
-├── stepit_plugin_manifest.cmake
+├── plugin.cmake
 ├── CMakeLists.txt
 ├── include/
 │   └── stepit/
@@ -18,10 +32,11 @@ my_plugin/
     └── my_plugin.cpp
 ```
 
-## 2. Dependencies & Build (`CMakeLists.txt`)
+## 3. Dependencies & Build (`CMakeLists.txt`)
 
-StepIt discovers plugins by the presence of `stepit_plugin_manifest.cmake`.
-Each manifest must declare the plugin name and plugin dependencies with `stepit_declare_plugin(...)`.
+StepIt discovers only the directories listed in a plugin root's `plugins.cmake`.
+Each listed directory must contain `plugin.cmake`, which declares the plugin name and dependencies with
+`stepit_declare_plugin(...)`.
 
 Use plain CMake logic in the manifest:
 
@@ -65,9 +80,9 @@ install(TARGETS stepit_plugin_example
 )
 ```
 
-> **Note**: The plugin name must start with `stepit_plugin_`.
+> **Note**: The library target must be named `stepit_plugin_<plugin name>`.
 
-## 3. Implementing Interfaces
+## 4. Implementing Interfaces
 
 Inherit from the base classes defined in `stepit` headers and implement the required virtual methods.
 
@@ -91,7 +106,7 @@ class MyRobot : public RobotApi {
 ```
 
 
-## 4. Registration
+## 5. Registration
 
 Register your implementations using the provided macros in your `.cpp` file with `STEPIT_REGISTER_*`, for example:
 
@@ -104,14 +119,14 @@ STEPIT_REGISTER_ROBOTAPI(my_robot, kDefPriority, RobotApi::make<MyRobot>);
 }  // namespace stepit
 ```
 
-## 5. Lifecycle Hooks (Optional)
+## 6. Lifecycle Hooks (Optional)
 
 You can export C-style functions for initialization and cleanup:
 
 - `extern "C" int stepit_plugin_init(int &argc, char *argv[])`: Called on load. Use to parse custom arguments.
 - `extern "C" void stepit_plugin_cleanup()`: Called on unload.
 
-## 6. Building & Loading
+## 7. Building & Loading
 
 1.  Build your plugin using CMake.
 2.  Ensure the compiled `.so` file is in a path searchable by StepIt. By default, it searches the following directories:

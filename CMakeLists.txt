@@ -132,48 +132,56 @@ install(TARGETS stepit_plugin_builtin
     ARCHIVE DESTINATION ${STEPIT_LIB_DESTINATION}
 )
 
-# Dynamically discover plugins from manifest files
+# Discover plugins listed by explicit plugin root indexes.
 set(STEPIT_DISCOVERED_PLUGINS "")
 set(STEPIT_DISCOVERED_PLUGIN_DIRS "")
-# Add the default plugin search directory
+# Add the default plugin root directory.
 list(APPEND STEPIT_PLUGIN_DIRS "${CMAKE_CURRENT_LIST_DIR}/plugin")
-foreach (plugin_search_dir ${STEPIT_PLUGIN_DIRS})
-  if (NOT IS_ABSOLUTE ${plugin_search_dir})
-    set(plugin_search_dir "$ENV{PWD}/${plugin_search_dir}")
+foreach (plugin_root_dir IN LISTS STEPIT_PLUGIN_DIRS)
+  if (NOT IS_ABSOLUTE "${plugin_root_dir}")
+    set(plugin_root_dir "$ENV{PWD}/${plugin_root_dir}")
   endif ()
-  if (NOT IS_DIRECTORY ${plugin_search_dir})
-    message(WARNING "Plugin directory '${plugin_search_dir}' does not exist.")
-    continue()
+  if (NOT IS_DIRECTORY "${plugin_root_dir}")
+    message(FATAL_ERROR "Plugin root directory '${plugin_root_dir}' does not exist.")
+  endif ()
+  get_filename_component(plugin_root_dir "${plugin_root_dir}" REALPATH)
+  set(plugin_index "${plugin_root_dir}/plugins.cmake")
+  if (NOT EXISTS "${plugin_index}")
+    message(FATAL_ERROR "Plugin root directory '${plugin_root_dir}' does not contain plugins.cmake.")
   endif ()
 
-  # Search for plugins in the directory
-  file(GLOB discovered_plugin_dirs RELATIVE ${plugin_search_dir} ${plugin_search_dir}/*)
-  foreach (plugin_entry ${discovered_plugin_dirs})
-    set(plugin_dir "${plugin_search_dir}/${plugin_entry}")
-    get_filename_component(plugin_dir "${plugin_dir}" REALPATH)
-    if (
-        IS_DIRECTORY ${plugin_dir}
-        AND EXISTS ${plugin_dir}/stepit_plugin_manifest.cmake
-        AND NOT ${plugin_dir} STREQUAL ${CMAKE_CURRENT_LIST_DIR}
-    )
-      if (plugin_dir IN_LIST STEPIT_DISCOVERED_PLUGIN_DIRS)
-        continue()
-      endif ()
-      list(APPEND STEPIT_DISCOVERED_PLUGIN_DIRS "${plugin_dir}")
-
-      stepit_load_plugin_manifest(${plugin_dir} manifest_id)
-      stepit_get_plugin_manifest_property(${manifest_id} NAME plugin_name)
-      if (plugin_name IN_LIST STEPIT_DISCOVERED_PLUGINS)
-        stepit_get_plugin_property(${plugin_name} DIR existing_plugin_dir)
-        message(
-            FATAL_ERROR
-            "Duplicated plugin '${plugin_name}' declared in "
-            "'${existing_plugin_dir}' and '${plugin_dir}'."
-        )
-      endif ()
-      stepit_commit_plugin_manifest(${manifest_id})
-      list(APPEND STEPIT_DISCOVERED_PLUGINS ${plugin_name})
+  stepit_load_plugin_index("${plugin_root_dir}" plugin_paths)
+  foreach (plugin_path IN LISTS plugin_paths)
+    if (IS_ABSOLUTE "${plugin_path}")
+      set(plugin_dir "${plugin_path}")
+    else ()
+      set(plugin_dir "${plugin_root_dir}/${plugin_path}")
     endif ()
+    if (NOT IS_DIRECTORY "${plugin_dir}")
+      message(FATAL_ERROR "Plugin path '${plugin_path}' in '${plugin_index}' is not a directory.")
+    endif ()
+    get_filename_component(plugin_dir "${plugin_dir}" REALPATH)
+    if (NOT EXISTS "${plugin_dir}/plugin.cmake")
+      message(FATAL_ERROR "Plugin directory '${plugin_dir}' listed in '${plugin_index}' does not contain plugin.cmake.")
+    endif ()
+
+    if (plugin_dir IN_LIST STEPIT_DISCOVERED_PLUGIN_DIRS)
+      message(FATAL_ERROR "Plugin directory '${plugin_dir}' is listed more than once.")
+    endif ()
+    list(APPEND STEPIT_DISCOVERED_PLUGIN_DIRS "${plugin_dir}")
+
+    stepit_load_plugin_manifest("${plugin_dir}" manifest_id)
+    stepit_get_plugin_manifest_property(${manifest_id} NAME plugin_name)
+    if (plugin_name IN_LIST STEPIT_DISCOVERED_PLUGINS)
+      stepit_get_plugin_property(${plugin_name} DIR existing_plugin_dir)
+      message(
+          FATAL_ERROR
+          "Duplicated plugin '${plugin_name}' declared in "
+          "'${existing_plugin_dir}' and '${plugin_dir}'."
+      )
+    endif ()
+    stepit_commit_plugin_manifest(${manifest_id})
+    list(APPEND STEPIT_DISCOVERED_PLUGINS ${plugin_name})
   endforeach ()
 endforeach ()
 list(SORT STEPIT_DISCOVERED_PLUGINS)
