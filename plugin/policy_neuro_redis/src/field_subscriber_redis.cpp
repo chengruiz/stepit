@@ -1,5 +1,9 @@
 #include <stepit/policy_neuro_redis/field_subscriber_redis.h>
 
+#include <cmath>
+#include <cstdint>
+#include <limits>
+
 #include <nlohmann/json.hpp>
 
 namespace stepit {
@@ -34,8 +38,10 @@ bool RedisFieldSubscriber::update(const LowState &low_state, ControlRequests &re
       STEPIT_WARN("Field '{}' has timed out.", field.name);
       return false;
     }
-    if (field.data.size() != static_cast<Eigen::Index>(field.size)) {
-      STEPIT_WARN("Field '{}' has unexpected size: expected {}, got {}.", field.name, field.size, field.data.size());
+    if (field.data.dataType() != field.dtype or field.data.size() != field.size) {
+      STEPIT_WARN("Field '{}' has unexpected data type or size: expected '{}' with size {}, got '{}' with size {}.",
+                  field.name, dataTypeName(field.dtype), field.size, dataTypeName(field.data.dataType()),
+                  field.data.size());
       return false;
     }
     context[field.id] = field.data;
@@ -66,13 +72,30 @@ void RedisFieldSubscriber::addField(const yml::Node &key_node, const yml::Node &
   value_node["key"].to(field.key);
   value_node["field"].to(field.json_field, true);
   value_node["size"].to(field.size);
+  field.dtype = parseDataType(value_node["dtype"].as<std::string>());
   value_node["timeout_threshold"].to(field.timeout_threshold, true);
 
   STEPIT_ASSERT(field.size > 0, "Redis field '{}' must have a positive size, got {}.", field.name, field.size);
   if (field.json_field.empty()) field.json_field = field.name;
 
-  field.id   = registerProvision(field.name, DataType::kFloat32, field.size);
-  field.data = VecXf::Zero(static_cast<Eigen::Index>(field.size));
+  field.id   = registerProvision(field.name, field.dtype, field.size);
+  field.data = FieldValue(FieldSpec{field.dtype, field.size});
+  switch (field.dtype) {
+    case DataType::kUndefined:
+      STEPIT_UNREACHABLE();
+    case DataType::kFloat32:
+      field.data.get<float>().setZero();
+      break;
+    case DataType::kInt32:
+      field.data.get<std::int32_t>().setZero();
+      break;
+    case DataType::kInt64:
+      field.data.get<std::int64_t>().setZero();
+      break;
+    case DataType::kBool:
+      field.data.get<bool>().setConstant(false);
+      break;
+  }
   fields_.push_back(std::move(field));
 }
 
@@ -88,7 +111,7 @@ bool RedisFieldSubscriber::fetchFields() {
 }
 
 redis::RedisReadStatus RedisFieldSubscriber::fetchField(FieldData &field) {
-  VecXf data;
+  FieldValue data;
   redis::RedisClient::JsonDict payload;
   redis::RedisReadStatus status = redis_client_->get(field.key, payload);
   if (status != redis::RedisReadStatus::kOk) return status;
@@ -101,7 +124,7 @@ redis::RedisReadStatus RedisFieldSubscriber::fetchField(FieldData &field) {
 }
 
 bool RedisFieldSubscriber::parseFieldValue(const FieldData &field, const redis::RedisClient::JsonDict &payload,
-                                           VecXf &data) const {
+                                           FieldValue &data) const {
   try {
     auto it = payload.find(field.json_field);
     if (it == payload.end()) {
@@ -122,16 +145,96 @@ bool RedisFieldSubscriber::parseFieldValue(const FieldData &field, const redis::
       return false;
     }
 
-    data.resize(static_cast<Eigen::Index>(it->size()));
-    for (std::size_t i = 0; i < it->size(); ++i) {
-      const auto &item = (*it)[i];
-      if (not item.is_number()) {
-        STEPIT_WARN("Redis field '{}' ({}) expects numeric JSON array elements, but index {} is {} in '{}'.",
-                    field.name, formatRedisField(field), i, item.type_name(), payload.dump());
+    FieldValue parsed(FieldSpec{field.dtype, field.size});
+    switch (field.dtype) {
+      case DataType::kUndefined:
+        STEPIT_WARN("Redis field '{}' ({}) has undefined data type.", field.name, formatRedisField(field));
         return false;
+      case DataType::kFloat32: {
+        auto &values = parsed.get<float>();
+        for (std::size_t i = 0; i < it->size(); ++i) {
+          const auto &item = (*it)[i];
+          if (not item.is_number()) {
+            STEPIT_WARN("Redis field '{}' ({}) expects float32 JSON array elements, but index {} is {} in '{}'.",
+                        field.name, formatRedisField(field), i, item.type_name(), payload.dump());
+            return false;
+          }
+          const float value = item.get<float>();
+          if (not std::isfinite(value)) {
+            STEPIT_WARN("Redis field '{}' ({}) has non-finite float32 value at index {} in '{}'.", field.name,
+                        formatRedisField(field), i, payload.dump());
+            return false;
+          }
+          values[static_cast<Eigen::Index>(i)] = value;
+        }
+        break;
       }
-      data[static_cast<Eigen::Index>(i)] = item.get<float>();
+      case DataType::kInt32: {
+        auto &values = parsed.get<std::int32_t>();
+        for (std::size_t i = 0; i < it->size(); ++i) {
+          const auto &item = (*it)[i];
+          if (item.is_number_unsigned()) {
+            const auto value = item.get<std::uint64_t>();
+            if (value > static_cast<std::uint64_t>(std::numeric_limits<std::int32_t>::max())) {
+              STEPIT_WARN("Redis field '{}' ({}) has out-of-range int32 value at index {} in '{}'.", field.name,
+                          formatRedisField(field), i, payload.dump());
+              return false;
+            }
+            values[static_cast<Eigen::Index>(i)] = static_cast<std::int32_t>(value);
+          } else if (item.is_number_integer()) {
+            const auto value = item.get<std::int64_t>();
+            if (value < std::numeric_limits<std::int32_t>::lowest() or
+                value > std::numeric_limits<std::int32_t>::max()) {
+              STEPIT_WARN("Redis field '{}' ({}) has out-of-range int32 value at index {} in '{}'.", field.name,
+                          formatRedisField(field), i, payload.dump());
+              return false;
+            }
+            values[static_cast<Eigen::Index>(i)] = static_cast<std::int32_t>(value);
+          } else {
+            STEPIT_WARN("Redis field '{}' ({}) expects int32 JSON array elements, but index {} is {} in '{}'.",
+                        field.name, formatRedisField(field), i, item.type_name(), payload.dump());
+            return false;
+          }
+        }
+        break;
+      }
+      case DataType::kInt64: {
+        auto &values = parsed.get<std::int64_t>();
+        for (std::size_t i = 0; i < it->size(); ++i) {
+          const auto &item = (*it)[i];
+          if (item.is_number_unsigned()) {
+            const auto value = item.get<std::uint64_t>();
+            if (value > static_cast<std::uint64_t>(std::numeric_limits<std::int64_t>::max())) {
+              STEPIT_WARN("Redis field '{}' ({}) has out-of-range int64 value at index {} in '{}'.", field.name,
+                          formatRedisField(field), i, payload.dump());
+              return false;
+            }
+            values[static_cast<Eigen::Index>(i)] = static_cast<std::int64_t>(value);
+          } else if (item.is_number_integer()) {
+            values[static_cast<Eigen::Index>(i)] = item.get<std::int64_t>();
+          } else {
+            STEPIT_WARN("Redis field '{}' ({}) expects int64 JSON array elements, but index {} is {} in '{}'.",
+                        field.name, formatRedisField(field), i, item.type_name(), payload.dump());
+            return false;
+          }
+        }
+        break;
+      }
+      case DataType::kBool: {
+        auto &values = parsed.get<bool>();
+        for (std::size_t i = 0; i < it->size(); ++i) {
+          const auto &item = (*it)[i];
+          if (not item.is_boolean()) {
+            STEPIT_WARN("Redis field '{}' ({}) expects bool JSON array elements, but index {} is {} in '{}'.",
+                        field.name, formatRedisField(field), i, item.type_name(), payload.dump());
+            return false;
+          }
+          values[static_cast<Eigen::Index>(i)] = item.get<bool>();
+        }
+        break;
+      }
     }
+    data = std::move(parsed);
   } catch (const nlohmann::json::exception &err) {
     STEPIT_WARN("Failed to parse Redis field '{}' ({}): {}.", field.name, formatRedisField(field), err.what());
     return false;

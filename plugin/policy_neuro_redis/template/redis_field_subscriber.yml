@@ -14,9 +14,11 @@ fields:                     # Required, Map[String, Dict]
     key: "stepit:policy"    # String, Redis key
     field: "cmd_vel"        # [Optional] String, JSON dict member name; if missing, use the StepIt field name
     size: 3                 # Int > 0, field dimension
+    dtype: "float32"        # Literal["float32", "int32", "int64", "bool"], field scalar type
     timeout_threshold: 0.2  # [Optional] Float, seconds before the cached value is considered stale
                             #   Redis value must be a JSON dict, e.g. {"cmd_vel": [0.1, 0.2, 0.3]}
 
   gait_phase:
     key: "stepit:gait_phase"
     size: 1
+    dtype: "int32"
