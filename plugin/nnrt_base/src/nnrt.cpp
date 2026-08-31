@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <iostream>
+#include <set>
 #include <sstream>
 
 #include <stepit/logging.h>
@@ -8,6 +9,7 @@
 
 namespace stepit {
 std::string shape2str(const std::vector<int64_t> &shape) {
+  if (shape.empty()) return "[]";
   std::stringstream ss;
   ss << "[" << shape[0];
   for (int j{1}; j < shape.size(); ++j) ss << " x " << shape[j];
@@ -54,6 +56,11 @@ void Nnrt::postInit() {
     config_[input_names_key].to(in_names);
     STEPIT_ASSERT_EQ(in_names.size(), num_in_, "'{}' count mismatch: expected {}, got {}.", input_names_key, num_in_,
                      in_names.size());
+    std::set<std::string> unique_names;
+    for (const auto &name : in_names) {
+      STEPIT_ASSERT(unique_names.insert(name).second, "'{}' contains duplicate input name '{}'.", input_names_key,
+                    name);
+    }
     for (std::size_t i{}; i < num_in_; ++i) {
       if (in_names_[i] != in_names[i]) {
         STEPIT_DBUGNT("Input {} renamed from '{}' to '{}'.", i, in_names_[i], in_names[i]);
@@ -68,6 +75,11 @@ void Nnrt::postInit() {
     config_[output_names_key].to(out_names);
     STEPIT_ASSERT_EQ(out_names.size(), num_out_, "'{}' count mismatch: expected {}, got {}.", output_names_key,
                      num_out_, out_names.size());
+    std::set<std::string> unique_names;
+    for (const auto &name : out_names) {
+      STEPIT_ASSERT(unique_names.insert(name).second, "'{}' contains duplicate output name '{}'.", output_names_key,
+                    name);
+    }
     for (std::size_t i{}; i < num_out_; ++i) {
       if (out_names_[i] != out_names[i]) {
         STEPIT_DBUGNT("Output {} renamed from '{}' to '{}'.", i, out_names_[i], out_names[i]);
