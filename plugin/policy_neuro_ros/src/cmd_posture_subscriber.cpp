@@ -17,10 +17,11 @@ CmdRollSubscriber::CmdRollSubscriber(const NeuroPolicySpec &policy_spec, const M
 bool CmdRollSubscriber::reset() {
   subscriber_enabled_.store(default_subscriber_enabled_, std::memory_order_relaxed);
   subscribing_status_ = publisher::StatusRegistration::make("Policy/CmdRoll/Subscribing");
+  if (not CmdRollSource::reset()) return false;
   joystick_rules_.emplace_back([](const joystick::State &js) -> std::string {
     return js.LB().pressed and js.A().on_press ? "Policy/CmdRoll/SwitchSubscriber" : "";
   });
-  return CmdRollSource::reset();
+  return true;
 }
 
 bool CmdRollSubscriber::update(const LowState &low_state, ControlRequests &requests, FieldMap &context) {
@@ -108,10 +109,11 @@ CmdPitchSubscriber::CmdPitchSubscriber(const NeuroPolicySpec &policy_spec, const
 bool CmdPitchSubscriber::reset() {
   subscriber_enabled_.store(default_subscriber_enabled_, std::memory_order_relaxed);
   subscribing_status_ = publisher::StatusRegistration::make("Policy/CmdPitch/Subscribing");
+  if (not CmdPitchSource::reset()) return false;
   joystick_rules_.emplace_back([](const joystick::State &js) -> std::string {
     return js.LB().pressed and js.A().on_press ? "Policy/CmdPitch/SwitchSubscriber" : "";
   });
-  return CmdPitchSource::reset();
+  return true;
 }
 
 bool CmdPitchSubscriber::update(const LowState &low_state, ControlRequests &requests, FieldMap &context) {
@@ -199,10 +201,11 @@ CmdHeightSubscriber::CmdHeightSubscriber(const NeuroPolicySpec &policy_spec, con
 bool CmdHeightSubscriber::reset() {
   subscriber_enabled_.store(default_subscriber_enabled_, std::memory_order_relaxed);
   subscribing_status_ = publisher::StatusRegistration::make("Policy/CmdHeight/Subscribing");
+  if (not CmdHeightSource::reset()) return false;
   joystick_rules_.emplace_back([](const joystick::State &js) -> std::string {
     return js.LB().pressed and js.A().on_press ? "Policy/CmdHeight/SwitchSubscriber" : "";
   });
-  return CmdHeightSource::reset();
+  return true;
 }
 
 bool CmdHeightSubscriber::update(const LowState &low_state, ControlRequests &requests, FieldMap &context) {

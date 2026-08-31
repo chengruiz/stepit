@@ -30,10 +30,11 @@ CmdRollSubscriber2::CmdRollSubscriber2(const NeuroPolicySpec &policy_spec, const
 bool CmdRollSubscriber2::reset() {
   subscriber_enabled_.store(default_subscriber_enabled_, std::memory_order_relaxed);
   subscribing_status_ = publisher::StatusRegistration::make("Policy/CmdRoll/Subscribing");
+  if (not CmdRollSource::reset()) return false;
   joystick_rules_.emplace_back([](const joystick::State &js) -> std::string {
     return js.LB().pressed and js.A().on_press ? "Policy/CmdRoll/SwitchSubscriber" : "";
   });
-  return CmdRollSource::reset();
+  return true;
 }
 
 bool CmdRollSubscriber2::update(const LowState &low_state, ControlRequests &requests, FieldMap &context) {
@@ -135,10 +136,11 @@ CmdPitchSubscriber2::CmdPitchSubscriber2(const NeuroPolicySpec &policy_spec, con
 bool CmdPitchSubscriber2::reset() {
   subscriber_enabled_.store(default_subscriber_enabled_, std::memory_order_relaxed);
   subscribing_status_ = publisher::StatusRegistration::make("Policy/CmdPitch/Subscribing");
+  if (not CmdPitchSource::reset()) return false;
   joystick_rules_.emplace_back([](const joystick::State &js) -> std::string {
     return js.LB().pressed and js.A().on_press ? "Policy/CmdPitch/SwitchSubscriber" : "";
   });
-  return CmdPitchSource::reset();
+  return true;
 }
 
 bool CmdPitchSubscriber2::update(const LowState &low_state, ControlRequests &requests, FieldMap &context) {
@@ -241,10 +243,11 @@ CmdHeightSubscriber2::CmdHeightSubscriber2(const NeuroPolicySpec &policy_spec, c
 bool CmdHeightSubscriber2::reset() {
   subscriber_enabled_.store(default_subscriber_enabled_, std::memory_order_relaxed);
   subscribing_status_ = publisher::StatusRegistration::make("Policy/CmdHeight/Subscribing");
+  if (not CmdHeightSource::reset()) return false;
   joystick_rules_.emplace_back([](const joystick::State &js) -> std::string {
     return js.LB().pressed and js.A().on_press ? "Policy/CmdHeight/SwitchSubscriber" : "";
   });
-  return CmdHeightSource::reset();
+  return true;
 }
 
 bool CmdHeightSubscriber2::update(const LowState &low_state, ControlRequests &requests, FieldMap &context) {

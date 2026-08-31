@@ -16,10 +16,11 @@ CmdVelSubscriber::CmdVelSubscriber(const NeuroPolicySpec &policy_spec, const Mod
 bool CmdVelSubscriber::reset() {
   subscriber_enabled_.store(default_subscriber_enabled_, std::memory_order_relaxed);
   subscribing_status_ = publisher::StatusRegistration::make("Policy/CmdVel/Subscribing");
+  if (not CmdVelSource::reset()) return false;
   joystick_rules_.emplace_back([](const joystick::State &js) -> std::string {
     return js.LB().pressed and js.A().on_press ? "Policy/CmdVel/SwitchSubscriber" : "";
   });
-  return CmdVelSource::reset();
+  return true;
 }
 
 bool CmdVelSubscriber::update(const LowState &low_state, ControlRequests &requests, FieldMap &context) {
