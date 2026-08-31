@@ -36,8 +36,10 @@ DataType mapTrtDtype(nvinfer1::DataType trt_type) {
       return DataType::kFloat32;
     case nvinfer1::DataType::kINT32:
       return DataType::kInt32;
+#if TENSORRT_VERSION_AT_LEAST(9, 0, 0)
     case nvinfer1::DataType::kINT64:
       return DataType::kInt64;
+#endif
     case nvinfer1::DataType::kBOOL:
       return DataType::kBool;
     default:
