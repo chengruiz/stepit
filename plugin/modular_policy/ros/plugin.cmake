@@ -1,0 +1,6 @@
+stepit_declare_plugin(NAME modular_policy_ros DEPENDS modular_policy_base ros_base)
+find_package(catkin QUIET COMPONENTS roscpp std_msgs)
+if (NOT catkin_FOUND)
+  stepit_plugin_mark_unbuildable("Missing catkin.")
+  return()
+endif ()

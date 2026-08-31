@@ -1,0 +1,194 @@
+#include <cstddef>
+#include <stepit/modular_policy/relative_pose_source.h>
+
+namespace stepit {
+namespace modular_policy {
+RelativeOriSource::RelativeOriSource(const ModularPolicySpec &policy_spec, const ModuleSpec &module_spec)
+    : Module(policy_spec, ModuleSpec(module_spec, "relative_pose/ori")) {
+  current_ori_name_ = config_["current_ori_name"].as<std::string>("base_global_ori");
+  target_ori_name_  = config_["target_ori_name"].as<std::string>("base_target_ori");
+  rot6d_order_      = config_["rotation_6d_order"].as(Rotation6dOrder::kRowMajor);
+
+  current_ori_id_     = registerRequirement(current_ori_name_, DataType::kFloat32, 4);
+  target_ori_id_      = registerRequirement(target_ori_name_, DataType::kFloat32);
+  relative_ori_id_    = registerProvision("relative_ori", DataType::kFloat32);
+  relative_ori_6d_id_ = registerProvision("relative_ori_6d", DataType::kFloat32);
+}
+
+bool RelativeOriSource::init() {
+  auto target_ori_size = getFieldSize(target_ori_id_);
+  STEPIT_ASSERT(target_ori_size > 0 and target_ori_size % 4 == 0, "Field '{}' must have size 4 * N, but got {}.",
+                target_ori_name_, target_ori_size);
+  num_frames_ = target_ori_size / 4;
+  setFieldSpec(relative_ori_id_, FieldSpec{DataType::kFloat32, target_ori_size});
+  setFieldSpec(relative_ori_6d_id_, FieldSpec{DataType::kFloat32, 6 * num_frames_});
+  return true;
+}
+
+bool RelativeOriSource::update(const LowState &, ControlRequests &, FieldMap &context) {
+  Quatf current_ori(context.at(current_ori_id_).view<float>());
+  const auto target_ori_stack = context.at(target_ori_id_).view<float>();
+
+  ArrXf relative_ori(4 * num_frames_);
+  ArrXf relative_ori_6d(6 * num_frames_);
+  for (std::size_t i{}; i < num_frames_; ++i) {
+    Quatf target_ori(target_ori_stack.segment(4 * i, 4));
+
+    Quatf relative_ori_i              = current_ori.inverse() * target_ori;
+    relative_ori.segment(4 * i, 4)    = relative_ori_i.coeffs();
+    relative_ori_6d.segment(6 * i, 6) = relative_ori_i.rotation6d(rot6d_order_);
+  }
+
+  context[relative_ori_id_]    = relative_ori;
+  context[relative_ori_6d_id_] = relative_ori_6d;
+  return true;
+}
+
+RelativePosSource::RelativePosSource(const ModularPolicySpec &policy_spec, const ModuleSpec &module_spec)
+    : Module(policy_spec, ModuleSpec(module_spec, "relative_pose/pos")) {
+  current_pos_name_ = config_["current_pos_name"].as<std::string>("base_global_pos");
+  current_ori_name_ = config_["current_ori_name"].as<std::string>("base_global_ori");
+  target_pos_name_  = config_["target_pos_name"].as<std::string>("base_target_pos");
+
+  current_pos_id_  = registerRequirement(current_pos_name_, DataType::kFloat32, 3);
+  current_ori_id_  = registerRequirement(current_ori_name_, DataType::kFloat32, 4);
+  target_pos_id_   = registerRequirement(target_pos_name_, DataType::kFloat32);
+  relative_pos_id_ = registerProvision("relative_pos", DataType::kFloat32);
+}
+
+bool RelativePosSource::init() {
+  auto target_pos_size = getFieldSize(target_pos_id_);
+  STEPIT_ASSERT(target_pos_size > 0 and target_pos_size % 3 == 0, "Field '{}' must have size 3 * N, but got {}.",
+                target_pos_name_, target_pos_size);
+  num_frames_ = target_pos_size / 3;
+  setFieldSpec(relative_pos_id_, FieldSpec{DataType::kFloat32, target_pos_size});
+  return true;
+}
+
+bool RelativePosSource::update(const LowState &, ControlRequests &, FieldMap &context) {
+  Vec3f current_pos(context.at(current_pos_id_).view<float>());
+  Quatf current_ori(context.at(current_ori_id_).view<float>());
+  const auto target_pos = context.at(target_pos_id_).view<float>();
+
+  ArrXf relative_pos(3 * num_frames_);
+  for (std::size_t i{}; i < num_frames_; ++i) {
+    Vec3f target_pos_i             = target_pos.segment(3 * i, 3);
+    Vec3f relative_pos_i           = current_ori.inverse() * (target_pos_i - current_pos);
+    relative_pos.segment(3 * i, 3) = relative_pos_i;
+  }
+
+  context[relative_pos_id_] = relative_pos;
+  return true;
+}
+
+MotionAlignment::MotionAlignment(const ModularPolicySpec &policy_spec, const ModuleSpec &module_spec)
+    : Module(policy_spec, ModuleSpec(module_spec, "motion_alignment")) {
+  world_to_init_yaw_.setIdentity();
+  world_to_init_pos_.setZero();
+  reference_index_          = config_["reference_index"].as<int>(0);
+  resolved_reference_index_ = 0;
+
+  current_pos_name_       = config_["current_pos_name"].as<std::string>("base_global_pos");
+  current_ori_name_       = config_["current_ori_name"].as<std::string>("base_global_ori");
+  target_pos_name_        = config_["target_pos_name"].as<std::string>("base_target_pos");
+  target_ori_name_        = config_["target_ori_name"].as<std::string>("base_target_ori");
+  alignment_trigger_name_ = config_["alignment_trigger_name"].as<std::string>(alignment_trigger_name_);
+
+  current_ori_id_          = registerRequirement(current_ori_name_, DataType::kFloat32, 4);
+  target_ori_id_           = registerRequirement(target_ori_name_, DataType::kFloat32);
+  motion_restart_event_id_ = registerRequirement("motion_restart_event", DataType::kBool, 1);
+  if (not alignment_trigger_name_.empty()) {
+    alignment_trigger_id_ = registerField(alignment_trigger_name_, DataType::kBool, 1);
+  }
+  aligned_target_ori_id_ = registerProvision("aligned_target_ori", DataType::kFloat32);
+
+  if (not target_pos_name_.empty()) {
+    current_pos_id_ = registerRequirement(current_pos_name_, DataType::kFloat32, 3);
+    target_pos_id_  = registerRequirement(target_pos_name_, DataType::kFloat32);
+  } else {
+    current_pos_id_ = kInvalidFieldId;
+    target_pos_id_  = kInvalidFieldId;
+  }
+  aligned_target_pos_id_ = registerProvision("aligned_target_pos", DataType::kFloat32);
+}
+
+bool MotionAlignment::init() {
+  auto target_ori_size = getFieldSize(target_ori_id_);
+  STEPIT_ASSERT(target_ori_size > 0 and target_ori_size % 4 == 0, "Field '{}' must have size 4 * N, but got {}.",
+                target_ori_name_, target_ori_size);
+  const auto num_frames = target_ori_size / 4;
+  STEPIT_ASSERT(reference_index_ >= -static_cast<int>(num_frames) and reference_index_ < static_cast<int>(num_frames),
+                "'reference_index'={} is out of range for {} frames. Expected [{}, {}).", reference_index_, num_frames,
+                -static_cast<int>(num_frames), static_cast<int>(num_frames));
+
+  if (target_pos_id_ != kInvalidFieldId) {
+    auto target_pos_size = getFieldSize(target_pos_id_);
+    STEPIT_ASSERT(target_pos_size > 0 and target_pos_size % 3 == 0, "Field '{}' must have size 3 * N, but got {}.",
+                  target_pos_name_, target_pos_size);
+    std::size_t target_pos_num_frames = target_pos_size / 3;
+    STEPIT_ASSERT(target_pos_num_frames == num_frames,
+                  "Field '{}' must have {} frames to match '{}', but got {} frames.", target_pos_name_, num_frames,
+                  target_ori_name_, target_pos_num_frames);
+  }
+
+  num_frames_               = num_frames;
+  resolved_reference_index_ = reference_index_ >= 0 ? static_cast<std::size_t>(reference_index_)
+                                                    : num_frames_ + reference_index_;
+  setFieldSpec(aligned_target_ori_id_, FieldSpec{DataType::kFloat32, target_ori_size});
+  setFieldSpec(aligned_target_pos_id_, FieldSpec{DataType::kFloat32, 3 * num_frames_});
+  return true;
+}
+
+bool MotionAlignment::reset() {
+  world_to_init_yaw_.setIdentity();
+  world_to_init_pos_.setZero();
+  return true;
+}
+
+bool MotionAlignment::update(const LowState &, ControlRequests &, FieldMap &context) {
+  Quatf current_ori(context.at(current_ori_id_).view<float>());
+  const auto target_ori = context.at(target_ori_id_).view<float>();
+
+  Vec3f current_pos = current_pos_id_ == kInvalidFieldId ? Vec3f::Zero()
+                                                         : Vec3f(context.at(current_pos_id_).view<float>());
+  ArrXf target_pos  = target_pos_id_ == kInvalidFieldId ? ArrXf::Zero(static_cast<Eigen::Index>(3 * num_frames_))
+                                                        : ArrXf(context.at(target_pos_id_).view<float>());
+
+  const bool motion_restarted    = context.at(motion_restart_event_id_).view<bool>()(0);
+  const auto alignment_trigger   = context.find(alignment_trigger_id_);
+  const bool alignment_triggered = alignment_trigger != context.end() and alignment_trigger->second.size() > 0 and
+                                   alignment_trigger->second.view<bool>()(0);
+  if (motion_restarted or alignment_triggered) {
+    Quatf reference_ori(target_ori.segment(4 * resolved_reference_index_, 4));
+    Quatf current_yaw   = Quatf::fromYaw(current_ori.eulerAngles().z());
+    Quatf reference_yaw = Quatf::fromYaw(reference_ori.eulerAngles().z());
+    Vec3f reference_pos = target_pos.segment(3 * resolved_reference_index_, 3);
+    world_to_init_yaw_  = current_yaw * reference_yaw.inverse();
+    world_to_init_pos_  = current_pos - world_to_init_yaw_ * reference_pos;
+  }
+
+  ArrXf aligned_target_ori(4 * num_frames_);
+  ArrXf aligned_target_pos(3 * num_frames_);
+  for (std::size_t i{}; i < num_frames_; ++i) {
+    Quatf target_ori_i(target_ori.segment(4 * i, 4));
+    Quatf aligned_target_ori_i           = world_to_init_yaw_ * target_ori_i;
+    aligned_target_ori.segment(4 * i, 4) = aligned_target_ori_i.coeffs();
+    Vec3f target_pos_i                   = target_pos.segment(3 * i, 3).matrix();
+    Vec3f aligned_target_pos_i           = world_to_init_yaw_ * target_pos_i + world_to_init_pos_;
+    aligned_target_pos.segment(3 * i, 3) = aligned_target_pos_i;
+  }
+  context[aligned_target_ori_id_] = aligned_target_ori;
+  context[aligned_target_pos_id_] = aligned_target_pos;
+  return true;
+}
+
+STEPIT_REGISTER_MODULE(relative_ori, kDefPriority, Module::make<RelativeOriSource>);
+STEPIT_REGISTER_MODULE(relative_pos, kDefPriority, Module::make<RelativePosSource>);
+STEPIT_REGISTER_MODULE(motion_alignment, kDefPriority, Module::make<MotionAlignment>);
+STEPIT_REGISTER_FIELD_SOURCE(relative_ori, kDefPriority, Module::make<RelativeOriSource>);
+STEPIT_REGISTER_FIELD_SOURCE(relative_ori_6d, kDefPriority, Module::make<RelativeOriSource>);
+STEPIT_REGISTER_FIELD_SOURCE(relative_pos, kDefPriority, Module::make<RelativePosSource>);
+STEPIT_REGISTER_FIELD_SOURCE(aligned_target_pos, kDefPriority, Module::make<MotionAlignment>);
+STEPIT_REGISTER_FIELD_SOURCE(aligned_target_ori, kDefPriority, Module::make<MotionAlignment>);
+}  // namespace modular_policy
+}  // namespace stepit

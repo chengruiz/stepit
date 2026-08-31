@@ -1,0 +1,49 @@
+#include <stepit/modular_policy/locomotion/proprioceptor.h>
+
+namespace stepit {
+namespace modular_policy {
+Proprioceptor::Proprioceptor(const ModularPolicySpec &policy_spec, const ModuleSpec &module_spec)
+    : Module(policy_spec, ModuleSpec(module_spec, "proprioceptor")) {
+  ang_vel_id_   = registerProvision("ang_vel", DataType::kFloat32, 3);
+  gravity_id_   = registerProvision("gravity", DataType::kFloat32, 3);
+  joint_pos_id_ = registerProvision("joint_pos", DataType::kFloat32, policy_spec.dof);
+  joint_vel_id_ = registerProvision("joint_vel", DataType::kFloat32, policy_spec.dof);
+  lin_acc_id_   = registerProvision("lin_acc", DataType::kFloat32, 3);
+}
+
+bool Proprioceptor::update(const LowState &low_state, ControlRequests &, FieldMap &context) {
+  const auto num_joints = getFieldSize(joint_pos_id_);
+  ArrXf joint_pos{num_joints}, joint_vel{num_joints};
+  for (std::size_t i{}; i < num_joints; ++i) {
+    joint_pos[i] = low_state.motor_state[i].q;
+    joint_vel[i] = low_state.motor_state[i].dq;
+  }
+
+  context[lin_acc_id_]   = cmArr3f(low_state.imu.accelerometer.data());
+  context[ang_vel_id_]   = cmArr3f(low_state.imu.gyroscope.data());
+  context[gravity_id_]   = Quatf(low_state.imu.quaternion).inverse() * Vec3f{0, 0, -1.};
+  context[joint_pos_id_] = joint_pos;
+  context[joint_vel_id_] = joint_vel;
+  return true;
+}
+
+RollPitchSource::RollPitchSource(const ModularPolicySpec &policy_spec, const ModuleSpec &module_spec)
+    : Module(policy_spec, ModuleSpec(module_spec, "roll_pitch")) {
+  roll_pitch_id_ = registerProvision("roll_pitch", DataType::kFloat32, 2);
+}
+
+bool RollPitchSource::update(const LowState &low_state, ControlRequests &, FieldMap &context) {
+  context[roll_pitch_id_] = Arr2f{low_state.imu.rpy[0], low_state.imu.rpy[1]};
+  return true;
+}
+
+STEPIT_REGISTER_MODULE(proprioceptor, kDefPriority, Module::make<Proprioceptor>);
+STEPIT_REGISTER_MODULE(roll_pitch_source, kDefPriority, Module::make<RollPitchSource>);
+STEPIT_REGISTER_FIELD_SOURCE(ang_vel, kDefPriority, Module::make<Proprioceptor>);
+STEPIT_REGISTER_FIELD_SOURCE(gravity, kDefPriority, Module::make<Proprioceptor>);
+STEPIT_REGISTER_FIELD_SOURCE(joint_pos, kDefPriority, Module::make<Proprioceptor>);
+STEPIT_REGISTER_FIELD_SOURCE(joint_vel, kDefPriority, Module::make<Proprioceptor>);
+STEPIT_REGISTER_FIELD_SOURCE(lin_acc, kDefPriority, Module::make<Proprioceptor>);
+STEPIT_REGISTER_FIELD_SOURCE(roll_pitch, kDefPriority, Module::make<RollPitchSource>);
+}  // namespace modular_policy
+}  // namespace stepit

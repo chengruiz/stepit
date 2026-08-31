@@ -49,41 +49,61 @@ You can configure the build by passing CMake variables via `-D` flags:
 
 - `STEPIT_WHITELIST_PLUGINS` (string): semicolon-separated list of plugins to build. Default is all available plugins.
 - `STEPIT_BLACKLIST_PLUGINS` (string): semicolon-separated list of plugins not to build. Default is `""`.
-- `STEPIT_PLUGIN_DIRS` (string): semicolon-separated list of directories to search for plugins.
+- `STEPIT_PLUGIN_DIRS` (string): semicolon-separated list of plugin root directories, each with a `plugins.cmake` index.
 
-StepIt searches for plugins in directories `plugin` and the specified `STEPIT_PLUGIN_DIRS`.
-All subdirectories with `CMakeLists.txt` and without `STEPIT_IGNORE` are considered plugins.
-Built-in plugins are listed below.
-Read the corresponding `README.md` first if you use any of the plugins.
+StepIt discovers build-time plugins through explicit indexes. The built-in index is
+[`plugin/plugins.cmake`](plugin/plugins.cmake); each directory specified by `STEPIT_PLUGIN_DIRS` must also contain a
+`plugins.cmake` file that sets `STEPIT_PLUGIN_PATHS`. Read a plugin's `README.md` before using it.
 
-- [`control_console`](plugin/control_console): Controlling with standard input.
-- [`debugging_helper`](plugin/debugging_helper): Helper utilities for debugging.
-- [`field_base`](plugin/field_base): Field registration and generic field operators.
-- [`joystick_base`](plugin/joystick_base): Interface for general joystick and joystick control.
-- [`joystick_redis`](plugin/joystick_redis): Controlling with joystick data read from Redis.
-- [`joystick_udp`](plugin/joystick_udp): Controlling with retroid gamepads.
-- [`joystick_usb`](plugin/joystick_usb): Controlling with USB joysticks, e.g. Xbox 360 controller.
-- [`nnrt_base`](plugin/nnrt_base): Interface for neural networks.
-- [`nnrt_onnxruntime`](plugin/nnrt_onnxruntime): Neural network inference on general x86_64 processors.
-- [`nnrt_tensorrt`](plugin/nnrt_tensorrt): Neural network inference on NVIDIA GPUs and Jetson platforms, e.g. Jetson Orin NX.
-- [`nnrt_torchjit`](plugin/nnrt_torchjit): Neural network inference with TorchScript (PyTorch JIT) models.
-- [`policy_neuro`](plugin/policy_neuro): Neural network-based control policy.
-- [`policy_neuro_motion_tracking`](plugin/policy_neuro_motion_tracking): Motion tracking related modules for plugin `policy_neuro`.
-- [`policy_neuro_redis`](plugin/policy_neuro_redis): Subscribing redis fields for plugin `policy_neuro`.
-- [`policy_neuro_ros`](plugin/policy_neuro_ros): ROS extensions for plugin `policy_neuro`.
-- [`policy_neuro_ros2`](plugin/policy_neuro_ros2): ROS2 extensions for plugin `policy_neuro`.
-- [`publisher_csv`](plugin/publisher_csv): Publisher for writing robot data to csv file.
-- [`pyutils`](plugin/pyutils): Python utilities for C++ modules.
-- [`redis_base`](plugin/redis_base): Reusable Redis client support for other plugins.
-- [`robot_deeprobotics_lite3`](plugin/robot_deeprobotics_lite3): Controlling the DeepRobotics Lite3 robot.
-- [`robot_deeprobotics_x30`](plugin/robot_deeprobotics_x30): Controlling the DeepRobotics X30 robot (Deprecated).
-- [`robot_unitree_aliengo`](plugin/robot_unitree): Controlling the Unitree Aliengo robot.
-- [`robot_unitree_go1`](plugin/robot_unitree): Controlling the Unitree Go1 robot.
-- [`robot_unitree_b1`](plugin/robot_unitree): Controlling the Unitree B1 robot.
-- [`robot_unitree2`](plugin/robot_unitree2): Controlling Unitree Go2, B2, A2 and G1 robots, and with Unitree joysticks.
-- [`robot_unitree2_ros2`](plugin/robot_unitree2_ros2): Controlling Unitree robots with unitree_ros2.
-- [`ros_base`](plugin/ros_base): ROS extensions, e.g. subscribing joysticks and publishing states.
-- [`ros2_base`](plugin/ros2_base): ROS2 extensions, e.g. subscribing joysticks and publishing states.
+- **Control**
+  - [`control_console`](plugin/control/console): Controlling with standard input.
+
+- **Examples**
+  - [`debugging_helper`](plugin/example/debugging_helper): Helper utilities for debugging.
+
+- **Field**
+  - [`field_base`](plugin/field/base): Field registration and generic field operators.
+  - [`pyutils`](plugin/field/python): Python utilities for C++ modules.
+
+- **Integrations**
+  - [`redis_base`](plugin/integration/redis): Reusable Redis client support for other plugins.
+  - [`ros_base`](plugin/integration/ros): ROS extensions, e.g. subscribing joysticks and publishing states.
+  - [`ros2_base`](plugin/integration/ros2): ROS2 extensions, e.g. subscribing joysticks and publishing states.
+
+- **Joystick**
+  - [`joystick_base`](plugin/joystick/base): Interface for general joystick and joystick control.
+  - [`joystick_redis`](plugin/joystick/redis): Controlling with joystick data read from Redis.
+  - [`joystick_udp`](plugin/joystick/udp): Controlling with Retroid gamepads.
+  - [`joystick_usb`](plugin/joystick/usb): Controlling with USB joysticks, e.g. Xbox 360 controller.
+
+- **Neural-network runtime**
+  - [`nnrt_base`](plugin/nnrt/base): Interface for neural networks.
+  - [`nnrt_onnxruntime`](plugin/nnrt/onnxruntime): Neural network inference on general x86_64 processors.
+  - [`nnrt_tensorrt`](plugin/nnrt/tensorrt): Neural network inference on NVIDIA GPUs and Jetson platforms, e.g. Jetson Orin NX.
+  - [`nnrt_torchjit`](plugin/nnrt/torchjit): Neural network inference with TorchScript (PyTorch JIT) models.
+
+- **Modular policy**
+  - [`modular_policy_base`](plugin/modular_policy/base): Core modular-policy modules and actuators.
+  - [`modular_policy_nn`](plugin/modular_policy/nn): Neural-network policy modules.
+  - [`modular_policy_locomotion`](plugin/modular_policy/locomotion): Locomotion inputs, observations, and commands.
+  - [`modular_policy_locomotion_ros`](plugin/modular_policy/locomotion_ros): ROS support for locomotion modules.
+  - [`modular_policy_locomotion_ros2`](plugin/modular_policy/locomotion_ros2): ROS2 support for locomotion modules.
+  - [`modular_policy_motion_tracking`](plugin/modular_policy/motion_tracking): Motion-tracking policy modules.
+  - [`modular_policy_redis`](plugin/modular_policy/redis): Redis field sources for modular policies.
+  - [`modular_policy_ros`](plugin/modular_policy/ros): Generic ROS field subscribers for modular policies.
+  - [`modular_policy_ros2`](plugin/modular_policy/ros2): Generic ROS2 field subscribers for modular policies.
+
+- **Publishing**
+  - [`publisher_csv`](plugin/publisher/csv): Publisher for writing robot data to CSV files.
+
+- **Robots**
+  - [`robot_deeprobotics_lite3`](plugin/robot/deeprobotics/lite3): Controlling the DeepRobotics Lite3 robot.
+  - [`robot_deeprobotics_x30`](plugin/robot/deeprobotics/x30): Controlling the DeepRobotics X30 robot (deprecated).
+  - [`robot_unitree_aliengo`](plugin/robot/unitree/aliengo): Controlling the Unitree Aliengo robot.
+  - [`robot_unitree_b1`](plugin/robot/unitree/b1): Controlling the Unitree B1 robot.
+  - [`robot_unitree_go1`](plugin/robot/unitree/go1): Controlling the Unitree Go1 robot.
+  - [`robot_unitree2`](plugin/robot/unitree2): Controlling Unitree Go2, B2, A2, and G1 robots, and Unitree joysticks.
+  - [`robot_unitree2_ros2`](plugin/robot/unitree2_ros2): Controlling Unitree robots with `unitree_ros2`.
 
 ### Run
 
@@ -109,8 +129,8 @@ Run `./install/bin/stepit --help` for more information.
 ## Notes
 
 - **Environment Variable**: StepIt reads environment variables listed in [`environment.sh`](config/environment.sh). Environment variables have lower precedence than their corresponding command-line arguments.
-- **Control Input**: Generally, StepIt accepts strings as control inputs, and returns a response for each one. These inputs can be provided via [the console](plugin/control_console), [joysticks](plugin/joystick_base), or topics/services in [ROS1](plugin/ros_base)/[ROS2](plugin/ros2_base). See [doc/control.md](doc/control.md) for more details.
-- **State Publishing**: StepIt publishes the robot states to [CSV files](plugin/publisher_csv), or via [ROS1](plugin/ros_base) or [ROS2](plugin/ros2_base) topics.
+- **Control Input**: Generally, StepIt accepts strings as control inputs, and returns a response for each one. These inputs can be provided via [the console](plugin/control/console), [joysticks](plugin/joystick/base), or topics/services in [ROS1](plugin/integration/ros)/[ROS2](plugin/integration/ros2). See [doc/control.md](doc/control.md) for more details.
+- **State Publishing**: StepIt publishes the robot states to [CSV files](plugin/publisher/csv), or via [ROS1](plugin/integration/ros) or [ROS2](plugin/integration/ros2) topics.
 - **Plugin Mechanism**: StepIt provides a flexible plugin architecture to enable integration of new modules without modifying existing code. See [doc/plugin.md](doc/plugin.md) for more details.
-- **ROS Intergrations**: StepIt works well with ROS1 and ROS2. Make sure you read the README.md of [ROS1](plugin/ros_base) or [ROS2](plugin/ros2_base) before you start.
-- **Simulation**: StepIt supports [unitree_mujoco](https://github.com/unitreerobotics/unitree_mujoco)-based simulation. See [robot_unitree2](plugin/robot_unitree2) or [stepit_sim](https://github.com/legnAray/stepit_sim) for more details.
+- **ROS Integrations**: StepIt works well with ROS1 and ROS2. Make sure you read the README.md of [ROS1](plugin/integration/ros) or [ROS2](plugin/integration/ros2) before you start.
+- **Simulation**: StepIt supports [unitree_mujoco](https://github.com/unitreerobotics/unitree_mujoco)-based simulation. See [robot_unitree2](plugin/robot/unitree2) or [stepit_sim](https://github.com/legnAray/stepit_sim) for more details.
