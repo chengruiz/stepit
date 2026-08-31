@@ -13,7 +13,7 @@ class JointReordering : public Module {
   bool update(const LowState &low_state, ControlRequests &, FieldMap &context) override;
 
  private:
-  ArrXf reorder(const ArrXf &in);
+  ArrXf reorder(Eigen::Ref<const ArrXf> in);
 
   FieldId joint_pos_id_, joint_vel_id_;
   std::vector<std::size_t> joint_order_;
@@ -28,7 +28,7 @@ class ActionReordering : public Module {
   bool update(const LowState &low_state, ControlRequests &, FieldMap &context) override;
 
  private:
-  ArrXf reorder(const ArrXf &in);
+  ArrXf reorder(Eigen::Ref<const ArrXf> in);
 
   FieldId action_id_;
   std::vector<std::size_t> joint_order_;

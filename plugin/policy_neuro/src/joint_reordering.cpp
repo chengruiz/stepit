@@ -42,7 +42,7 @@ bool JointReordering::init() {
   return true;
 }
 
-ArrXf JointReordering::reorder(const ArrXf &in) {
+ArrXf JointReordering::reorder(Eigen::Ref<const ArrXf> in) {
   ArrXf out(in.size());
   for (Eigen::Index i{}; i < in.size(); ++i) {
     out[i] = in[static_cast<Eigen::Index>(joint_order_[i])] * (joint_reversed_[i] ? -1.0F : 1.0F);
@@ -51,8 +51,8 @@ ArrXf JointReordering::reorder(const ArrXf &in) {
 }
 
 bool JointReordering::update(const LowState &, ControlRequests &, FieldMap &context) {
-  context[joint_pos_id_] = reorder(context.at(joint_pos_id_).get<float>());
-  context[joint_vel_id_] = reorder(context.at(joint_vel_id_).get<float>());
+  context[joint_pos_id_] = reorder(context.at(joint_pos_id_).view<float>());
+  context[joint_vel_id_] = reorder(context.at(joint_vel_id_).view<float>());
   return true;
 }
 
@@ -90,7 +90,7 @@ bool ActionReordering::init() {
   return true;
 }
 
-ArrXf ActionReordering::reorder(const ArrXf &in) {
+ArrXf ActionReordering::reorder(Eigen::Ref<const ArrXf> in) {
   // The reverse of JointReordering::reorder
   ArrXf out(in.size());
   for (Eigen::Index i{}; i < in.size(); ++i) {
@@ -100,7 +100,7 @@ ArrXf ActionReordering::reorder(const ArrXf &in) {
 }
 
 bool ActionReordering::update(const LowState &, ControlRequests &, FieldMap &context) {
-  context[action_id_] = reorder(context.at(action_id_).get<float>());
+  context[action_id_] = reorder(context.at(action_id_).view<float>());
   return true;
 }
 

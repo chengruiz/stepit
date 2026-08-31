@@ -26,14 +26,14 @@ class OnnxRt : public Nnrt {
 
  private:
   static DataType mapOnnxDtype(ONNXTensorElementDataType onnx_type);
-  Ort::Value createTensor(void *data, DataType dtype, std::size_t byte_size, const std::vector<int64_t> &shape);
+  Ort::Value createTensor(TypedBuffer &buffer, const std::vector<int64_t> &shape);
 
   Ort::Env env_;
   Ort::AllocatorWithDefaultOptions allocator_;
   Ort::MemoryInfo memory_info_{nullptr};
   Ort::RunOptions run_options_{nullptr};
   std::unique_ptr<Ort::Session> core_{nullptr};
-  std::vector<std::vector<uint8_t>> in_data_, out_data_;
+  std::vector<TypedBuffer> in_data_, out_data_;
   std::vector<Ort::Value> in_tensors_, out_tensors_;
   std::unique_ptr<Ort::IoBinding> io_binding_{nullptr};
 };

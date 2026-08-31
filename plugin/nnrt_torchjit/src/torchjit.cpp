@@ -1,5 +1,4 @@
 #include <cstring>
-#include <numeric>
 #include <stdexcept>
 
 #include <stepit/nnrt/torchjit.h>
@@ -52,7 +51,8 @@ void TorchJit::runInference() {
   std::vector<torch::jit::IValue> in_tensors;
   in_tensors.reserve(num_in_);
   for (std::size_t i{}; i < num_in_; ++i) {
-    in_tensors.emplace_back(torch::from_blob(in_data_[i].data(), in_shapes_[i], toTorchDtype(in_dtypes_[i])));
+    in_tensors.emplace_back(
+        torch::from_blob(static_cast<void *>(in_data_[i].data()), in_shapes_[i], toTorchDtype(in_dtypes_[i])));
   }
 
   auto out_tensors = extractOutputTensors(module_.forward(in_tensors));
@@ -66,25 +66,25 @@ void TorchJit::runInference() {
     const DataType out_dtype = mapTorchDtype(out_tensors[i].scalar_type());
     STEPIT_ASSERT(out_dtype == out_dtypes_[i], "TorchJit output '{}' dtype mismatch: expected {}, got {}.",
                   out_names_[i], dataTypeName(out_dtypes_[i]), dataTypeName(out_dtype));
-    std::size_t bytes = static_cast<std::size_t>(out_size) * dataTypeSize(out_dtypes_[i]);
-    std::memcpy(out_data_[i].data(), out_tensors[i].data_ptr(), bytes);
+    std::memcpy(out_data_[i].data(), out_tensors[i].data_ptr(), out_data_[i].byteSize());
   }
 
   for (const auto &pair : recur_param_indices_) {
-    std::size_t bytes = static_cast<std::size_t>(in_sizes_[pair.first]) * dataTypeSize(in_dtypes_[pair.first]);
-    std::memcpy(in_data_[pair.first].data(), out_data_[pair.second].data(), bytes);
+    auto &input        = in_data_[pair.first];
+    const auto &output = out_data_[pair.second];
+    std::memcpy(input.data(), output.data(), input.byteSize());
   }
 }
 
 void TorchJit::clearState() {
   for (const auto &pair : recur_param_indices_) {
-    std::fill(in_data_[pair.first].begin(), in_data_[pair.first].end(), 0);
+    auto &input = in_data_[pair.first];
+    if (input.byteSize() != 0) std::memset(input.data(), 0, input.byteSize());
   }
 }
 
 void TorchJit::setInput(std::size_t idx, const void *data) {
-  std::size_t bytes = static_cast<std::size_t>(in_sizes_[idx]) * dataTypeSize(in_dtypes_[idx]);
-  std::memcpy(in_data_[idx].data(), data, bytes);
+  std::memcpy(in_data_[idx].data(), data, in_data_[idx].byteSize());
 }
 
 const void *TorchJit::getOutput(std::size_t idx) { return out_data_[idx].data(); }
@@ -162,7 +162,9 @@ void TorchJit::initInputSpec() {
         STEPIT_THROW("Unknown dtype string '{}' in 'input_dtypes'.", s);
     }
     addInput("input" + std::to_string(i), std::move(shapes[i]), dtype, in_size);
-    in_data_.emplace_back(static_cast<std::size_t>(in_size) * dataTypeSize(dtype), 0);
+    in_data_.emplace_back(dtype, static_cast<std::size_t>(in_size));
+    auto &data = in_data_.back();
+    if (data.byteSize() != 0) std::memset(data.data(), 0, data.byteSize());
   }
 }
 
@@ -172,7 +174,8 @@ void TorchJit::initOutputSpec() {
   std::vector<torch::jit::IValue> in_tensors;
   in_tensors.reserve(num_in_);
   for (std::size_t i{}; i < num_in_; ++i) {
-    in_tensors.emplace_back(torch::from_blob(in_data_[i].data(), in_shapes_[i], toTorchDtype(in_dtypes_[i])));
+    in_tensors.emplace_back(
+        torch::from_blob(static_cast<void *>(in_data_[i].data()), in_shapes_[i], toTorchDtype(in_dtypes_[i])));
   }
 
   auto out_tensors = extractOutputTensors(module_.forward(in_tensors));
@@ -185,13 +188,12 @@ void TorchJit::initOutputSpec() {
     out_tensors[i] = normalizeTensor(out_tensors[i]);
     auto dtype     = mapTorchDtype(out_tensors[i].scalar_type());
 
-    auto shape        = std::vector<int64_t>(out_tensors[i].sizes().begin(), out_tensors[i].sizes().end());
-    auto size         = static_cast<int64_t>(out_tensors[i].numel());
-    std::size_t bytes = static_cast<std::size_t>(size) * dataTypeSize(dtype);
+    auto shape = std::vector<int64_t>(out_tensors[i].sizes().begin(), out_tensors[i].sizes().end());
+    auto size  = static_cast<int64_t>(out_tensors[i].numel());
 
     addOutput("output" + std::to_string(i), std::move(shape), dtype, size);
-    out_data_.emplace_back(bytes, 0);
-    std::memcpy(out_data_[i].data(), out_tensors[i].data_ptr(), bytes);
+    out_data_.emplace_back(dtype, static_cast<std::size_t>(size));
+    std::memcpy(out_data_[i].data(), out_tensors[i].data_ptr(), out_data_[i].byteSize());
   }
 }
 

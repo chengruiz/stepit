@@ -172,7 +172,7 @@ bool NeuroPolicy::act(const LowState &low_state, ControlRequests &requests, LowC
       return false;
     }
   }
-  action_ = context_.at(action_id_).get<float>();
+  action_ = context_.at(action_id_).view<float>();
   actuator_->setLowCmd(cmd, action_);
 
   ++num_steps_;

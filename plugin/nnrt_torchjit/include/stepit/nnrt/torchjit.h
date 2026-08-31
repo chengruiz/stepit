@@ -32,7 +32,7 @@ class TorchJit : public Nnrt {
   void initOutputSpec();
 
   torch::jit::script::Module module_;
-  std::vector<std::vector<uint8_t>> in_data_, out_data_;
+  std::vector<TypedBuffer> in_data_, out_data_;
 };
 }  // namespace stepit
 

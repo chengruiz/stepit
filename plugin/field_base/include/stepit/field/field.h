@@ -10,8 +10,9 @@
 #include <string>
 #include <type_traits>
 #include <utility>
-#include <variant>
 #include <vector>
+
+#include <Eigen/Core>
 
 #include <stepit/data_type.h>
 #include <stepit/registry.h>
@@ -26,9 +27,15 @@ using FieldSize = std::size_t;
 /** Ordered field ID list used for concat/split layouts. */
 using FieldIdVec = std::vector<FieldId>;
 
-/** One-dimensional owning array used as field storage. */
+/** One-dimensional Eigen array used for field values and views. */
 template <typename T>
 using FieldArray = Eigen::Array<T, Eigen::Dynamic, 1>;
+/** Mutable non-owning view of a field array. */
+template <typename T>
+using FieldView = Eigen::Map<FieldArray<T>>;
+/** Read-only non-owning view of a field array. */
+template <typename T>
+using ConstFieldView = Eigen::Map<const FieldArray<T>>;
 
 /** Field metadata; zero size or `kUndefined` denotes an unresolved component. */
 struct FieldSpec {
@@ -48,8 +55,7 @@ struct FieldSpec {
 /**
  * Owning runtime value of a registered field.
  *
- * A value stores exactly one supported scalar array. The default value is an
- * empty float array so it can be used with standard associative containers.
+ * A value owns a typed buffer. Its default state has no data type or storage.
  */
 class FieldValue {
  public:
@@ -71,28 +77,32 @@ class FieldValue {
     return *this;
   }
 
-  /** Returns the stored array, throwing `std::bad_variant_access` for a type mismatch. */
+  /** Returns a mutable Eigen view after validating the scalar data type. */
   template <typename T>
-  FieldArray<T> &get() {
+  FieldView<T> view() {
     static_assert(isSupportedScalar<T>(), "Unsupported field scalar type.");
-    return std::get<FieldArray<T>>(storage_);
+    STEPIT_ASSERT(dataType() == DataTypeTrait<T>::value, "Cannot view field value with data type '{}' as '{}'.",
+                  dataTypeName(dataType()), dataTypeName(DataTypeTrait<T>::value));
+    return FieldView<T>(reinterpret_cast<T *>(data()), static_cast<Eigen::Index>(size()));
   }
 
-  /** Returns the stored array, throwing `std::bad_variant_access` for a type mismatch. */
+  /** Returns a read-only Eigen view after validating the scalar data type. */
   template <typename T>
-  const FieldArray<T> &get() const {
+  ConstFieldView<T> view() const {
     static_assert(isSupportedScalar<T>(), "Unsupported field scalar type.");
-    return std::get<FieldArray<T>>(storage_);
+    STEPIT_ASSERT(dataType() == DataTypeTrait<T>::value, "Cannot view field value with data type '{}' as '{}'.",
+                  dataTypeName(dataType()), dataTypeName(DataTypeTrait<T>::value));
+    return ConstFieldView<T>(reinterpret_cast<const T *>(data()), static_cast<Eigen::Index>(size()));
   }
 
   /** Returns mutable byte access to the contiguous scalar storage. */
-  std::byte *data();
+  std::byte *data() { return buffer_.data(); }
   /** Returns read-only byte access to the contiguous scalar storage. */
-  const std::byte *data() const;
+  const std::byte *data() const { return buffer_.data(); }
   /** Returns the scalar length of this value. */
-  FieldSize size() const;
+  FieldSize size() const { return buffer_.size(); }
   /** Returns the scalar data type of this value. */
-  DataType dataType() const;
+  DataType dataType() const { return buffer_.dataType(); }
   /** Copies a scalar range from another value of the same data type. */
   void copyFrom(const FieldValue &source, FieldSize source_offset, FieldSize target_offset, FieldSize count);
   /** Copies a scalar range from a raw buffer containing this value's data type. */
@@ -101,8 +111,6 @@ class FieldValue {
   FieldValue cast(DataType dtype) const;
 
  private:
-  using Storage = std::variant<FieldArray<float>, FieldArray<std::int32_t>, FieldArray<std::int64_t>, FieldArray<bool>>;
-
   template <typename T>
   static constexpr bool isSupportedScalar() {
     return std::is_same<T, float>::value or std::is_same<T, std::int32_t>::value or
@@ -115,15 +123,16 @@ class FieldValue {
     static_assert(isSupportedScalar<Scalar>(), "Unsupported field scalar type.");
     STEPIT_ASSERT(value.rows() == 1 or value.cols() == 1, "Field value must be a vector, got shape [{} x {}].",
                   value.rows(), value.cols());
-    FieldArray<Scalar> result(value.size());
+    TypedBuffer new_buffer(DataTypeTrait<Scalar>::value, static_cast<std::size_t>(value.size()));
+    FieldView<Scalar> result(reinterpret_cast<Scalar *>(new_buffer.data()), value.size());
     Eigen::Index index{};
     for (Eigen::Index col{}; col < value.cols(); ++col) {
       for (Eigen::Index row{}; row < value.rows(); ++row) result(index++) = value.derived().coeff(row, col);
     }
-    storage_ = std::move(result);
+    buffer_ = std::move(new_buffer);
   }
 
-  Storage storage_;
+  TypedBuffer buffer_;
 };
 
 /** Runtime map from field ID to the value available in the current context. */

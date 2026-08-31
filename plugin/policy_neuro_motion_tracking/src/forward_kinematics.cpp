@@ -102,7 +102,7 @@ bool ForwardKinematics::update(const LowState &low_state, ControlRequests &, Fie
 
   ArrXf whole_body_global_pos = whole_body_local_pos;
   ArrXf whole_body_global_ori = whole_body_local_ori;
-  Quatf anchor_global_ori(context.at(anchor_global_ori_id_).get<float>());
+  Quatf anchor_global_ori(context.at(anchor_global_ori_id_).view<float>());
   for (std::size_t i{}; i < body_indices_.size(); ++i) {
     Quatf local_ori(whole_body_local_ori.segment(4 * i, 4));
     Quatf global_ori = anchor_global_ori * local_ori;
@@ -110,7 +110,7 @@ bool ForwardKinematics::update(const LowState &low_state, ControlRequests &, Fie
     whole_body_global_ori.segment(4 * i, 4) = global_ori.coeffs();
   }
 
-  Vec3f anchor_global_pos = context.at(anchor_global_pos_id_).get<float>();
+  Vec3f anchor_global_pos = context.at(anchor_global_pos_id_).view<float>();
   for (std::size_t i{}; i < body_indices_.size(); ++i) {
     Vec3f body_local_pos                    = whole_body_local_pos.segment(3 * i, 3);
     whole_body_global_pos.segment(3 * i, 3) = anchor_global_ori * body_local_pos + anchor_global_pos;

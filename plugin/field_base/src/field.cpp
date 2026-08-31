@@ -14,6 +14,65 @@ void validateFieldValue(FieldId field_id, const FieldValue &value, const FieldSp
                  spec.size);
   }
 }
+
+template <typename Source>
+FieldValue castFieldValue(const FieldValue &source_value, DataType dtype) {
+  FieldValue result(FieldSpec{dtype, source_value.size()});
+  const auto source = source_value.view<Source>();
+  switch (dtype) {
+    case DataType::kUndefined:
+      STEPIT_UNREACHABLE();
+    case DataType::kFloat32: {
+      auto target = result.view<float>();
+      target      = source.template cast<float>();
+      break;
+    }
+    case DataType::kInt32: {
+      auto target = result.view<std::int32_t>();
+      if constexpr (std::is_same<Source, float>::value) {
+        for (Eigen::Index index{}; index < source.size(); ++index) {
+          const float value       = source(index);
+          const long double number = static_cast<long double>(value);
+          STEPIT_ASSERT(std::isfinite(value) and number >= std::numeric_limits<std::int32_t>::lowest() and
+                            number <= std::numeric_limits<std::int32_t>::max(),
+                        "Cannot cast element {} from {} value {} to {}.", index,
+                        dataTypeName(DataTypeTrait<Source>::value), value, dataTypeName(DataType::kInt32));
+        }
+      } else if constexpr (std::is_same<Source, std::int64_t>::value) {
+        for (Eigen::Index index{}; index < source.size(); ++index) {
+          const std::int64_t value = source(index);
+          STEPIT_ASSERT(value >= std::numeric_limits<std::int32_t>::lowest() and
+                            value <= std::numeric_limits<std::int32_t>::max(),
+                        "Cannot cast element {} from {} value {} to {}.", index,
+                        dataTypeName(DataTypeTrait<Source>::value), value, dataTypeName(DataType::kInt32));
+        }
+      }
+      target = source.template cast<std::int32_t>();
+      break;
+    }
+    case DataType::kInt64: {
+      auto target = result.view<std::int64_t>();
+      if constexpr (std::is_same<Source, float>::value) {
+        for (Eigen::Index index{}; index < source.size(); ++index) {
+          const float value       = source(index);
+          const long double number = static_cast<long double>(value);
+          STEPIT_ASSERT(std::isfinite(value) and number >= std::numeric_limits<std::int64_t>::lowest() and
+                            number <= std::numeric_limits<std::int64_t>::max(),
+                        "Cannot cast element {} from {} value {} to {}.", index,
+                        dataTypeName(DataTypeTrait<Source>::value), value, dataTypeName(DataType::kInt64));
+        }
+      }
+      target = source.template cast<std::int64_t>();
+      break;
+    }
+    case DataType::kBool: {
+      auto target = result.view<bool>();
+      target      = source.template cast<bool>();
+      break;
+    }
+  }
+  return result;
+}
 }  // namespace
 
 FieldValue::FieldValue(const FieldSpec &spec) {
@@ -22,46 +81,7 @@ FieldValue::FieldValue(const FieldSpec &spec) {
   STEPIT_ASSERT(spec.size <= static_cast<std::size_t>(std::numeric_limits<Eigen::Index>::max()),
                 "Field size {} exceeds the maximum Eigen index ({}).", spec.size,
                 std::numeric_limits<Eigen::Index>::max());
-
-  const auto size = static_cast<Eigen::Index>(spec.size);
-  switch (spec.dtype) {
-    case DataType::kUndefined:
-      break;
-    case DataType::kFloat32:
-      storage_.emplace<FieldArray<float>>(size);
-      break;
-    case DataType::kInt32:
-      storage_.emplace<FieldArray<std::int32_t>>(size);
-      break;
-    case DataType::kInt64:
-      storage_.emplace<FieldArray<std::int64_t>>(size);
-      break;
-    case DataType::kBool:
-      storage_.emplace<FieldArray<bool>>(size);
-      break;
-  }
-}
-
-std::byte *FieldValue::data() {
-  return std::visit([](auto &value) { return reinterpret_cast<std::byte *>(value.data()); }, storage_);
-}
-
-const std::byte *FieldValue::data() const {
-  return std::visit([](const auto &value) { return reinterpret_cast<const std::byte *>(value.data()); }, storage_);
-}
-
-FieldSize FieldValue::size() const {
-  return std::visit([](const auto &value) { return static_cast<std::size_t>(value.size()); }, storage_);
-}
-
-DataType FieldValue::dataType() const {
-  return std::visit(
-      [](const auto &value) {
-        using Value  = typename std::decay<decltype(value)>::type;
-        using Scalar = typename Value::Scalar;
-        return DataTypeTrait<Scalar>::value;
-      },
-      storage_);
+  buffer_.allocate(spec.dtype, spec.size);
 }
 
 void FieldValue::copyFrom(const FieldValue &source, FieldSize source_offset, FieldSize target_offset, FieldSize count) {
@@ -85,31 +105,21 @@ void FieldValue::copyFrom(const void *source, FieldSize source_offset, FieldSize
 }
 
 FieldValue FieldValue::cast(DataType dtype) const {
-  FieldValue result(FieldSpec{dtype, size()});
-  std::visit(
-      [](const auto &source, auto &target) {
-        using Source                    = typename std::decay<decltype(source)>::type::Scalar;
-        using Target                    = typename std::decay<decltype(target)>::type::Scalar;
-        constexpr bool float_to_integer = std::is_same<Source, float>::value and
-                                          (std::is_same<Target, std::int32_t>::value or
-                                           std::is_same<Target, std::int64_t>::value);
-        constexpr bool narrowing_integer = std::is_same<Source, std::int64_t>::value and
-                                           std::is_same<Target, std::int32_t>::value;
-        if constexpr (float_to_integer or narrowing_integer) {
-          for (Eigen::Index index{}; index < source.size(); ++index) {
-            const long double element = static_cast<long double>(source(index));
-            bool valid                = element >= static_cast<long double>(std::numeric_limits<Target>::lowest()) and
-                         element <= static_cast<long double>(std::numeric_limits<Target>::max());
-            if constexpr (float_to_integer) valid = valid and std::isfinite(source(index));
-            STEPIT_ASSERT(valid, "Cannot cast element {} from {} value {} to {}.", index,
-                          dataTypeName(DataTypeTrait<Source>::value), source(index),
-                          dataTypeName(DataTypeTrait<Target>::value));
-          }
-        }
-        target = source.template cast<Target>();
-      },
-      storage_, result.storage_);
-  return result;
+  STEPIT_ASSERT(dataType() != DataType::kUndefined, "Cannot cast a field value with undefined data type.");
+  STEPIT_ASSERT(dtype != DataType::kUndefined, "Cannot cast a field value to an undefined data type.");
+  switch (dataType()) {
+    case DataType::kFloat32:
+      return castFieldValue<float>(*this, dtype);
+    case DataType::kInt32:
+      return castFieldValue<std::int32_t>(*this, dtype);
+    case DataType::kInt64:
+      return castFieldValue<std::int64_t>(*this, dtype);
+    case DataType::kBool:
+      return castFieldValue<bool>(*this, dtype);
+    case DataType::kUndefined:
+      STEPIT_UNREACHABLE();
+  }
+  STEPIT_UNREACHABLE();
 }
 
 FieldId Node::registerRequirement(const std::string &field_name, DataType dtype, FieldSize field_size) {
@@ -260,27 +270,31 @@ FieldValue parseFieldValue(const yml::Node &node, const FieldSpec &spec, bool al
     case DataType::kUndefined:
       STEPIT_UNREACHABLE();
     case DataType::kFloat32: {
-      auto &value = result.get<float>();
+      FieldArray<float> value(static_cast<Eigen::Index>(spec.size));
       if (allow_missing and not node.hasValue()) value.setZero();
       node.to(value, allow_missing);
+      result.view<float>() = value;
       break;
     }
     case DataType::kInt32: {
-      auto &value = result.get<std::int32_t>();
+      FieldArray<std::int32_t> value(static_cast<Eigen::Index>(spec.size));
       if (allow_missing and not node.hasValue()) value.setZero();
       node.to(value, allow_missing);
+      result.view<std::int32_t>() = value;
       break;
     }
     case DataType::kInt64: {
-      auto &value = result.get<std::int64_t>();
+      FieldArray<std::int64_t> value(static_cast<Eigen::Index>(spec.size));
       if (allow_missing and not node.hasValue()) value.setZero();
       node.to(value, allow_missing);
+      result.view<std::int64_t>() = value;
       break;
     }
     case DataType::kBool: {
-      auto &value = result.get<bool>();
+      FieldArray<bool> value(static_cast<Eigen::Index>(spec.size));
       if (allow_missing and not node.hasValue()) value.setZero();
       node.to(value, allow_missing);
+      result.view<bool>() = value;
       break;
     }
   }

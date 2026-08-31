@@ -50,7 +50,7 @@ void AffineOperator::init() {
 }
 
 bool AffineOperator::update(FieldMap &context) {
-  ArrXf transformed   = readFieldValue(context, source_id_).get<float>().cwiseProduct(scale_) + bias_;
+  ArrXf transformed   = readFieldValue(context, source_id_).view<float>().cwiseProduct(scale_) + bias_;
   context[target_id_] = transformed;
   return true;
 }
@@ -279,7 +279,7 @@ void MaskedFillOperator::init() {
 }
 
 bool MaskedFillOperator::update(FieldMap &context) {
-  buffer_ = readFieldValue(context, source_id_).get<float>();
+  buffer_ = readFieldValue(context, source_id_).view<float>();
   for (auto index : indices_) buffer_[index] = value_;
   context[target_id_] = buffer_;
   return true;

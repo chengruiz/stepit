@@ -84,16 +84,16 @@ void RedisFieldSubscriber::addField(const yml::Node &key_node, const yml::Node &
     case DataType::kUndefined:
       STEPIT_UNREACHABLE();
     case DataType::kFloat32:
-      field.data.get<float>().setZero();
+      field.data.view<float>().setZero();
       break;
     case DataType::kInt32:
-      field.data.get<std::int32_t>().setZero();
+      field.data.view<std::int32_t>().setZero();
       break;
     case DataType::kInt64:
-      field.data.get<std::int64_t>().setZero();
+      field.data.view<std::int64_t>().setZero();
       break;
     case DataType::kBool:
-      field.data.get<bool>().setConstant(false);
+      field.data.view<bool>().setConstant(false);
       break;
   }
   fields_.push_back(std::move(field));
@@ -151,7 +151,7 @@ bool RedisFieldSubscriber::parseFieldValue(const FieldData &field, const redis::
         STEPIT_WARN("Redis field '{}' ({}) has undefined data type.", field.name, formatRedisField(field));
         return false;
       case DataType::kFloat32: {
-        auto &values = parsed.get<float>();
+        auto values = parsed.view<float>();
         for (std::size_t i = 0; i < it->size(); ++i) {
           const auto &item = (*it)[i];
           if (not item.is_number()) {
@@ -170,7 +170,7 @@ bool RedisFieldSubscriber::parseFieldValue(const FieldData &field, const redis::
         break;
       }
       case DataType::kInt32: {
-        auto &values = parsed.get<std::int32_t>();
+        auto values = parsed.view<std::int32_t>();
         for (std::size_t i = 0; i < it->size(); ++i) {
           const auto &item = (*it)[i];
           if (item.is_number_unsigned()) {
@@ -199,7 +199,7 @@ bool RedisFieldSubscriber::parseFieldValue(const FieldData &field, const redis::
         break;
       }
       case DataType::kInt64: {
-        auto &values = parsed.get<std::int64_t>();
+        auto values = parsed.view<std::int64_t>();
         for (std::size_t i = 0; i < it->size(); ++i) {
           const auto &item = (*it)[i];
           if (item.is_number_unsigned()) {
@@ -221,7 +221,7 @@ bool RedisFieldSubscriber::parseFieldValue(const FieldData &field, const redis::
         break;
       }
       case DataType::kBool: {
-        auto &values = parsed.get<bool>();
+        auto values = parsed.view<bool>();
         for (std::size_t i = 0; i < it->size(); ++i) {
           const auto &item = (*it)[i];
           if (not item.is_boolean()) {
