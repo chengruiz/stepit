@@ -1,5 +1,6 @@
 #include <stepit/field/field.h>
 
+#include <cmath>
 #include <limits>
 
 namespace stepit {
@@ -61,6 +62,34 @@ DataType FieldValue::dataType() const {
         return DataTypeTrait<Scalar>::value;
       },
       storage_);
+}
+
+FieldValue FieldValue::cast(DataType dtype) const {
+  FieldValue result(FieldSpec{dtype, size()});
+  std::visit(
+      [](const auto &source, auto &target) {
+        using Source = typename std::decay<decltype(source)>::type::Scalar;
+        using Target = typename std::decay<decltype(target)>::type::Scalar;
+        constexpr bool float_to_integer =
+            std::is_same<Source, float>::value and
+            (std::is_same<Target, std::int32_t>::value or std::is_same<Target, std::int64_t>::value);
+        constexpr bool narrowing_integer =
+            std::is_same<Source, std::int64_t>::value and std::is_same<Target, std::int32_t>::value;
+        if constexpr (float_to_integer or narrowing_integer) {
+          for (Eigen::Index index{}; index < source.size(); ++index) {
+            const long double element = static_cast<long double>(source(index));
+            bool valid = element >= static_cast<long double>(std::numeric_limits<Target>::lowest()) and
+                         element <= static_cast<long double>(std::numeric_limits<Target>::max());
+            if constexpr (float_to_integer) valid = valid and std::isfinite(source(index));
+            STEPIT_ASSERT(valid, "Cannot cast element {} from {} value {} to {}.", index,
+                          dataTypeName(DataTypeTrait<Source>::value), source(index),
+                          dataTypeName(DataTypeTrait<Target>::value));
+          }
+        }
+        target = source.template cast<Target>();
+      },
+      storage_, result.storage_);
+  return result;
 }
 
 FieldId Node::registerRequirement(const std::string &field_name, DataType dtype, FieldSize field_size) {

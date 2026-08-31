@@ -33,6 +33,19 @@ class AffineOperator : public Operator {
   ArrXf bias_;
 };
 
+class CastOperator : public Operator {
+ public:
+  explicit CastOperator(const yml::Node &config);
+
+  void init() override;
+  bool update(FieldMap &context) override;
+
+ private:
+  FieldId source_id_{};
+  FieldId target_id_{};
+  DataType target_dtype_{DataType::kUndefined};
+};
+
 class ConcatOperator : public Operator {
  public:
   explicit ConcatOperator(const yml::Node &config);

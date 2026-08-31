@@ -17,6 +17,7 @@ StepIt plugin providing foundational field registry, generic field operators and
   | Name          | Description                                                                 |
   | :------------ | :-------------------------------------------------------------------------- |
   | `affine`      | Applies element-wise affine transform (`x * scale + bias`) to a field.     |
+  | `cast`        | Converts a field to a configured scalar data type.                          |
   | `concat`      | Concatenates multiple source fields into one target field.                  |
   | `const`       | Writes a constant scalar/vector value into a target field.                  |
   | `copy`        | Copies one source field to another target field.                            |
@@ -26,7 +27,10 @@ StepIt plugin providing foundational field registry, generic field operators and
   | `split`       | Splits one source field into multiple target fields by configured segments. |
 
 `copy`, `concat`, `history`, `slice`, and `split` preserve the source scalar type; all `concat` sources must use the
-same type. `affine`, `const`, and `masked_fill` operate on `float32` fields.
+same type. `cast` preserves the field size and applies scalar conversion element-wise. Floating-point to integer
+conversion requires finite, representable values and truncates toward zero; `int64` to `int32` rejects values outside
+the target range; integer to `float32` may lose precision. Numeric-to-boolean conversion maps zero to `false` and
+nonzero values (including NaN and infinity) to `true`. `affine`, `const`, and `masked_fill` operate on `float32` fields.
 
 ### Executables
 

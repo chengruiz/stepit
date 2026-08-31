@@ -56,6 +56,27 @@ bool AffineOperator::update(FieldMap &context) {
   return true;
 }
 
+CastOperator::CastOperator(const yml::Node &config) {
+  config.assertHasValue("source", "target", "dtype");
+  const auto source_name = config["source"].as<std::string>();
+  const auto target_name = config["target"].as<std::string>();
+  config.throwIf(source_name == target_name, "'source' and 'target' must not be the same");
+
+  target_dtype_ = parseDataType(config["dtype"].as<std::string>());
+  source_id_    = registerRequirement(source_name);
+  target_id_    = registerProvision(target_name, target_dtype_);
+}
+
+void CastOperator::init() {
+  const FieldSpec source_spec = getFieldSpec(source_id_);
+  setFieldSpec(target_id_, FieldSpec{target_dtype_, source_spec.size});
+}
+
+bool CastOperator::update(FieldMap &context) {
+  context[target_id_] = readFieldValue(context, source_id_).cast(target_dtype_);
+  return true;
+}
+
 ConcatOperator::ConcatOperator(const yml::Node &config) {
   config.assertHasValue("sources", "target");
   const auto target_name = config["target"].as<std::string>();
@@ -355,6 +376,7 @@ bool SplitOperator::update(FieldMap &context) {
 }
 
 STEPIT_REGISTER_FIELD_OPERATOR(affine, kDefPriority, Operator::make<AffineOperator>);
+STEPIT_REGISTER_FIELD_OPERATOR(cast, kDefPriority, Operator::make<CastOperator>);
 STEPIT_REGISTER_FIELD_OPERATOR(concat, kDefPriority, Operator::make<ConcatOperator>);
 STEPIT_REGISTER_FIELD_OPERATOR(const, kDefPriority, Operator::make<ConstOperator>);
 STEPIT_REGISTER_FIELD_OPERATOR(copy, kDefPriority, Operator::make<CopyOperator>);

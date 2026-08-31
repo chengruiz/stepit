@@ -93,6 +93,8 @@ class FieldValue {
   FieldSize size() const;
   /** Returns the scalar data type of this value. */
   DataType dataType() const;
+  /** Returns an element-wise scalar conversion with the same length. */
+  FieldValue cast(DataType dtype) const;
 
  private:
   using Storage =

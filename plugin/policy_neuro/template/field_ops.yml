@@ -18,6 +18,11 @@ operators:
     # mean: 0.1                  # [Optional] Union[Float, List[Float]], used when bias is not provided
     # std: 10.0                  # [Optional] Union[Float, List[Float]], used when scale is not provided
 
+  - type: cast                   # Literal["cast"]
+    source: motion_frame_index   # String, source field name
+    target: motion_frame_index_i # String, target field name; must differ from source
+    dtype: int64                 # Literal["float32", "int32", "int64", "bool"], target scalar type
+
   - type: concat                 # Literal["concat"]
     target: proprioception       # String, target field name
     sources:                     # List[String], source fields to concatenate in order
