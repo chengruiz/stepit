@@ -37,7 +37,7 @@ LoggingModule &LoggingModule::instance() {
   static LoggingModule logging_module;
   static bool initialized = [] {
     long verbosity{};
-    if (getenv("STEPIT_VERBOSITY", verbosity)) {
+    if (getenv("STEPIT_VERBOSITY", verbosity, false)) {
       logging_module.setVerbosity(static_cast<VerbosityLevel>(verbosity));
     }
     return true;
