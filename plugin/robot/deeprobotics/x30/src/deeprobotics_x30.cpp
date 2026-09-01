@@ -30,14 +30,14 @@ void DeepRoboticsX30Api::setSend(const LowCmd &cmd_msg) {
 }
 
 void copyImuData(const x30::ImuDataSDK &src, LowState::IMU &dst) {
+  dst.rpy[0]           = deg2rad(src.roll);
+  dst.rpy[1]           = deg2rad(src.pitch);
+  dst.rpy[2]           = deg2rad(src.yaw);
   auto quaternion      = Quatf::fromEulerAngles(dst.rpy);
   dst.quaternion[0]    = quaternion.w();
   dst.quaternion[1]    = quaternion.x();
   dst.quaternion[2]    = quaternion.y();
   dst.quaternion[3]    = quaternion.z();
-  dst.rpy[0]           = deg2rad(src.roll);
-  dst.rpy[1]           = deg2rad(src.pitch);
-  dst.rpy[2]           = deg2rad(src.yaw);
   dst.gyroscope[0]     = src.omega_x;
   dst.gyroscope[1]     = src.omega_y;
   dst.gyroscope[2]     = src.omega_z;

@@ -37,14 +37,14 @@ void DeepRoboticsLite3Api::setSend(const LowCmd &cmd_msg) {
 }
 
 void DeepRoboticsLite3Api::getRecv(LowState &state_msg) {
+  state_msg.imu.rpy[0]           = deg2rad(state_msg_->imu.angle_roll);
+  state_msg.imu.rpy[1]           = deg2rad(state_msg_->imu.angle_pitch);
+  state_msg.imu.rpy[2]           = deg2rad(state_msg_->imu.angle_yaw);
   auto quaternion                = Quatf::fromEulerAngles(state_msg.imu.rpy);
   state_msg.imu.quaternion[0]    = quaternion.w();
   state_msg.imu.quaternion[1]    = quaternion.x();
   state_msg.imu.quaternion[2]    = quaternion.y();
   state_msg.imu.quaternion[3]    = quaternion.z();
-  state_msg.imu.rpy[0]           = deg2rad(state_msg_->imu.angle_roll);
-  state_msg.imu.rpy[1]           = deg2rad(state_msg_->imu.angle_pitch);
-  state_msg.imu.rpy[2]           = deg2rad(state_msg_->imu.angle_yaw);
   state_msg.imu.gyroscope[0]     = state_msg_->imu.angular_velocity_roll;
   state_msg.imu.gyroscope[1]     = state_msg_->imu.angular_velocity_pitch;
   state_msg.imu.gyroscope[2]     = state_msg_->imu.angular_velocity_yaw;
