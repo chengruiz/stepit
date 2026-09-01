@@ -157,7 +157,7 @@ void Communication::mainEvent() {
     std::lock_guard<std::mutex> _(mutex_);
     api_->getRecv(low_state_);
     connected_ = low_state_.tick != 0;
-    if (frozen_) active_ = false;
+    if (not connected_ or frozen_) active_ = false;
 
     const auto &negative_joint_power_limit = spec().safety.negative_joint_power_limit;
     actual_low_cmd_                        = low_cmd_;
