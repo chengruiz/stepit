@@ -119,6 +119,7 @@ bool MotionPlayer::reset() {
   frame_index_          = 0;
   motion_restart_event_ = true;
 
+  joystick_rules_.clear();
   joystick_rules_.emplace_back([](const joystick::State &js) -> std::string {
     if (js.Select().on_press) return "Policy/Motion/ReplayCurrentClip";
     if (js.LB().pressed and js.Start().on_press) return "Policy/Motion/SelectPreviousClip";
